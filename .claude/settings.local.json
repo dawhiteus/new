@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ls)",
+      "Bash(curl -s http://localhost:5174/)",
+      "Bash(curl -s \"http://localhost:5174/components/PaymentManagement.tsx\")",
+      "Bash(curl -s \"http://localhost:5174/src/main.tsx\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git --version)",
+      "Bash(gh --version)"
+    ]
+  }
+}
