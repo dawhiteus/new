@@ -667,6 +667,8 @@ const workflowStages = [
 
 export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProps) {
   const [newNote, setNewNote] = useState('');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadData, setUploadData] = useState({ category: '', description: '' });
   const [activeTab, setActiveTab] = useState('summary');
   const [expandedStages, setExpandedStages] = useState<string[]>(['lease-negotiation']); // Start with current stage expanded
   const [timelineFilter, setTimelineFilter] = useState<'all' | 'tasks' | 'stages'>('all');
@@ -1973,11 +1975,12 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
               <div className="mb-4">
                 <Button
                   className="text-white"
-                  style={{ 
+                  onClick={() => setShowUploadModal(true)}
+                  style={{
                     backgroundColor: '#005B94',
-                    fontSize: '14px', 
-                    fontWeight: 500, 
-                    fontFamily: 'Inter, sans-serif' 
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    fontFamily: 'Inter, sans-serif'
                   }}
                 >
                   <Upload className="h-4 w-4 mr-2" />
@@ -2228,6 +2231,129 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
               Cancel
             </Button>
           </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Upload Documents Modal */}
+    <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+      <DialogContent className="max-w-lg p-0">
+        <DialogDescription className="sr-only">
+          Upload documents for this requirement
+        </DialogDescription>
+        {/* Header */}
+        <DialogHeader className="px-6 py-5 border-b" style={{ borderColor: '#E5E7EB' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle style={{ fontSize: '20px', fontWeight: 600, fontFamily: 'Inter, sans-serif', color: '#111827' }}>
+                Upload Documents
+              </DialogTitle>
+              <p style={{ fontSize: '13px', color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: '2px' }}>
+                Upload files for {deal.dealName}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowUploadModal(false)}
+              className="text-gray-500 hover:bg-gray-100"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </DialogHeader>
+
+        {/* Form */}
+        <div className="p-6 space-y-4">
+          {/* Document Category */}
+          <div>
+            <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+              Document Category <span style={{ color: '#DC2626' }}>*</span>
+            </Label>
+            <Select
+              value={uploadData.category}
+              onValueChange={(value) => setUploadData({ ...uploadData, category: value })}
+            >
+              <SelectTrigger className="mt-2 border-gray-300" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Proposal">Proposal</SelectItem>
+                <SelectItem value="Floor Plans">Floor Plans</SelectItem>
+                <SelectItem value="Pricing">Pricing</SelectItem>
+                <SelectItem value="Contract">Contract</SelectItem>
+                <SelectItem value="Legal">Legal</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Description */}
+          <div>
+            <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+              Description <span style={{ color: '#6B7280', fontWeight: 400 }}>(optional)</span>
+            </Label>
+            <Textarea
+              value={uploadData.description}
+              onChange={(e) => setUploadData({ ...uploadData, description: e.target.value })}
+              placeholder="Add a description for this document..."
+              className="mt-2 border-gray-300 min-h-[80px]"
+              style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+            />
+          </div>
+
+          {/* File Drop Zone */}
+          <div>
+            <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+              Files <span style={{ color: '#DC2626' }}>*</span>
+            </Label>
+            <div
+              className="mt-2 rounded-xl flex flex-col items-center justify-center py-10 px-6 cursor-pointer hover:bg-blue-50 transition-colors"
+              style={{ border: '2px dashed #D1D5DB', backgroundColor: '#F9FAFB' }}
+              onClick={() => {/* file picker would open here */}}
+            >
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+                style={{ backgroundColor: '#EFF6FF' }}
+              >
+                <Upload className="h-6 w-6" style={{ color: '#005B94' }} />
+              </div>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', marginBottom: '4px' }}>
+                Drag and drop files here
+              </p>
+              <p style={{ fontSize: '13px', color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '8px' }}>
+                or click to browse from your computer
+              </p>
+              <p style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif' }}>
+                Supported formats: PDF, DOCX, XLSX, PNG, JPG — Max 25 MB per file
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t" style={{ borderColor: '#E5E7EB' }}>
+          <Button
+            variant="outline"
+            onClick={() => setShowUploadModal(false)}
+            className="border-gray-300"
+            style={{ fontSize: '14px', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="text-white"
+            style={{ backgroundColor: '#005B94', fontSize: '14px', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}
+            disabled={!uploadData.category}
+            onClick={() => {
+              setShowUploadModal(false);
+              setUploadData({ category: '', description: '' });
+              toast.success('Document uploaded successfully.');
+            }}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Upload
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
