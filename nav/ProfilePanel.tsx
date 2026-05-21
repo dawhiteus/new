@@ -120,7 +120,7 @@ export function ProfilePanel({
                   label={v}
                   sublabel={VARIANT_LABELS[v]}
                   selected={variant === v}
-                  recommended={v === 'B'}
+                  recommended={false}
                   onSelect={() => onVariantChange(v)}
                 />
               ))}
