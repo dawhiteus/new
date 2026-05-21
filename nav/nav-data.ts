@@ -116,8 +116,6 @@ export const IA: Record<string, Product> = {
         label: 'Enterprise Summary',
         items: [
           { id: 'summary-overview',  icon: 'home',        label: 'Overview' },
-          { id: 'summary-portfolio', icon: 'building-2',  label: 'Portfolio' },
-          { id: 'summary-spend',     icon: 'dollar-sign', label: 'Spend' },
         ],
       },
       {
