@@ -88,7 +88,7 @@ const sampleTeamMembers: TeamMember[] = [
     organization: 'LiquidSpace AI',
     email: 'sourcing.agent@ai.liquidspace.com',
     type: 'Agent',
-    description: 'Searches the LiquidSpace marketplace and builds curated collections of candidate spaces matching requirement criteria.',
+    description: 'Searches the LiquidSpace marketplace and builds a comprehensive first-pass candidate set — not a curated shortlist. Its purpose is to give the Collection Assessment Agent and human reviewers a full option set to work from. After this task completes, the Collection Assessment Agent runs automatically and the Collection tab becomes visible on the requirement.',
   },
   {
     id: '10',
@@ -97,7 +97,7 @@ const sampleTeamMembers: TeamMember[] = [
     organization: 'LiquidSpace AI',
     email: 'assessment.agent@ai.liquidspace.com',
     type: 'Agent',
-    description: 'Evaluates collections against requirement criteria. Scores fit, flags gaps, and surfaces top recommendations.',
+    description: 'A Requirement-aware lens layered on top of LiquidSpace\'s existing recommendations. Answers: how well does this specific collection satisfy this specific requirement? Evaluates each space across five dimensions — location proximity, workspace type, size and capacity, budget, and term. Runs automatically after sourcing completes, and re-triggers when requirement fields are edited.',
   },
 ];
 

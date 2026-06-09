@@ -1,15 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
+import { toast } from './ui/toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { Input } from './ui/input';
 import {
   Search,
   Plus,
   MoreHorizontal,
   ChevronDown,
   Eye,
+  FolderOpen,
+  FolderPlus,
   TrendingUp,
   FileText,
   CircleDot,
   Zap,
+  MapPin,
+  Users,
+  DollarSign,
 } from 'lucide-react';
 import { DealDetailsModal } from './DealDetailsModal';
 import { CreateEditDealModal } from './CreateEditDealModal';
@@ -76,6 +84,89 @@ function getStatusBadgeStyle(status: string) {
   return statusBadgeStyles[status] ?? { backgroundColor: '#9CA3AF', color: '#FFFFFF' };
 }
 
+// ─── Collection Assessment Mock Data ─────────────────────────────────────────
+
+const MOCK_ASSESSMENTS: Record<string, {
+  strong: number;
+  partial: number;
+  weak: number;
+  inMarket: number;
+  withinBudget: number;
+  sizeMatch: number;
+  location: string;
+  headcount: string;
+  budget: string;
+  lastAssessed: string;
+  collectionName: string;
+}> = {
+  '1': {
+    strong: 4,
+    partial: 6,
+    weak: 2,
+    inMarket: 8,
+    withinBudget: 6,
+    sizeMatch: 7,
+    location: 'Midtown Manhattan',
+    headcount: '35–40 people',
+    budget: '$18,000/mo',
+    lastAssessed: 'Nov 9, 2024',
+    collectionName: 'NYC Executive Suites',
+  },
+  '3': {
+    strong: 2,
+    partial: 5,
+    weak: 4,
+    inMarket: 5,
+    withinBudget: 4,
+    sizeMatch: 6,
+    location: 'Back Bay, Boston',
+    headcount: '70–80 people',
+    budget: '$32,000/mo',
+    lastAssessed: 'Nov 7, 2024',
+    collectionName: 'Boston Back Bay Offices',
+  },
+  '4': {
+    strong: 5,
+    partial: 3,
+    weak: 1,
+    inMarket: 7,
+    withinBudget: 6,
+    sizeMatch: 6,
+    location: 'Financial District, SF',
+    headcount: '20–25 people',
+    budget: '$12,500/mo',
+    lastAssessed: 'Nov 5, 2024',
+    collectionName: 'SF Financial District Pack',
+  },
+};
+
+type CollectionAssessment = (typeof MOCK_ASSESSMENTS)[string];
+
+function generateMockAssessment(deal: Deal, name?: string): CollectionAssessment {
+  const strong = deal.size >= 5000 ? 4 : deal.size >= 2000 ? 3 : 2;
+  const partial = Math.max(2, 6 - strong);
+  const weak = 2;
+  const total = strong + partial + weak;
+  const seed = Number(deal.id) || 5;
+  const inMarket    = Math.max(1, Math.round(total * (0.55 + (seed % 5) * 0.07)));
+  const withinBudget = Math.max(1, Math.round(total * (0.45 + (seed % 3) * 0.09)));
+  const sizeMatch   = Math.max(1, Math.round(total * (0.50 + (seed % 4) * 0.08)));
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return {
+    strong,
+    partial,
+    weak,
+    inMarket,
+    withinBudget,
+    sizeMatch,
+    location: deal.city,
+    headcount: `${Math.floor(deal.size / 150)}–${Math.ceil(deal.size / 100)} people`,
+    budget: `$${(Math.round(deal.estValue / 1200) * 100).toLocaleString()}/mo`,
+    lastAssessed: today,
+    collectionName: name || `${deal.city} Collection`,
+  };
+}
+
 // ─── Sample Data ──────────────────────────────────────────────────────────────
 
 const SAMPLE_DEALS: Deal[] = [
@@ -84,7 +175,7 @@ const SAMPLE_DEALS: Deal[] = [
     dealName: 'Tel Tech NYC Expansion',
     clientName: 'Tel Tech',
     city: 'New York',
-    workspaceType: 'Dedicated Desk',
+    workspaceType: 'Office Suite',
     dealStage: 'Negotiation',
     size: 5000,
     estValue: 125000,
@@ -98,7 +189,7 @@ const SAMPLE_DEALS: Deal[] = [
     dealName: 'Tech Ventures SF Office',
     clientName: 'Tech Ventures',
     city: 'San Francisco',
-    workspaceType: 'Hot Desk',
+    workspaceType: 'Coworking',
     dealStage: 'Intake',
     size: 2000,
     estValue: 98000,
@@ -112,7 +203,7 @@ const SAMPLE_DEALS: Deal[] = [
     dealName: 'Global Finance Boston Hub',
     clientName: 'Global Finance Corp',
     city: 'Boston',
-    workspaceType: 'Team Suite',
+    workspaceType: 'Headquarters',
     dealStage: 'Proposal',
     size: 8000,
     estValue: 240000,
@@ -140,7 +231,7 @@ const SAMPLE_DEALS: Deal[] = [
     dealName: 'MediaCo Chicago Office',
     clientName: 'MediaCo',
     city: 'Chicago',
-    workspaceType: 'Team Suite',
+    workspaceType: 'Headquarters',
     dealStage: 'Intake',
     size: 4000,
     estValue: 115000,
@@ -214,7 +305,13 @@ const ALL_STATUSES = ['Draft', 'Active', 'Executed', 'Archived'];
 
 // ─── Actions dropdown ─────────────────────────────────────────────────────────
 
-function ActionsMenu({ onView }: { onView: () => void }) {
+function ActionsMenu({
+  onView,
+  hasCollection,
+}: {
+  onView: () => void;
+  hasCollection: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -239,16 +336,26 @@ function ActionsMenu({ onView }: { onView: () => void }) {
       {open && (
         <div
           className="absolute right-0 top-8 z-50 rounded-lg bg-white py-1 shadow-lg"
-          style={{ border: '1px solid #E5E7EB', minWidth: '170px' }}
+          style={{ border: '1px solid #E5E7EB', minWidth: '172px' }}
         >
           <button
             onClick={(e) => { e.stopPropagation(); onView(); setOpen(false); }}
             className="flex w-full items-center gap-2.5 px-4 py-2 text-left hover:bg-gray-50 transition-colors"
-            style={{ fontSize: '13px', fontFamily: 'Inter, sans-serif', color: '#005B94' }}
+            style={{ fontSize: '13px', fontFamily: 'Inter, sans-serif', color: '#374151' }}
           >
-            <Eye className="h-3.5 w-3.5" />
+            <Eye className="h-3.5 w-3.5" style={{ color: '#6B7280' }} />
             View Requirement
           </button>
+          {hasCollection && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+              className="flex w-full items-center gap-2.5 px-4 py-2 text-left hover:bg-gray-50 transition-colors"
+              style={{ fontSize: '13px', fontFamily: 'Inter, sans-serif', color: '#374151' }}
+            >
+              <FolderOpen className="h-3.5 w-3.5" style={{ color: '#6B7280' }} />
+              View Collection
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -259,6 +366,7 @@ function ActionsMenu({ onView }: { onView: () => void }) {
 
 export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
   const [deals] = useState<Deal[]>(SAMPLE_DEALS);
+  const [liveAssessments, setLiveAssessments] = useState<Record<string, CollectionAssessment>>({ ...MOCK_ASSESSMENTS });
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -269,6 +377,9 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editDeal, setEditDeal] = useState<Deal | undefined>(undefined);
+
+  const [createTarget, setCreateTarget] = useState<Deal | null>(null);
+  const [collectionName, setCollectionName] = useState('');
 
   const cities = Array.from(new Set(deals.map((d) => d.city))).sort();
 
@@ -421,7 +532,7 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search deals by client, city, broker..."
+                placeholder="Search requirements by company, location, service provider..."
                 className="w-full rounded-lg pl-9 pr-4 py-2 outline-none"
                 style={{
                   border: '1px solid #E5E7EB',
@@ -433,7 +544,7 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
             </div>
             <FilterSelect value={stageFilter}  onChange={setStageFilter}  placeholder="All Stages"   options={ALL_STAGES}  />
             <FilterSelect value={statusFilter} onChange={setStatusFilter} placeholder="All Statuses" options={ALL_STATUSES} />
-            <FilterSelect value={cityFilter}   onChange={setCityFilter}   placeholder="All Cities"   options={cities}     />
+            <FilterSelect value={cityFilter}   onChange={setCityFilter}   placeholder="All Locations" options={cities}     />
           </div>
 
           {/* Table */}
@@ -441,14 +552,14 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
             <thead>
               <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
                 {[
-                  { label: 'TRANSACTION NAME', width: '22%' },
-                  { label: 'CLIENT NAME',       width: '14%' },
-                  { label: 'BROKER',            width: '13%' },
-                  { label: 'STATUS',            width: '9%'  },
-                  { label: 'STAGE',             width: '11%' },
-                  { label: 'EST. VALUE',        width: '10%' },
-                  { label: 'LAST UPDATED',      width: '10%' },
-                  { label: 'ACTIONS',           width: '6%'  },
+                  { label: 'REQUIREMENT',           width: '22%' },
+                  { label: 'COMPANY',               width: '13%' },
+                  { label: 'SERVICE PROVIDER',      width: '12%' },
+                  { label: 'STATUS',                width: '8%'  },
+                  { label: 'STAGE',                 width: '11%' },
+                  { label: 'EST. VALUE',            width: '10%' },
+                  { label: 'COLLECTION',            width: '14%' },
+                  { label: 'ACTIONS',               width: '7%'  },
                 ].map((col) => (
                   <th
                     key={col.label}
@@ -491,6 +602,11 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
                     deal={deal}
                     isLast={idx === filtered.length - 1}
                     onClick={() => openDeal(deal)}
+                    assessment={liveAssessments[deal.id]}
+                    onCreateCollection={() => {
+                      setCreateTarget(deal);
+                      setCollectionName('');
+                    }}
                   />
                 ))
               )}
@@ -513,6 +629,119 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
         onClose={() => setIsCreateOpen(false)}
         deal={editDeal}
       />
+
+      {/* ── New Collection Modal ──────────────────────────────────────── */}
+      <Dialog
+        open={!!createTarget}
+        onOpenChange={(open) => {
+          if (!open) { setCreateTarget(null); setCollectionName(''); }
+        }}
+      >
+        <DialogContent
+          className="max-w-md"
+          style={{ fontFamily: 'Inter, sans-serif', padding: '28px 28px 24px' }}
+        >
+          <DialogHeader style={{ marginBottom: 20 }}>
+            <DialogTitle style={{ fontSize: 20, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>
+              New Collection
+            </DialogTitle>
+            <DialogDescription style={{ display: 'none' }}>
+              Create a new collection for this requirement
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Requirement context */}
+          {createTarget && (
+            <div style={{
+              fontSize: 12,
+              color: '#6B7280',
+              fontFamily: 'Inter, sans-serif',
+              marginBottom: 16,
+              lineHeight: 1.4,
+            }}>
+              Requirement: <span style={{ fontWeight: 600, color: '#374151' }}>{createTarget.dealName}</span>
+            </div>
+          )}
+
+          {/* Collection Name input */}
+          <Input
+            placeholder="Collection Name"
+            value={collectionName}
+            onChange={(e) => setCollectionName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && collectionName.trim()) {
+                e.preventDefault();
+                if (!createTarget) return;
+                const a = generateMockAssessment(createTarget, collectionName.trim());
+                setLiveAssessments(prev => ({ ...prev, [createTarget.id]: a }));
+                toast.success(`"${collectionName}" collection created — assessing fit…`);
+                setCreateTarget(null);
+                setCollectionName('');
+              }
+            }}
+            autoFocus
+            style={{ fontSize: 14, fontFamily: 'Inter, sans-serif', marginBottom: 16 }}
+          />
+
+          {/* Agent explanation */}
+          <div style={{
+            backgroundColor: '#EFF6FF',
+            border: '1px solid #BFDBFE',
+            borderRadius: 8,
+            padding: '12px 14px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            marginBottom: 12,
+          }}>
+            <Zap size={14} style={{ color: '#2563EB', flexShrink: 0, marginTop: 2 }} />
+            <p style={{ fontSize: 13, color: '#1E40AF', fontFamily: 'Inter, sans-serif', lineHeight: 1.55, margin: 0 }}>
+              <span style={{ fontWeight: 600 }}>The Create Collection Agent</span> will source spaces based on this requirement's metadata — location, headcount, budget, and workspace type.
+            </p>
+          </div>
+
+          {/* Outcome expectation */}
+          <p style={{
+            fontSize: 12,
+            color: '#6B7280',
+            fontFamily: 'Inter, sans-serif',
+            lineHeight: 1.6,
+            marginBottom: 24,
+          }}>
+            Once the collection is ready, a <span style={{ fontWeight: 500, color: '#374151' }}>collection link</span> and <span style={{ fontWeight: 500, color: '#374151' }}>fitness assessment</span> will appear in the Requirements table.
+          </p>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <Button
+              variant="outline"
+              onClick={() => { setCreateTarget(null); setCollectionName(''); }}
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: 14 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={!collectionName.trim()}
+              className="text-white"
+              style={{
+                backgroundColor: collectionName.trim() ? '#005B94' : undefined,
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 14,
+              }}
+              onClick={() => {
+                if (!createTarget || !collectionName.trim()) return;
+                const a = generateMockAssessment(createTarget, collectionName.trim());
+                setLiveAssessments(prev => ({ ...prev, [createTarget.id]: a }));
+                toast.success(`"${collectionName}" collection created — assessing fit…`);
+                setCreateTarget(null);
+                setCollectionName('');
+              }}
+            >
+              Create Collection
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -523,12 +752,19 @@ function DealRow({
   deal,
   isLast,
   onClick,
+  assessment,
+  onCreateCollection,
 }: {
   deal: Deal;
   isLast: boolean;
   onClick: () => void;
+  assessment: CollectionAssessment | undefined;
+  onCreateCollection: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [assessHovered, setAssessHovered] = useState(false);
+  const [assessCardHovered, setAssessCardHovered] = useState(false);
+  const [assessRect, setAssessRect] = useState<{ top: number; left: number } | null>(null);
   const stageBadge  = getStageBadgeStyle(deal.dealStage);
   const statusBadge = getStatusBadgeStyle(deal.status);
 
@@ -608,16 +844,126 @@ function DealRow({
         </span>
       </td>
 
-      {/* Last Updated */}
-      <td style={{ padding: '14px 16px' }}>
-        <span style={{ fontSize: '13px', color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
-          {deal.lastUpdated}
-        </span>
+      {/* Collection Assessment */}
+      <td
+        style={{ padding: '14px 16px', position: 'relative' }}
+        onMouseEnter={(e) => {
+          if (!assessment) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          setAssessRect({ top: rect.bottom + 6, left: rect.left });
+          setAssessHovered(true);
+        }}
+        onMouseLeave={() => setAssessHovered(false)}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {assessment ? (
+          <div
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '3px 9px', borderRadius: 999,
+              border: '1px solid #BFDBFE', backgroundColor: '#EFF6FF',
+              color: '#1D4ED8', fontSize: 12, fontWeight: 500,
+              fontFamily: 'Inter, sans-serif', cursor: 'default',
+            }}
+          >
+            <FolderOpen size={11} style={{ flexShrink: 0 }} />
+            {assessment.strong + assessment.partial} spaces
+          </div>
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); onCreateCollection(); }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '4px 10px', borderRadius: 999,
+              border: '1px solid #D1D5DB', backgroundColor: '#FFFFFF',
+              color: '#6B7280', fontSize: 12, fontWeight: 500,
+              fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+            }}
+          >
+            <FolderPlus size={12} style={{ flexShrink: 0 }} />
+            Create
+          </button>
+        )}
+        {(assessHovered || assessCardHovered) && assessment && assessRect && (
+          <div
+            style={{ position: 'fixed', top: assessRect.top, left: assessRect.left, zIndex: 9999, width: 268, backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.14)', overflow: 'hidden' }}
+            onMouseEnter={() => setAssessCardHovered(true)}
+            onMouseLeave={() => setAssessCardHovered(false)}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: collection name + total space count */}
+            <div style={{ padding: '12px 14px 10px', borderBottom: '1px solid #F3F4F6' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', fontFamily: 'Inter, sans-serif', lineHeight: 1.25, marginBottom: 3 }}>
+                {assessment.collectionName}
+              </div>
+              <div style={{ fontSize: 12, color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
+                {assessment.strong + assessment.partial + assessment.weak} spaces total
+              </div>
+            </div>
+
+            {/* Criteria breakdown */}
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid #F3F4F6', display: 'flex', flexDirection: 'column' as const, gap: 7 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#6B7280' }}>
+                  <MapPin size={11} color="#9CA3AF" style={{ flexShrink: 0 }} />
+                  In {assessment.location}
+                </span>
+                <span style={{ fontWeight: 600, color: '#111827' }}>{assessment.inMarket} spaces</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#6B7280' }}>
+                  <DollarSign size={11} color="#9CA3AF" style={{ flexShrink: 0 }} />
+                  Within {assessment.budget}
+                </span>
+                <span style={{ fontWeight: 600, color: '#111827' }}>{assessment.withinBudget} spaces</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#6B7280' }}>
+                  <Users size={11} color="#9CA3AF" style={{ flexShrink: 0 }} />
+                  For {assessment.headcount}
+                </span>
+                <span style={{ fontWeight: 600, color: '#111827' }}>{assessment.sizeMatch} spaces</span>
+              </div>
+            </div>
+
+            {/* Saved / Shortlisted stats */}
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'stretch' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#111827', fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>{assessment.strong + assessment.partial}</div>
+                <div style={{ fontSize: 11, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: 3 }}>Saved</div>
+              </div>
+              <div style={{ width: 1, backgroundColor: '#E5E7EB', margin: '0 12px', alignSelf: 'stretch' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#111827', fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>{assessment.strong}</div>
+                <div style={{ fontSize: 11, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: 3 }}>Shortlisted</div>
+              </div>
+            </div>
+
+            {/* Footer + CTA */}
+            <div style={{ padding: '10px 14px 12px' }}>
+              <div style={{ fontSize: 11, color: '#9CA3AF', fontFamily: 'Inter, sans-serif', marginBottom: 10 }}>
+                Updated {assessment.lastAssessed}
+              </div>
+              <button
+                style={{ width: '100%', padding: '8px 0', backgroundColor: '#005B94', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 600, borderRadius: 7, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                onClick={() => toast.info(`Opening ${assessment.collectionName}…`)}
+              >
+                View Collection
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
       </td>
 
       {/* Actions */}
       <td style={{ padding: '14px 8px 14px 0' }} onClick={(e) => e.stopPropagation()}>
-        <ActionsMenu onView={onClick} />
+        <ActionsMenu
+          onView={onClick}
+          hasCollection={!!assessment}
+        />
       </td>
     </tr>
   );

@@ -7,6 +7,7 @@ import {
   TrendingUp as FundingIcon,
   CheckSquare,
   BarChart3,
+  BarChart2,
   Users,
   MapPin,
   Activity,
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react';
 import { cn } from './ui/utils';
 
-type ViewType = 'broker-flow' | 'liquid-ai';
+type ViewType = 'broker-flow' | 'liquid-ai' | 'cfo-dashboard';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -50,6 +51,11 @@ const licenseAdminItems = [
     id: 'tasks',
     label: 'Tasks',
     icon: CheckSquare,
+  },
+  {
+    id: 'cfo-dashboard' as ViewType,
+    label: 'Financial Intelligence',
+    icon: BarChart2,
   },
 ];
 
@@ -194,12 +200,20 @@ export function Sidebar({ currentView, onViewChange, isOpen, onToggle }: Sidebar
                   onClick={() => {
                     if (item.id === 'license-tracker') {
                       window.open('https://crayon-duo-80396629.figma.site/', '_blank');
+                    } else if (item.id === 'cfo-dashboard') {
+                      onViewChange('cfo-dashboard');
                     }
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                    currentView === item.id
+                      ? "text-white"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  )}
                   style={{
                     fontSize: '14px',
                     fontFamily: 'Inter, sans-serif',
+                    backgroundColor: currentView === item.id ? '#005B94' : 'transparent',
                   }}
                 >
                   <Icon className="h-5 w-5 flex-shrink-0" />

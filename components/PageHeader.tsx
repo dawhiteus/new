@@ -9,15 +9,18 @@ interface PageHeaderProps {
   onAIAssistantOpen: () => void;
   isAIDrawerOpen: boolean;
   children?: React.ReactNode;
+  /** Pass true to suppress the LiquidAI button when the page provides its own AI entry point. */
+  hideAIButton?: boolean;
 }
 
-export function PageHeader({ 
-  icon, 
-  title, 
-  subtitle, 
-  onAIAssistantOpen, 
+export function PageHeader({
+  icon,
+  title,
+  subtitle,
+  onAIAssistantOpen,
   isAIDrawerOpen,
-  children 
+  children,
+  hideAIButton = false,
 }: PageHeaderProps) {
   return (
     <div className="px-6 py-8" style={{ backgroundColor: '#005B94', color: '#FFFFFF' }}>
@@ -49,7 +52,7 @@ export function PageHeader({
           
           <div className="flex items-center gap-3">
             {children}
-            <Button
+            {!hideAIButton && <Button
               variant="ghost"
               size="sm"
               onClick={onAIAssistantOpen}
@@ -76,7 +79,7 @@ export function PageHeader({
               {!isAIDrawerOpen && (
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#0080FC] rounded-full ai-pulse"></div>
               )}
-            </Button>
+            </Button>}
           </div>
         </div>
       </div>

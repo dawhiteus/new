@@ -53,6 +53,11 @@ import {
   Bot,
   PlayCircle,
   Loader2,
+  ExternalLink,
+  Minus,
+  RefreshCw,
+  Share2,
+  Bookmark,
 } from 'lucide-react';
 import { MessagingThread } from './MessagingThread';
 import { DealTeamSection } from './DealTeamSection';
@@ -423,12 +428,260 @@ const sampleDocuments: Document[] = [
   },
 ];
 
-const timelineEvents = [
-  { date: '2025-11-10', event: 'Deal moved to Negotiation', user: 'Sarah Chen' },
-  { date: '2025-11-08', event: 'Proposal sent to client', user: 'Sarah Chen' },
-  { date: '2025-11-05', event: 'Site visit completed', user: 'Sarah Chen' },
-  { date: '2025-11-01', event: 'Initial meeting with client', user: 'Sarah Chen' },
-  { date: '2025-10-28', event: 'Deal created', user: 'Sarah Chen' },
+// ─── Mock collection data (Phase 1 — replaced with real agent output in Phase 3) ─
+//
+// Tier semantics:
+//   Strong  — spaces in the right area with clear alignment to this dimension
+//   Partial — spaces in the right area with some alignment; requirement partially met
+//   No match (weak) — zero spaces in the collection that could viably satisfy this dimension
+//
+// fitness_signal derivation:
+//   Good  → strong ≥ 1 (collection has at least one genuinely good option)
+//   Fair  → strong = 0, partial ≥ 1 (options exist but none are clearly right)
+//   Poor  → strong = 0, partial = 0 (collection has no viable candidates at all)
+const MOCK_COLLECTION = {
+  fitness_signal: 'Good' as const,
+  tier_counts: { strong: 4, partial: 6, weak: 2 },
+  top_recommendation: { name: 'Hudson Yards Tower', match_pct: 96 },
+  gaps: ['No spaces support 24-month term'],
+  delta: {
+    previous_tier_counts: { strong: 5, partial: 5, weak: 2 },
+    summary: '1 space moved from strong to partial following budget reduction.',
+  },
+  collection: {
+    name: 'NYC Private Offices 12',
+    spaceCount: 12,
+    sourcedBy: 'Market Sourcing Agent',
+    sourcedOn: 'Oct 26, 3:42 PM',
+    lastAssessed: 'Nov 9, 9:03 AM',
+    assessmentsRun: 2,
+  },
+  criteria: [
+    { label: 'Midtown Manhattan', tier: 'Strong'  as 'Strong' | 'Partial' | 'Weak' },
+    { label: 'Private office',    tier: 'Strong'  as 'Strong' | 'Partial' | 'Weak' },
+    { label: '35–40 people',      tier: 'Partial' as 'Strong' | 'Partial' | 'Weak' },
+    { label: '$18,000/mo budget', tier: 'Partial' as 'Strong' | 'Partial' | 'Weak' },
+    { label: '4,500–5,000 sq ft', tier: 'Partial' as 'Strong' | 'Partial' | 'Weak' },
+    { label: '12–24 mo term',     tier: 'Partial' as 'Strong' | 'Partial' | 'Weak' },
+  ],
+  criteriaNote: '',
+  history: [
+    {
+      type: 'space_shortlisted',
+      title: '3 spaces shortlisted for client review',
+      time: 'Nov 14, 11:30 AM',
+      desc: 'Hudson Yards Tower, Park Ave Suites, and One Penn Plaza flagged for client review by Matthew Weiner.',
+      delta: null as null | { label: string; direction: 'up' | 'down' | 'neutral' },
+    },
+    {
+      type: 'collection_shared',
+      title: 'Collection shared with client',
+      time: 'Nov 13, 3:45 PM',
+      desc: 'Collection shared with Sarah Chen at Tel Tech by Matthew Weiner for review and feedback.',
+      delta: null as null | { label: string; direction: 'up' | 'down' | 'neutral' },
+    },
+    {
+      type: 'requirement_update',
+      title: 'Requirement updated · Location narrowed',
+      time: 'Nov 12, 2:00 PM',
+      desc: 'Target area updated from Midtown Manhattan to Hudson Yards corridor by Sarah Chen. Full resourcing triggered automatically.',
+      delta: null as null | { label: string; direction: 'up' | 'down' | 'neutral' },
+    },
+    {
+      type: 'resourced',
+      title: 'Collection rebuilt',
+      time: 'Nov 12, 2:01 PM',
+      desc: 'Market Sourcing Agent rebuilt collection for Hudson Yards corridor. 12 prior candidates replaced with 9 tighter-area spaces.',
+      delta: { label: 'Strong 4→5 · Partial 6→4', direction: 'up' as const },
+    },
+    {
+      type: 'space_removed',
+      title: '2 spaces removed',
+      time: 'Nov 11, 10:20 AM',
+      desc: 'Rockefeller Center Office and Bryant Park Suite removed by Matthew Weiner — both exceed budget by more than 30%.',
+      delta: null as null | { label: string; direction: 'up' | 'down' | 'neutral' },
+    },
+    {
+      type: 'space_added',
+      title: '1 space added',
+      time: 'Nov 10, 9:45 AM',
+      desc: 'Industrious Bryant Park added to collection manually by Matthew Weiner.',
+      delta: null as null | { label: string; direction: 'up' | 'down' | 'neutral' },
+    },
+    {
+      type: 'requirement_update',
+      title: 'Requirement updated · Budget reduced',
+      time: 'Nov 9, 9:02 AM',
+      desc: 'Budget changed from $20,000/mo to $18,000/mo by Sarah Chen. Re-assessment triggered automatically.',
+      delta: null as null | { label: string; direction: 'up' | 'down' | 'neutral' },
+    },
+    {
+      type: 'reassessment',
+      title: 'Re-assessment complete',
+      time: 'Nov 9, 9:03 AM',
+      desc: '1 space moved from strong to partial following budget reduction. Collection still has 4 strong matches.',
+      delta: { label: 'Strong 5→4 · Partial 5→6', direction: 'down' as const },
+    },
+    {
+      type: 'initial_assessment',
+      title: 'Initial assessment complete',
+      time: 'Oct 28, 10:18 AM',
+      desc: '12 spaces assessed. Strong: 5 · Partial: 5 · No match: 2. Top pick: Hudson Yards Tower, 4,800 sq ft (96% match).',
+      delta: { label: 'First run', direction: 'neutral' as const },
+    },
+    {
+      type: 'assessment_blocked',
+      title: 'Assessment incomplete · Missing data',
+      time: 'Oct 27, 4:22 PM',
+      desc: 'Initial scoring attempted but sq ft data unavailable for 9 of 12 spaces. Budget and location dimensions scored; capacity and size skipped. Re-attempted Oct 28 with full scoring.',
+      delta: null as null | { label: string; direction: 'up' | 'down' | 'neutral' },
+    },
+    {
+      type: 'sourced',
+      title: 'Collection sourced',
+      time: 'Oct 26, 3:42 PM',
+      desc: '12 candidate spaces identified for Midtown Manhattan, private office, 4,500–5,000 sq ft. Collection built by Market Sourcing Agent.',
+      delta: null as null | { label: string; direction: 'up' | 'down' | 'neutral' },
+    },
+  ],
+};
+
+const TIMELINE_EVENTS: {
+  iconBg: string;
+  Icon: any;
+  title: string;
+  desc: string;
+  date: string;
+  user: string;
+}[] = [
+  {
+    iconBg: '#1D4ED8',
+    Icon: TrendingUp,
+    title: 'Workflow Stage Changed',
+    desc: 'Requirement advanced from Site Tours Scheduled to Proposal & Negotiation.',
+    date: 'Nov 14, 2024',
+    user: 'matthew@liquidspace.com',
+  },
+  {
+    iconBg: '#5B21B6',
+    Icon: Bookmark,
+    title: '3 Spaces Shortlisted for Client Review',
+    desc: 'Hudson Yards Tower, Park Ave Suites, and One Penn Plaza flagged for client review.',
+    date: 'Nov 14, 2024',
+    user: 'matthew@liquidspace.com',
+  },
+  {
+    iconBg: '#1D4ED8',
+    Icon: Share2,
+    title: 'Collection Shared with Client',
+    desc: 'Collection shared with Sarah Chen at Tel Tech by Matthew Weiner for review and feedback.',
+    date: 'Nov 13, 2024',
+    user: 'matthew@liquidspace.com',
+  },
+  {
+    iconBg: '#065F46',
+    Icon: Search,
+    title: 'Collection Rebuilt',
+    desc: 'Market Sourcing Agent rebuilt collection for Hudson Yards corridor. 12 prior candidates replaced with 9 tighter-area spaces.',
+    date: 'Nov 12, 2024',
+    user: 'Market Sourcing Agent',
+  },
+  {
+    iconBg: '#B45309',
+    Icon: RefreshCw,
+    title: 'Requirement Updated · Location Narrowed',
+    desc: 'Target area updated from Midtown Manhattan to Hudson Yards corridor. Full resourcing triggered automatically.',
+    date: 'Nov 12, 2024',
+    user: 'sarah.chen@liquidspace.com',
+  },
+  {
+    iconBg: '#6B7280',
+    Icon: Minus,
+    title: '2 Spaces Removed from Collection',
+    desc: 'Rockefeller Center Office and Bryant Park Suite removed — both exceed budget by more than 30%.',
+    date: 'Nov 11, 2024',
+    user: 'matthew@liquidspace.com',
+  },
+  {
+    iconBg: '#6B7280',
+    Icon: Plus,
+    title: 'Space Added to Collection',
+    desc: 'Industrious Bryant Park added to collection manually.',
+    date: 'Nov 10, 2024',
+    user: 'matthew@liquidspace.com',
+  },
+  {
+    iconBg: '#065F46',
+    Icon: Bot,
+    title: 'Re-assessment Complete',
+    desc: '1 space moved from strong to partial following budget reduction. Collection still has 4 strong matches.',
+    date: 'Nov 9, 2024',
+    user: 'Collection Assessment Agent',
+  },
+  {
+    iconBg: '#B45309',
+    Icon: RefreshCw,
+    title: 'Requirement Updated · Budget Reduced',
+    desc: 'Budget changed from $20,000/mo to $18,000/mo. Re-assessment triggered automatically.',
+    date: 'Nov 9, 2024',
+    user: 'sarah.chen@liquidspace.com',
+  },
+  {
+    iconBg: '#065F46',
+    Icon: Bot,
+    title: 'Initial Assessment Complete',
+    desc: '12 spaces assessed. Strong: 5 · Partial: 5 · No match: 2. Top pick: Hudson Yards Tower, 4,800 sq ft (96% match).',
+    date: 'Oct 28, 2024',
+    user: 'Collection Assessment Agent',
+  },
+  {
+    iconBg: '#B45309',
+    Icon: AlertCircle,
+    title: 'Assessment Blocked · Missing Data',
+    desc: 'Initial scoring attempted but sq ft data unavailable for 9 of 12 spaces. Budget and location dimensions scored; capacity and size skipped.',
+    date: 'Oct 27, 2024',
+    user: 'Collection Assessment Agent',
+  },
+  {
+    iconBg: '#065F46',
+    Icon: Search,
+    title: 'Collection Sourced',
+    desc: '12 candidate spaces identified for Midtown Manhattan, private office, 4,500–5,000 sq ft. Collection built by Market Sourcing Agent.',
+    date: 'Oct 26, 2024',
+    user: 'Market Sourcing Agent',
+  },
+  {
+    iconBg: '#374151',
+    Icon: CheckSquare,
+    title: 'Task Created · Build Collection',
+    desc: '"Build collection for requirement" task assigned to Market Sourcing Agent.',
+    date: 'Oct 25, 2024',
+    user: 'sarah.chen@liquidspace.com',
+  },
+  {
+    iconBg: '#1D4ED8',
+    Icon: TrendingUp,
+    title: 'Workflow Stage Changed',
+    desc: 'Requirement moved from Requirement Identified to Site Tours Scheduled.',
+    date: 'Oct 19, 2024',
+    user: 'sarah.chen@liquidspace.com',
+  },
+  {
+    iconBg: '#5B21B6',
+    Icon: Users,
+    title: 'Team Member Added',
+    desc: 'Sarah Chen added to the requirement team.',
+    date: 'Oct 15, 2024',
+    user: 'matthew@liquidspace.com',
+  },
+  {
+    iconBg: '#1E3A5F',
+    Icon: FileText,
+    title: 'Requirement Created',
+    desc: 'NYC Private Offices requirement created for Tel Tech.',
+    date: 'Oct 15, 2024',
+    user: 'matthew@liquidspace.com',
+  },
 ];
 
 // Enhanced timeline data grouped by workflow stages
@@ -677,14 +930,19 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
   const [stageTasks, setStageTasks] = useState<Record<string, Task[]>>(stageTasksData);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [selectedStage, setSelectedStage] = useState<string>('');
+  const [selectedStageName, setSelectedStageName] = useState<string>('');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
+  const [editTaskStatus, setEditTaskStatus] = useState<string>('Not Started');
   const [newTaskData, setNewTaskData] = useState({
     name: '',
     dueDate: '',
-    assignedTo: 'Sarah Chen',
+    assignedTo: 'Me',
     dependency: '',
     agentInstruction: '',
     expectedOutput: 'Brief / Summary',
-    agentTaskType: 'Assess Collection'
+    agentTaskType: '',
+    taskType: '',
   });
 
   // Agent work review handlers
@@ -713,8 +971,57 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
     );
   };
   
+  // Task detail / edit handlers
+  const handleOpenTaskDetail = (task: any, stage: string) => {
+    setEditingTask(task);
+    setSelectedStage(stage);
+    setIsEditMode(true);
+    setEditTaskStatus(task.status || 'Not Started');
+    setNewTaskData({
+      name: task.name,
+      dueDate: task.dueDate || '',
+      assignedTo: task.assignedTo || 'Sarah Chen',
+      dependency: task.dependency || '',
+      agentInstruction: task.agentInstruction || '',
+      expectedOutput: task.expectedOutput || 'Brief / Summary',
+      agentTaskType: task.agentTaskType || '',
+      taskType: task.humanTaskType || '',
+    });
+    setShowAddTaskModal(true);
+  };
+
+  const handleUpdateTask = () => {
+    if (!editingTask) return;
+    setStageTasks(prev => ({
+      ...prev,
+      [selectedStage]: prev[selectedStage].map(t =>
+        t.id === editingTask.id
+          ? {
+              ...t,
+              name: newTaskData.name,
+              dueDate: newTaskData.dueDate,
+              assignedTo: newTaskData.assignedTo,
+              dependency: newTaskData.dependency,
+              status: editTaskStatus,
+              ...(newTaskData.assignedTo === 'Agent' && editTaskStatus === 'Not Started' && {
+                agentTaskType: newTaskData.agentTaskType,
+              }),
+              ...(newTaskData.assignedTo !== 'Agent' && {
+                humanTaskType: newTaskData.taskType,
+              }),
+            }
+          : t
+      ),
+    }));
+    setIsEditMode(false);
+    setEditingTask(null);
+    setShowAddTaskModal(false);
+    toast.success(`Task "${newTaskData.name}" updated.`);
+  };
+
   // Add task handler
   const handleAddTask = () => {
+    if (isEditMode) { handleUpdateTask(); return; }
     if (!newTaskData.name || !newTaskData.dueDate) return;
     
     const newTask: Task = {
@@ -746,7 +1053,8 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
       dependency: '',
       agentInstruction: '',
       expectedOutput: 'Brief / Summary',
-      agentTaskType: 'Assess Collection'
+      agentTaskType: '',
+      taskType: '',
     });
     setShowAddTaskModal(false);
     toast.success(`Task "${newTaskData.name}" added.`);
@@ -761,10 +1069,18 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
     toast.info('Task removed.');
   };
 
-  // Toggle task completion
+  // Toggle task completion — with auto-advance when last task in current stage is completed
   const handleToggleTaskComplete = (stage: string, taskId: string) => {
     const currentTask = stageTasks[stage]?.find(t => t.id === taskId);
     const wasCompleted = currentTask?.status === 'Completed';
+
+    // Compute new task list synchronously for auto-advance check
+    const updatedStageTasks = (stageTasks[stage] || []).map(task =>
+      task.id === taskId
+        ? { ...task, status: task.status === 'Completed' ? 'Not Started' : 'Completed' }
+        : task
+    );
+
     setStageTasks(prev => ({
       ...prev,
       [stage]: prev[stage].map(task =>
@@ -773,9 +1089,29 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
           : task
       )
     }));
+
     if (wasCompleted) {
       toast.info('Task reopened.');
     } else {
+      // Check auto-advance: completing this task may finish all tasks in the current stage
+      const currentIdx = getStageIdx(currentDealStage);
+      const currentStageKey = stageOrderConfig[currentIdx]?.stage;
+
+      if (stage === currentStageKey && currentIdx < stageOrderConfig.length - 1) {
+        const prevHadIncomplete = (stageTasks[stage] || []).some(
+          t => t.status !== 'Completed' && t.agentState !== 'completed'
+        );
+        const nowAllComplete = updatedStageTasks.every(
+          t => t.status === 'Completed' || t.agentState === 'completed'
+        );
+
+        if (prevHadIncomplete && nowAllComplete) {
+          const nextStage = stageOrderConfig[currentIdx + 1];
+          setCurrentDealStage(nextStage.stage);
+          toast.success(`All tasks complete — advancing to ${nextStage.name}.`);
+          return;
+        }
+      }
       toast.success('Task marked complete.');
     }
   };
@@ -783,7 +1119,29 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
   // Agent insights state - track dismissals
   const [dismissedInsights, setDismissedInsights] = useState<string[]>([]);
   const [showAgentPanel, setShowAgentPanel] = useState(true);
-  
+
+  // Stage navigation state
+  const [currentDealStage, setCurrentDealStage] = useState(deal.dealStage);
+  const [stageConfirmTarget, setStageConfirmTarget] = useState<{ stage: string; name: string; index: number } | null>(null);
+
+  const stageOrderConfig = [
+    { name: 'Intake',      stage: 'Requirement Identified' },
+    { name: 'Evaluation',  stage: 'Site Tours Scheduled'   },
+    { name: 'Proposal',    stage: 'Proposal Sent'          },
+    { name: 'Negotiation', stage: 'Lease Negotiation'      },
+    { name: 'Contracting', stage: 'Lease Finalization'     },
+    { name: 'Execution',   stage: 'Lease Executed'         },
+  ];
+  const getStageIdx = (s: string): number => {
+    if (s === 'Intake' || s === 'Requirement' || s === 'Requirement Identified') return 0;
+    if (s === 'Evaluation' || s === 'Evaluate' || s === 'Site Tours Scheduled') return 1;
+    if (s === 'Proposal' || s === 'Terms' || s === 'Proposal Sent') return 2;
+    if (s === 'Negotiation' || s === 'Lease Negotiation') return 3;
+    if (s === 'Contracting' || s === 'Lease Finalization') return 4;
+    if (s === 'Execution' || s === 'Executed' || s === 'Lease Executed') return 5;
+    return 3;
+  };
+
   // Editable form state
   const [editedDeal, setEditedDeal] = useState({
     dealName: deal.dealName,
@@ -801,6 +1159,22 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
     primaryContactEmail: 'jlee@teltech.com',
     dealId: '#TL-NYC-98321',
   });
+
+  // Collection tab becomes visible once a Market Sourcing Agent task is complete
+  const collectionTabVisible = Object.values(stageTasks).some((tasks) =>
+    tasks.some(
+      (t) =>
+        (t.agentTaskType === 'Build collection' || t.agentTaskType === 'Create Collection') &&
+        (t.status === 'Completed' || t.agentState === 'completed')
+    )
+  );
+
+  const signalColor =
+    MOCK_COLLECTION.fitness_signal === 'Good'
+      ? '#0F6E56'
+      : MOCK_COLLECTION.fitness_signal === 'Fair'
+      ? '#BA7517'
+      : '#E24B4A';
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -870,46 +1244,44 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="px-8 pt-6 pb-4 flex-shrink-0" style={{ backgroundColor: '#F8F9FA' }}>
-            <TabsList className="grid grid-cols-4 gap-2 bg-white border rounded-lg p-1 h-11" style={{ borderColor: '#E5E7EB' }}>
+            <TabsList
+              className="grid grid-cols-5 gap-2 bg-white border rounded-lg p-1 h-11"
+              style={{ borderColor: '#E5E7EB' }}
+            >
               <TabsTrigger
                 value="summary"
                 className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white rounded-md h-9 transition-all"
-                style={{
-                  fontSize: '14px',
-                  fontFamily: 'Inter, sans-serif'
-                }}
+                style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
               >
                 Summary
               </TabsTrigger>
               <TabsTrigger
                 value="workflow"
                 className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white rounded-md h-9 transition-all"
-                style={{
-                  fontSize: '14px',
-                  fontFamily: 'Inter, sans-serif'
-                }}
+                style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
               >
                 Workflow
               </TabsTrigger>
               <TabsTrigger
                 value="team"
                 className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white rounded-md h-9 transition-all"
-                style={{
-                  fontSize: '14px',
-                  fontFamily: 'Inter, sans-serif'
-                }}
+                style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
               >
                 Team
               </TabsTrigger>
               <TabsTrigger
                 value="documents"
                 className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white rounded-md h-9 transition-all"
-                style={{
-                  fontSize: '14px',
-                  fontFamily: 'Inter, sans-serif'
-                }}
+                style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
               >
                 Documents
+              </TabsTrigger>
+              <TabsTrigger
+                value="timeline"
+                className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white rounded-md h-9 transition-all"
+                style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+              >
+                Timeline
               </TabsTrigger>
             </TabsList>
           </div>
@@ -946,7 +1318,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
 
                     <div>
                       <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Client / Company
+                        Company
                       </Label>
                       <Input
                         value={editedDeal.clientName}
@@ -981,10 +1353,12 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Hot Desk">Hot Desk</SelectItem>
-                          <SelectItem value="Dedicated Desk">Dedicated Desk</SelectItem>
                           <SelectItem value="Private Office">Private Office</SelectItem>
-                          <SelectItem value="Team Suite">Team Suite</SelectItem>
+                          <SelectItem value="Office Suite">Office Suite</SelectItem>
+                          <SelectItem value="Headquarters">Headquarters</SelectItem>
+                          <SelectItem value="Coworking">Coworking</SelectItem>
+                          <SelectItem value="Meeting Space">Meeting Space</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1012,7 +1386,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
 
                     <div className="relative">
                       <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Size (sq ft)
+                        Size Requirement (sq ft)
                       </Label>
                       <Input
                         type="number"
@@ -1039,24 +1413,14 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
 
                     <div className="relative">
                       <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Requirement Stage
+                        Current Stage
                       </Label>
-                      <Select
-                        value={editedDeal.dealStage}
-                        onValueChange={(value) => setEditedDeal({ ...editedDeal, dealStage: value })}
+                      <div
+                        className="flex items-center h-10 px-3 rounded-md border border-gray-200 bg-gray-50"
+                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', color: '#374151' }}
                       >
-                        <SelectTrigger className="border-gray-300" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Intake">Intake</SelectItem>
-                          <SelectItem value="Evaluation">Evaluation</SelectItem>
-                          <SelectItem value="Proposal">Proposal</SelectItem>
-                          <SelectItem value="Negotiation">Negotiation</SelectItem>
-                          <SelectItem value="Contracting">Contracting</SelectItem>
-                          <SelectItem value="Execution">Execution</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        {editedDeal.dealStage}
+                      </div>
                     </div>
 
                     <div>
@@ -1082,7 +1446,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                     {/* Row 4 */}
                     <div>
                       <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Broker
+                        Service Provider
                       </Label>
                       <Select
                         value={editedDeal.broker}
@@ -1247,15 +1611,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                           { name: 'Contracting',  stage: 'Lease Finalization',     count: 3 },
                           { name: 'Execution',    stage: 'Lease Executed',         count: 3 }
                         ].map((stageItem, index, array) => {
-                          const currentStageIndex = (() => {
-                            if (deal.dealStage === 'Intake'       || deal.dealStage === 'Requirement' || deal.dealStage === 'Requirement Identified') return 0;
-                            if (deal.dealStage === 'Evaluation'   || deal.dealStage === 'Evaluate'    || deal.dealStage === 'Site Tours Scheduled')    return 1;
-                            if (deal.dealStage === 'Proposal'     || deal.dealStage === 'Terms'       || deal.dealStage === 'Proposal Sent')            return 2;
-                            if (deal.dealStage === 'Negotiation'  || deal.dealStage === 'Lease Negotiation')                                           return 3;
-                            if (deal.dealStage === 'Contracting'  || deal.dealStage === 'Lease Finalization')                                          return 4;
-                            if (deal.dealStage === 'Execution'    || deal.dealStage === 'Executed'    || deal.dealStage === 'Lease Executed')           return 5;
-                            return 3; // default to Negotiation
-                          })();
+                          const currentStageIndex = getStageIdx(currentDealStage);
                           
                           const isCompleted = index < currentStageIndex;
                           const isCurrent = index === currentStageIndex;
@@ -1273,10 +1629,12 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                           };
                           
                           return (
-                            <div 
-                              key={index} 
+                            <div
+                              key={index}
                               className="flex flex-col items-center flex-1 relative group"
+                              style={{ cursor: 'pointer' }}
                               title={getTooltipText()}
+                              onClick={() => setStageConfirmTarget({ stage: stageItem.stage, name: stageItem.name, index })}
                             >
                               {/* Connector Line */}
                               {index < array.length - 1 && (
@@ -1354,15 +1712,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                   { name: 'Execution',   stage: 'Lease Executed',         count: 3 }
                 ].map((stageItem) => {
                   const stageTasksList = stageTasks[stageItem.stage] || [];
-                  const currentStageIndex = (() => {
-                    if (deal.dealStage === 'Intake'      || deal.dealStage === 'Requirement' || deal.dealStage === 'Requirement Identified') return 0;
-                    if (deal.dealStage === 'Evaluation'  || deal.dealStage === 'Evaluate'    || deal.dealStage === 'Site Tours Scheduled')    return 1;
-                    if (deal.dealStage === 'Proposal'    || deal.dealStage === 'Terms'       || deal.dealStage === 'Proposal Sent')            return 2;
-                    if (deal.dealStage === 'Negotiation' || deal.dealStage === 'Lease Negotiation')                                           return 3;
-                    if (deal.dealStage === 'Contracting' || deal.dealStage === 'Lease Finalization')                                          return 4;
-                    if (deal.dealStage === 'Execution'   || deal.dealStage === 'Executed'    || deal.dealStage === 'Lease Executed')           return 5;
-                    return 3;
-                  })();
+                  const currentStageIndex = getStageIdx(currentDealStage);
                   
                   const stageIndex = ['Requirement Identified', 'Site Tours Scheduled', 'Proposal Sent', 'Lease Negotiation', 'Lease Finalization', 'Lease Executed'].indexOf(stageItem.stage);
                   const isCompleted = stageIndex < currentStageIndex;
@@ -1393,6 +1743,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                             }}
                             onClick={() => {
                               setSelectedStage(stageItem.stage);
+                              setSelectedStageName(stageItem.name);
                               setShowAddTaskModal(true);
                             }}
                           >
@@ -1434,7 +1785,10 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                               </div>
 
                               {/* Task Details */}
-                              <div className="flex-1 min-w-0">
+                              <div
+                                className="flex-1 min-w-0 cursor-pointer"
+                                onClick={() => handleOpenTaskDetail(task, stageItem.stage)}
+                              >
                                 <div className="flex items-center gap-2">
                                   <div 
                                     style={{ 
@@ -1572,61 +1926,10 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                               </div>
                             </div>
                             
-                            {/* Task Output - For agent tasks with output */}
-                            {task.taskType === 'agent' && task.agentOutput && (
-                              <div className="ml-9 mt-3 p-4 rounded-lg border" style={{ borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}>
-                                <div className="flex items-start gap-2">
-                                  <FileText className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: '#6B7280' }} />
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      {task.expectedOutput && (
-                                        <Badge className="bg-gray-100 text-gray-600 border-0" style={{ fontSize: '9px', fontWeight: 500, padding: '2px 8px' }}>
-                                          {task.expectedOutput}
-                                        </Badge>
-                                      )}
-                                      {task.executionTimestamp && (
-                                        <span style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif' }}>
-                                          {task.executionTimestamp}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div style={{ fontSize: '12px', color: '#374151', fontFamily: 'Inter, sans-serif', lineHeight: '1.6', marginBottom: '8px' }}>
-                                      {task.agentOutput}
-                                    </div>
-
-                                    {/* Collection link */}
-                                    {task.collectionUrl && (
-                                      <a
-                                        href={task.collectionUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1 hover:underline"
-                                        style={{ fontSize: '12px', color: '#005B94', fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
-                                      >
-                                        <Eye className="h-3 w-3" />
-                                        View Collection
-                                      </a>
-                                    )}
-
-                                    {/* View Full Output link for non-collection tasks */}
-                                    {!task.collectionUrl && (task.agentState === 'completed' || task.agentState === 'needs_review') && (
-                                      <a
-                                        href="#"
-                                        onClick={(e) => e.preventDefault()}
-                                        className="flex items-center gap-1 hover:underline"
-                                        style={{ fontSize: '12px', color: '#005B94', fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
-                                      >
-                                        <Eye className="h-3 w-3" />
-                                        View Full Output
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
                           </div>
                           ))}
                         </div>
+
 
                         {/* Task Completion Summary */}
                         <div className="mt-4 pt-4 border-t" style={{ borderColor: '#E5E7EB' }}>
@@ -1639,9 +1942,9 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                             </div>
                           </div>
                           <div className="mt-2 w-full h-2 rounded-full" style={{ backgroundColor: '#E5E7EB' }}>
-                            <div 
+                            <div
                               className="h-2 rounded-full transition-all"
-                              style={{ 
+                              style={{
                                 backgroundColor: '#28A745',
                                 width: `${stageTasksList.length > 0 ? (stageTasksList.filter(t => t.status === 'Completed').length / stageTasksList.length) * 100 : 0}%`
                               }}
@@ -1669,8 +1972,9 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
               <DealTeamSection dealId={deal.id} />
             </TabsContent>
 
-            {/* Timeline Tab */}
-            <TabsContent value="timeline" className="p-6 mt-0">
+            {/* Workflow Timeline Tab (legacy — superseded by Timeline tab below) */}
+            {false && (
+            <TabsContent value="workflow-timeline" className="p-6 mt-0">
               {/* Header with filter */}
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -1969,6 +2273,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                 </Card>
               )}
             </TabsContent>
+            )}
 
             {/* Documents Tab */}
             <TabsContent value="documents" className="p-6 mt-0">
@@ -2015,6 +2320,289 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
 
             </TabsContent>
 
+            {/* Collection Tab */}
+            {collectionTabVisible && (
+              <TabsContent value="collection" className="p-6 mt-0">
+                <div className="space-y-4">
+
+                  {/* ── Fitness Card ─────────────────────────────────── */}
+                  <Card className="bg-white border overflow-hidden" style={{ borderColor: '#E5E7EB' }}>
+                    <div className="flex items-stretch">
+                      {/* Signal panel */}
+                      <div
+                        className="flex-shrink-0 flex flex-col justify-center"
+                        style={{ width: '200px', padding: '18px 16px', borderRight: '1px solid #E5E7EB' }}
+                      >
+                        <div style={{ fontSize: '11px', fontWeight: 500, color: '#9CA3AF', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '6px', fontFamily: 'Inter, sans-serif' }}>
+                          Collection fitness
+                        </div>
+                        <div style={{ fontSize: '28px', fontWeight: 500, color: signalColor, marginBottom: '3px', fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>
+                          {MOCK_COLLECTION.fitness_signal}
+                        </div>
+                        <div style={{ fontSize: '12px', color: signalColor, marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+                          {MOCK_COLLECTION.tier_counts.strong} strong match{MOCK_COLLECTION.tier_counts.strong !== 1 ? 'es' : ''}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.45, fontFamily: 'Inter, sans-serif' }}>
+                          Top pick: {MOCK_COLLECTION.top_recommendation.name} at {MOCK_COLLECTION.top_recommendation.match_pct}% fit.
+                        </div>
+                      </div>
+
+                      {/* Tier bars */}
+                      <div className="flex-1 flex flex-col justify-center" style={{ padding: '16px', gap: '9px' }}>
+                        {([
+                          { key: 'strong',  label: 'Strong',  color: '#1D9E75', count: MOCK_COLLECTION.tier_counts.strong },
+                          { key: 'partial', label: 'Partial', color: '#BA7517', count: MOCK_COLLECTION.tier_counts.partial },
+                          { key: 'weak',    label: 'No match', color: '#E24B4A', count: MOCK_COLLECTION.tier_counts.weak },
+                        ] as const).map((tier) => {
+                          const total = MOCK_COLLECTION.tier_counts.strong + MOCK_COLLECTION.tier_counts.partial + MOCK_COLLECTION.tier_counts.weak;
+                          return (
+                            <div key={tier.key} className="flex items-center" style={{ gap: '10px' }}>
+                              <div className="rounded-full flex-shrink-0" style={{ width: '8px', height: '8px', backgroundColor: tier.color }} />
+                              <div style={{ fontSize: '12px', color: '#6B7280', width: '52px', fontFamily: 'Inter, sans-serif' }}>{tier.label}</div>
+                              <div className="flex-1 rounded-full overflow-hidden" style={{ height: '5px', backgroundColor: '#F0F0ED' }}>
+                                <div className="h-full rounded-full" style={{ width: `${(tier.count / total) * 100}%`, backgroundColor: tier.color }} />
+                              </div>
+                              <div style={{ fontSize: '12px', fontWeight: 500, color: '#555', width: '16px', textAlign: 'right', fontFamily: 'Inter, sans-serif' }}>{tier.count}</div>
+                            </div>
+                          );
+                        })}
+                        {/* Gap note */}
+                        <div className="pt-2 border-t" style={{ borderColor: '#E5E7EB', marginTop: '2px' }}>
+                          <div style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif' }}>
+                            {MOCK_COLLECTION.gaps.join(' · ')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between px-4 py-2.5 border-t" style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAF8' }}>
+                      <div className="flex items-center gap-1.5" style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif' }}>
+                        <Bot className="h-3.5 w-3.5" />
+                        Assessed {MOCK_COLLECTION.collection.lastAssessed} · Collection Assessment Agent
+                      </div>
+                      <a
+                        href="#"
+                        onClick={(e) => e.preventDefault()}
+                        className="flex items-center gap-1 hover:underline"
+                        style={{ fontSize: '12px', color: '#185FA5', fontFamily: 'Inter, sans-serif', textDecoration: 'none' }}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        View collection
+                      </a>
+                    </div>
+                  </Card>
+
+                  {/* ── Two-column metadata ───────────────────────────── */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Collection metadata */}
+                    <Card className="bg-white border" style={{ borderColor: '#E5E7EB' }}>
+                      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b" style={{ borderColor: '#E5E7EB' }}>
+                        <FileText className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
+                        <span style={{ fontSize: '12px', fontWeight: 500, color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>Collection metadata</span>
+                      </div>
+                      <div className="px-4 py-1">
+                        {[
+                          { key: 'Collection name', val: MOCK_COLLECTION.collection.name },
+                          { key: 'Spaces',          val: `${MOCK_COLLECTION.collection.spaceCount} candidates` },
+                          { key: 'Sourced by',      val: MOCK_COLLECTION.collection.sourcedBy },
+                          { key: 'Sourced on',      val: MOCK_COLLECTION.collection.sourcedOn },
+                          { key: 'Last assessed',   val: MOCK_COLLECTION.collection.lastAssessed },
+                          { key: 'Assessments run', val: String(MOCK_COLLECTION.collection.assessmentsRun) },
+                        ].map((row, i, arr) => (
+                          <div
+                            key={row.key}
+                            className="flex justify-between items-baseline py-1.5"
+                            style={{ borderBottom: i < arr.length - 1 ? '1px solid #F0F0ED' : 'none', fontSize: '12px', fontFamily: 'Inter, sans-serif' }}
+                          >
+                            <span style={{ color: '#777' }}>{row.key}</span>
+                            <span style={{ fontWeight: 500, color: '#1a1a1a', textAlign: 'right' }}>{row.val}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+
+                    {/* Sourcing criteria */}
+                    <Card className="bg-white border" style={{ borderColor: '#E5E7EB' }}>
+                      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b" style={{ borderColor: '#E5E7EB' }}>
+                        <Target className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
+                        <span style={{ fontSize: '12px', fontWeight: 500, color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>Criteria assessed</span>
+                      </div>
+                      <div className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          {MOCK_COLLECTION.criteria.map((c) => (
+                            <span
+                              key={c.label}
+                              style={{
+                                fontSize: '11px',
+                                padding: '3px 9px',
+                                borderRadius: '20px',
+                                fontFamily: 'Inter, sans-serif',
+                                ...(c.tier === 'Strong'
+                                  ? { backgroundColor: '#E1F5EE', color: '#085041', border: '1px solid #9FE1CB' }
+                                  : c.tier === 'Partial'
+                                  ? { backgroundColor: '#FAEEDA', color: '#633806', border: '1px solid #FAC775' }
+                                  : { backgroundColor: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5' })
+                              }}
+                            >
+                              {c.label}
+                            </span>
+                          ))}
+                        </div>
+                        {MOCK_COLLECTION.criteriaNote && (
+                          <div
+                            className="flex items-center gap-1 mt-2.5 pt-2"
+                            style={{ borderTop: '1px solid #E5E7EB', fontSize: '11px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif' }}
+                          >
+                            <AlertTriangle className="h-3 w-3 flex-shrink-0" style={{ color: '#BA7517' }} />
+                            {MOCK_COLLECTION.criteriaNote}
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* ── Assessment history ────────────────────────────── */}
+                  <Card className="bg-white border overflow-hidden" style={{ borderColor: '#E5E7EB' }}>
+                    <div className="flex items-center gap-1.5 px-4 py-2.5 border-b" style={{ borderColor: '#E5E7EB' }}>
+                      <Clock className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
+                      <span style={{ fontSize: '12px', fontWeight: 500, color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>Assessment history</span>
+                    </div>
+                    <div>
+                      {MOCK_COLLECTION.history.map((entry, i) => {
+                        const iconStyle =
+                          entry.type === 'assessment_blocked'
+                            ? { bg: '#FEE2E2', color: '#991B1B' }  // red — error state only
+                            : { bg: '#F0F0ED', color: '#4B5563' }; // single neutral for all other events
+
+                        const IconComp =
+                          entry.type === 'requirement_update'  ? Edit
+                          : entry.type === 'sourced'           ? Search
+                          : entry.type === 'resourced'         ? RefreshCw
+                          : entry.type === 'space_added'       ? Plus
+                          : entry.type === 'space_removed'     ? Minus
+                          : entry.type === 'collection_shared' ? Share2
+                          : entry.type === 'space_shortlisted' ? Bookmark
+                          : entry.type === 'assessment_blocked'? AlertCircle
+                          : Bot; // initial_assessment, reassessment
+
+                        return (
+                          <div
+                            key={i}
+                            className="flex gap-3 px-4 py-3"
+                            style={{ borderBottom: i < MOCK_COLLECTION.history.length - 1 ? '1px solid #F0F0ED' : 'none' }}
+                          >
+                            <div
+                              className="flex-shrink-0 flex items-center justify-center rounded-full mt-0.5"
+                              style={{ width: '28px', height: '28px', backgroundColor: iconStyle.bg }}
+                            >
+                              <IconComp className="h-3.5 w-3.5" style={{ color: iconStyle.color }} />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-baseline justify-between mb-0.5">
+                                <span style={{ fontSize: '13px', fontWeight: 500, color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
+                                  {entry.title}
+                                </span>
+                                <span style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', marginLeft: '12px' }}>
+                                  {entry.time}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: '1.5', fontFamily: 'Inter, sans-serif' }}>
+                                {entry.desc}
+                              </div>
+                              {entry.delta && (
+                                <div
+                                  className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded"
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 500,
+                                    fontFamily: 'Inter, sans-serif',
+                                    ...(entry.delta.direction === 'down'
+                                      ? { backgroundColor: '#FAEEDA', color: '#633806' }
+                                      : entry.delta.direction === 'up'
+                                      ? { backgroundColor: '#E1F5EE', color: '#085041' }
+                                      : { backgroundColor: '#F0F0ED', color: '#666' })
+                                  }}
+                                >
+                                  {entry.delta.direction === 'down'    && <TrendingDown className="h-3 w-3" />}
+                                  {entry.delta.direction === 'up'      && <TrendingUp className="h-3 w-3" />}
+                                  {entry.delta.direction === 'neutral' && <CheckCircle2 className="h-3 w-3" />}
+                                  {entry.delta.label}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+
+                </div>
+              </TabsContent>
+            )}
+
+            {/* Timeline Tab */}
+            <TabsContent value="timeline" className="mt-0">
+              <div className="p-6">
+                <div className="mb-5">
+                  <div style={{ fontSize: '18px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+                    Timeline
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
+                    Complete event history for this requirement
+                  </div>
+                </div>
+
+                <div className="relative">
+                  {/* Vertical connecting line */}
+                  <div style={{ position: 'absolute', left: 17, top: 18, bottom: 18, width: 2, backgroundColor: '#E5E7EB' }} />
+
+                  <div className="flex flex-col">
+                    {TIMELINE_EVENTS.map((evt, idx) => (
+                      <div key={idx} className="flex gap-4 pb-5 relative">
+                        {/* Icon circle */}
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: '50%',
+                            backgroundColor: evt.iconBg,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            position: 'relative',
+                            zIndex: 1,
+                          }}
+                        >
+                          <evt.Icon size={15} color="#ffffff" />
+                        </div>
+                        {/* Event content */}
+                        <div className="flex-1 flex justify-between items-start gap-4 pt-1" style={{ minWidth: 0 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: 'Inter, sans-serif', lineHeight: 1.4 }}>
+                              {evt.title}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: 2, lineHeight: 1.5 }}>
+                              {evt.desc}
+                            </div>
+                          </div>
+                          <div style={{ flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>
+                            <div style={{ fontSize: '12px', color: '#374151', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}>
+                              {evt.date}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif', marginTop: 1, whiteSpace: 'nowrap' }}>
+                              {evt.user}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
             {/* Messaging Tab */}
             <TabsContent value="messaging" className="mt-0 h-full">
               <MessagingThread dealId={deal.id} />
@@ -2024,15 +2612,58 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
       </DialogContent>
     </Dialog>
 
-    {/* Add Task Modal */}
-    <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
+    {/* Stage Change Confirmation Dialog */}
+    <Dialog open={!!stageConfirmTarget} onOpenChange={(open) => { if (!open) setStageConfirmTarget(null); }}>
+      <DialogContent className="max-w-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+        <DialogHeader>
+          <DialogTitle style={{ fontSize: '18px', fontWeight: 600, color: '#111827', fontFamily: 'Inter, sans-serif' }}>
+            Change Stage?
+          </DialogTitle>
+          <DialogDescription style={{ fontSize: '14px', color: '#6B7280', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
+            Set the requirement stage to{' '}
+            <span style={{ fontWeight: 600, color: '#111827' }}>{stageConfirmTarget?.name}</span>?
+            {' '}Tasks in other stages will remain unchanged.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex gap-3 justify-end mt-2">
+          <Button
+            variant="outline"
+            onClick={() => setStageConfirmTarget(null)}
+            style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="text-white"
+            style={{ backgroundColor: '#005B94', fontFamily: 'Inter, sans-serif', fontSize: '14px' }}
+            onClick={() => {
+              if (stageConfirmTarget) {
+                setCurrentDealStage(stageConfirmTarget.stage);
+                toast.success(`Stage changed to ${stageConfirmTarget.name}.`);
+              }
+              setStageConfirmTarget(null);
+            }}
+          >
+            Confirm
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Add / Edit Task Modal */}
+    <Dialog open={showAddTaskModal} onOpenChange={(open) => {
+      setShowAddTaskModal(open);
+      if (!open) { setIsEditMode(false); setEditingTask(null); }
+    }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle style={{ fontSize: '22px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-            Add Task to {selectedStage}
+            {isEditMode ? 'Edit Task' : `Add Task to ${selectedStageName}`}
           </DialogTitle>
           <DialogDescription style={{ fontSize: '14px', color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
-            Assign work to team members or delegate to an agent for automated execution
+            {isEditMode
+              ? 'Update task details, reassign, or change status.'
+              : 'Assign work to team members or delegate to an agent for automated execution'}
           </DialogDescription>
         </DialogHeader>
         
@@ -2050,7 +2681,26 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
               style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
             />
           </div>
-          
+
+          {/* Status — edit mode only */}
+          {isEditMode && (
+            <div>
+              <Label style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+                Status
+              </Label>
+              <Select value={editTaskStatus} onValueChange={setEditTaskStatus}>
+                <SelectTrigger className="mt-1" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Not Started">Not Started</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div>
             <Label htmlFor="task-due-date" style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
               Due Date
@@ -2071,7 +2721,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
             </Label>
             <Select 
               value={newTaskData.assignedTo} 
-              onValueChange={(value) => setNewTaskData({ ...newTaskData, assignedTo: value })}
+              onValueChange={(value) => setNewTaskData({ ...newTaskData, assignedTo: value, agentTaskType: '', taskType: '' })}
             >
               <SelectTrigger className="mt-1" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                 <SelectValue />
@@ -2081,12 +2731,6 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                   <div className="flex items-center gap-2">
                     <User className="h-3.5 w-3.5" />
                     <span>Assign to Me</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="Agent">
-                  <div className="flex items-center gap-2">
-                    <Bot className="h-3.5 w-3.5" />
-                    <span>Assign to Agent</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="Sarah Chen">Sarah Chen</SelectItem>
@@ -2113,119 +2757,103 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
             />
           </div>
 
-          {newTaskData.assignedTo === 'Agent' && (
-            <>
-              {/* Task Type */}
-              <div>
-                <Label htmlFor="task-type" style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                  Task Type
-                </Label>
-                <Select 
-                  value={newTaskData.agentTaskType} 
-                  onValueChange={(value) => setNewTaskData({ ...newTaskData, agentTaskType: value })}
-                >
-                  <SelectTrigger className="mt-1" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Create Collection">Create Collection</SelectItem>
-                    <SelectItem value="Assess Collection">Assess Collection</SelectItem>
-                    <SelectItem value="Structured evaluation + decisioning">Structured evaluation + decisioning</SelectItem>
-                    <SelectItem value="Define Shortlist">Define Shortlist</SelectItem>
-                    <SelectItem value="Schedule tour(s)">Schedule tour(s)</SelectItem>
-                    <SelectItem value="Request/review proposal">Request/review proposal</SelectItem>
-                    <SelectItem value="Negotiate terms">Negotiate terms</SelectItem>
-                    <SelectItem value="Coordinate legal review">Coordinate legal review</SelectItem>
-                    <SelectItem value="Contract renegotiation">Contract renegotiation</SelectItem>
-                    <SelectItem value="Coordinate execution and signatures">Coordinate execution and signatures</SelectItem>
-                    <SelectItem value="Closeout readiness (bridge into License Admin)">Closeout readiness (bridge into License Admin)</SelectItem>
-                    <SelectItem value="Exit / replacement execution">Exit / replacement execution</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Agent Instruction */}
-              <div>
-                <Label htmlFor="agent-instruction" style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                  Agent Instruction <span style={{ color: '#DC2626' }}>*</span>
-                </Label>
-                <Textarea
-                  id="agent-instruction"
-                  value={newTaskData.agentInstruction}
-                  onChange={(e) => setNewTaskData({ ...newTaskData, agentInstruction: e.target.value })}
-                  placeholder="Example: Analyze Midtown Manhattan flex office pricing for 5,000 sq ft and identify negotiation leverage points based on current market conditions."
-                  className="mt-1 min-h-[80px]"
-                  style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                />
-                <div style={{ fontSize: '11px', color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: '4px' }}>
-                  Clearly describe the work you're delegating to the agent. Be specific about context and desired outcome.
-                </div>
-              </div>
-
-              {/* Expected Output */}
-              <div>
-                <Label htmlFor="expected-output" style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                  Expected Output
-                </Label>
-                <Select 
-                  value={newTaskData.expectedOutput} 
-                  onValueChange={(value) => setNewTaskData({ ...newTaskData, expectedOutput: value })}
-                >
-                  <SelectTrigger className="mt-1" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Brief / Summary">Brief / Summary</SelectItem>
-                    <SelectItem value="Comparison Table">Comparison Table</SelectItem>
-                    <SelectItem value="Shortlist">Shortlist</SelectItem>
-                    <SelectItem value="Recommendation">Recommendation</SelectItem>
-                    <SelectItem value="Risk Flags">Risk Flags</SelectItem>
-                    <SelectItem value="Draft Document">Draft Document</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div style={{ fontSize: '11px', color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: '4px' }}>
-                  Select the format you'd like the agent to deliver the work in.
-                </div>
-              </div>
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="flex items-start gap-2">
-                  <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: '#005B94' }} />
-                  <div>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', marginBottom: '4px' }}>
-                      Agent Will Execute This Work
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', fontFamily: 'Inter, sans-serif', lineHeight: '1.5' }}>
-                      The agent will complete this task automatically. You'll review and approve the output before advancing the deal stage.
-                    </div>
+          {/* Task Type */}
+          <div>
+            <Label style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+              Task Type
+            </Label>
+              <Select
+                value={newTaskData.taskType}
+                disabled={isEditMode && editTaskStatus !== 'Not Started'}
+                onValueChange={(value) => setNewTaskData({ ...newTaskData, taskType: value })}
+              >
+                <SelectTrigger className="mt-1" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+                  <SelectValue placeholder="Select task type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <div style={{ padding: '4px 8px 2px', fontSize: '10px', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', pointerEvents: 'none' }}>
+                    Evaluation
                   </div>
-                </div>
-              </div>
-            </>
-          )}
+                  <SelectItem value="Structured evaluation + decisioning">Structured evaluation + decisioning</SelectItem>
+                  <SelectItem value="Define shortlist">Define shortlist</SelectItem>
+                  <SelectItem value="Schedule tour(s)">Schedule tour(s)</SelectItem>
+                  <div style={{ padding: '6px 8px 2px', fontSize: '10px', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', pointerEvents: 'none', borderTop: '1px solid #F3F4F6', marginTop: '4px' }}>
+                    Proposal &amp; negotiation
+                  </div>
+                  <SelectItem value="Request/review proposal">Request/review proposal</SelectItem>
+                  <SelectItem value="Negotiate terms">Negotiate terms</SelectItem>
+                  <div style={{ padding: '6px 8px 2px', fontSize: '10px', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', pointerEvents: 'none', borderTop: '1px solid #F3F4F6', marginTop: '4px' }}>
+                    Legal &amp; contracting
+                  </div>
+                  <SelectItem value="Coordinate legal review">Coordinate legal review</SelectItem>
+                  <SelectItem value="Contract renegotiation">Contract renegotiation</SelectItem>
+                  <SelectItem value="Coordinate execution and signatures">Coordinate execution and signatures</SelectItem>
+                  <div style={{ padding: '6px 8px 2px', fontSize: '10px', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', pointerEvents: 'none', borderTop: '1px solid #F3F4F6', marginTop: '4px' }}>
+                    Closeout
+                  </div>
+                  <SelectItem value="Closeout readiness">Closeout readiness (bridge into License Admin)</SelectItem>
+                  <SelectItem value="Exit / replacement execution">Exit / replacement execution</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           
+          {/* Agent output — edit mode only */}
+          {isEditMode && editingTask?.agentOutput && (
+            <div>
+              <Label style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+                Output
+                {editingTask.executionTimestamp && (
+                  <span style={{ fontSize: '11px', fontWeight: 400, color: '#9CA3AF', marginLeft: '6px' }}>
+                    {editingTask.executionTimestamp}
+                  </span>
+                )}
+              </Label>
+              <div className="mt-1 p-3 rounded-lg" style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+                <div style={{ fontSize: '13px', color: '#374151', fontFamily: 'Inter, sans-serif', lineHeight: '1.6', marginBottom: editingTask.collectionUrl ? '10px' : '0' }}>
+                  {editingTask.agentOutput}
+                </div>
+                {editingTask.collectionUrl && (
+                  <a href={editingTask.collectionUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 hover:underline"
+                    style={{ fontSize: '12px', color: '#005B94', fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
+                    <Eye className="h-3 w-3" />
+                    View Collection
+                  </a>
+                )}
+                {!editingTask.collectionUrl && (editingTask.agentState === 'completed' || editingTask.agentState === 'needs_review') && (
+                  <a href="#" onClick={(e) => e.preventDefault()}
+                    className="flex items-center gap-1.5 hover:underline"
+                    style={{ fontSize: '12px', color: '#005B94', fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
+                    <Eye className="h-3 w-3" />
+                    View Full Output
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2 pt-4">
             <Button
               onClick={handleAddTask}
               className="flex-1 text-white"
-              style={{ 
+              style={{
                 backgroundColor: '#005B94',
-                fontSize: '14px', 
-                fontWeight: 500, 
-                fontFamily: 'Inter, sans-serif' 
+                fontSize: '14px',
+                fontWeight: 500,
+                fontFamily: 'Inter, sans-serif'
               }}
-              disabled={!newTaskData.name || !newTaskData.dueDate || (newTaskData.assignedTo === 'Agent' && !newTaskData.agentInstruction)}
+              disabled={!newTaskData.name || !newTaskData.dueDate}
             >
-              Add Task
+              {isEditMode ? 'Save Changes' : 'Add Task'}
             </Button>
             <Button
-              onClick={() => setShowAddTaskModal(false)}
+              onClick={() => { setShowAddTaskModal(false); setIsEditMode(false); setEditingTask(null); }}
               variant="outline"
               className="flex-1"
-              style={{ 
-                fontSize: '14px', 
-                fontWeight: 500, 
-                fontFamily: 'Inter, sans-serif' 
+              style={{
+                fontSize: '14px',
+                fontWeight: 500,
+                fontFamily: 'Inter, sans-serif'
               }}
             >
               Cancel
