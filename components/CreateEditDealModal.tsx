@@ -26,22 +26,58 @@ interface CreateEditDealModalProps {
   deal?: any;
 }
 
+const CURRENCIES = [
+  { code: 'USD', name: 'US Dollar',          symbol: '$'   },
+  { code: 'EUR', name: 'Euro',               symbol: '€'   },
+  { code: 'GBP', name: 'British Pound',      symbol: '£'   },
+  { code: 'CAD', name: 'Canadian Dollar',    symbol: 'CA$' },
+  { code: 'AUD', name: 'Australian Dollar',  symbol: 'A$'  },
+  { code: 'JPY', name: 'Japanese Yen',       symbol: '¥'   },
+  { code: 'SGD', name: 'Singapore Dollar',   symbol: 'S$'  },
+  { code: 'HKD', name: 'Hong Kong Dollar',   symbol: 'HK$' },
+  { code: 'MXN', name: 'Mexican Peso',       symbol: 'MX$' },
+  { code: 'BRL', name: 'Brazilian Real',     symbol: 'R$'  },
+  { code: 'INR', name: 'Indian Rupee',       symbol: '₹'   },
+  { code: 'CNY', name: 'Chinese Yuan',       symbol: '¥'   },
+  { code: 'CHF', name: 'Swiss Franc',        symbol: 'CHF' },
+  { code: 'AED', name: 'UAE Dirham',         symbol: 'AED' },
+];
+
+// Approximate rates to USD (as of mid-2025)
+const FX_TO_USD: Record<string, number> = {
+  USD: 1,     EUR: 1.09,  GBP: 1.27,  CAD: 0.73,  AUD: 0.65,
+  JPY: 0.007, SGD: 0.74,  HKD: 0.13,  MXN: 0.058, BRL: 0.20,
+  INR: 0.012, CNY: 0.138, CHF: 1.13,  AED: 0.272,
+};
+
+function deriveUSD(amount: string, currency: string): string | null {
+  if (currency === 'USD' || !amount) return null;
+  const num = parseFloat(amount.replace(/,/g, ''));
+  if (isNaN(num)) return null;
+  const rate = FX_TO_USD[currency] ?? 1;
+  const usd = Math.round(num * rate);
+  return `≈ USD $${usd.toLocaleString()}/mo`;
+}
+
 export function CreateEditDealModal({ isOpen, onClose, deal }: CreateEditDealModalProps) {
   const [formData, setFormData] = useState({
-    dealName: deal?.dealName || '',
-    clientName: deal?.clientName || '',
-    city: deal?.city || '',
-    workspaceType: deal?.workspaceType || '',
-    size: deal?.size || '',
-    estValue: deal?.estValue || '',
-    status: deal?.status === 'Executed' || deal?.status === 'Archived' ? 'Active' : (deal?.status || 'Active'),
-    broker: deal?.broker || '',
-    headcount: '',
-    budget: '',
-    term: '',
+    dealName:         deal?.dealName || '',
+    clientName:       deal?.clientName || '',
+    city:             deal?.city || '',
+    workspaceType:    deal?.workspaceType || '',
+    size:             deal?.size || '',
+    currency:         'USD',
+    monthlyCost:      deal?.estValue ? String(deal.estValue) : '',
+    status:           deal?.status === 'Executed' || deal?.status === 'Archived' ? 'Active' : (deal?.status || 'Active'),
+    headcount:        '',
+    budget:           '',
+    term:             '',
     requirementNotes: '',
   });
   const [showAdditional, setShowAdditional] = useState(false);
+
+  const currencyInfo = CURRENCIES.find(c => c.code === formData.currency) ?? CURRENCIES[0];
+  const usdDerived = deriveUSD(formData.monthlyCost, formData.currency);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,42 +255,61 @@ export function CreateEditDealModal({ isOpen, onClose, deal }: CreateEditDealMod
               />
             </div>
 
-            {/* Estimated Value */}
+            {/* Currency */}
             <div>
-              <Label htmlFor="estValue" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                Estimated Value ($) *
-              </Label>
-              <Input
-                id="estValue"
-                type="number"
-                value={formData.estValue}
-                onChange={(e) => setFormData({ ...formData, estValue: e.target.value })}
-                placeholder="Enter estimated value"
-                required
-                className="mt-2 border-gray-300"
-                style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-              />
-            </div>
-
-            {/* Service Provider */}
-            <div>
-              <Label htmlFor="broker" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                Service Provider *
+              <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+                Currency *
               </Label>
               <Select
-                value={formData.broker}
-                onValueChange={(value) => setFormData({ ...formData, broker: value })}
+                value={formData.currency}
+                onValueChange={(value) => setFormData({ ...formData, currency: value })}
               >
                 <SelectTrigger className="mt-2 border-gray-300" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                  <SelectValue placeholder="Select service provider" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Sarah Chen">Sarah Chen</SelectItem>
-                  <SelectItem value="Michael Torres">Michael Torres</SelectItem>
-                  <SelectItem value="David Kim">David Kim</SelectItem>
-                  <SelectItem value="Jennifer Lee">Jennifer Lee</SelectItem>
+                  {CURRENCIES.map(c => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.code} – {c.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Monthly Cost */}
+            <div>
+              <Label htmlFor="monthlyCost" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+                Monthly Cost *
+              </Label>
+              <div className="mt-2 flex rounded-md border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                <span style={{
+                  display: 'flex', alignItems: 'center', padding: '0 10px',
+                  backgroundColor: '#F9FAFB', borderRight: '1px solid #E5E7EB',
+                  fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif',
+                  whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  {currencyInfo.symbol}
+                </span>
+                <input
+                  id="monthlyCost"
+                  type="number"
+                  value={formData.monthlyCost}
+                  onChange={(e) => setFormData({ ...formData, monthlyCost: e.target.value })}
+                  placeholder="0"
+                  required
+                  style={{
+                    flex: 1, border: 'none', outline: 'none', padding: '9px 12px',
+                    fontSize: '14px', fontFamily: 'Inter, sans-serif', color: '#111827',
+                    backgroundColor: 'transparent',
+                  }}
+                />
+              </div>
+              {usdDerived && (
+                <p style={{ marginTop: '5px', fontSize: '12px', color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
+                  {usdDerived}
+                </p>
+              )}
             </div>
 
             {/* Status */}
