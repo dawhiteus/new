@@ -60,7 +60,7 @@ import {
   Bookmark,
 } from 'lucide-react';
 import { MessagingThread } from './MessagingThread';
-import { DealTeamSection, sampleTeamMembers } from './DealTeamSection';
+import { DealTeamSection, TeamMember, sampleTeamMembers } from './DealTeamSection';
 import { SpaceSourcing } from './SpaceSourcing';
 
 interface Deal {
@@ -1143,6 +1143,10 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
   };
 
   // Editable form state
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(sampleTeamMembers);
+
+  const leadBroker = teamMembers.find(m => m.role === 'Lead Broker');
+
   const [editedDeal, setEditedDeal] = useState({
     dealName: deal.dealName,
     clientName: deal.clientName,
@@ -1155,8 +1159,8 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
     broker: deal.broker,
     createdDate: '2025-10-01',
     expectedCloseDate: '2025-12-01',
-    primaryContactName: 'James Lee',
-    primaryContactEmail: 'jlee@teltech.com',
+    primaryContactName: leadBroker?.name ?? '',
+    primaryContactEmail: leadBroker?.email ?? '',
     dealId: '#TL-NYC-98321',
   });
 
@@ -1471,44 +1475,60 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
                     </div>
 
                     {/* Row 5 — Lead derived from team */}
-                    {(() => {
-                      const lead = sampleTeamMembers.find(m => m.role === 'Lead Broker');
-                      return lead ? (
-                        <div className="col-span-3" style={{
-                          display: 'flex', alignItems: 'center', gap: '12px',
-                          padding: '10px 12px', borderRadius: '8px',
-                          border: '1px solid #E5E7EB', backgroundColor: '#F9FAFB',
-                        }}>
-                          <div style={{
-                            width: '32px', height: '32px', borderRadius: '50%',
-                            backgroundColor: '#DBEAFE', display: 'flex', alignItems: 'center',
-                            justifyContent: 'center', flexShrink: 0,
-                            fontSize: '13px', fontWeight: 600, color: '#1D4ED8',
-                            fontFamily: 'Inter, sans-serif',
-                          }}>
-                            {lead.name.split(' ').map(n => n[0]).join('')}
-                          </div>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: 'Inter, sans-serif' }}>
-                              {lead.name}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
-                              {lead.role} · <a href={`mailto:${lead.email}`} style={{ color: '#005B94' }}>{lead.email}</a>
-                            </div>
-                          </div>
-                          <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}>
-                            From team
-                          </div>
-                        </div>
-                      ) : null;
-                    })()}
+                    {/* Row 5 */}
+                    <div>
+                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
+                        Lead
+                      </Label>
+                      <Input
+                        value={editedDeal.primaryContactName}
+                        onChange={(e) => setEditedDeal({ ...editedDeal, primaryContactName: e.target.value })}
+                        className="border-gray-300"
+                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
+                        Lead Email
+                      </Label>
+                      <Input
+                        type="email"
+                        value={editedDeal.primaryContactEmail}
+                        onChange={(e) => setEditedDeal({ ...editedDeal, primaryContactEmail: e.target.value })}
+                        className="border-gray-300"
+                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+                      />
+                    </div>
                   </div>
 
                   {/* Save Button */}
                   <div className="mt-6 pt-4 border-t flex justify-end" style={{ borderColor: '#E5E7EB' }}>
                     <Button
                       className="text-white"
-                      onClick={() => toast.success('Changes saved.')}
+                      onClick={() => {
+                        // Upsert the Lead Broker in the team from Summary form values
+                        const name = editedDeal.primaryContactName.trim();
+                        const email = editedDeal.primaryContactEmail.trim();
+                        if (name || email) {
+                          const existing = teamMembers.find(m => m.role === 'Lead Broker');
+                          if (existing) {
+                            setTeamMembers(teamMembers.map(m =>
+                              m.role === 'Lead Broker' ? { ...m, name: name || m.name, email: email || m.email } : m
+                            ));
+                          } else {
+                            setTeamMembers([...teamMembers, {
+                              id: String(Date.now()),
+                              name,
+                              email,
+                              role: 'Lead Broker',
+                              organization: '',
+                              type: 'Internal',
+                            }]);
+                          }
+                        }
+                        toast.success('Changes saved.');
+                      }}
                       style={{
                         backgroundColor: '#005B94',
                         fontSize: '14px',
@@ -1956,7 +1976,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
 
             {/* Deal Team Tab */}
             <TabsContent value="team" className="mt-0">
-              <DealTeamSection dealId={deal.id} />
+              <DealTeamSection dealId={deal.id} teamMembers={teamMembers} onTeamChange={setTeamMembers} />
             </TabsContent>
 
             {/* Workflow Timeline Tab (legacy — superseded by Timeline tab below) */}

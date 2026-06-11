@@ -34,6 +34,8 @@ export interface TeamMember {
 
 interface DealTeamSectionProps {
   dealId: string;
+  teamMembers: TeamMember[];
+  onTeamChange: (members: TeamMember[]) => void;
 }
 
 export const sampleTeamMembers: TeamMember[] = [
@@ -101,8 +103,7 @@ export const sampleTeamMembers: TeamMember[] = [
   },
 ];
 
-export function DealTeamSection({ dealId }: DealTeamSectionProps) {
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(sampleTeamMembers);
+export function DealTeamSection({ dealId, teamMembers, onTeamChange }: DealTeamSectionProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [filterRole, setFilterRole] = useState('all');
   const [filterType, setFilterType] = useState('all');
@@ -290,7 +291,7 @@ export function DealTeamSection({ dealId }: DealTeamSectionProps) {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={(member) => {
-          setTeamMembers([...teamMembers, { ...member, id: Date.now().toString() }]);
+          onTeamChange([...teamMembers, { ...member, id: Date.now().toString() }]);
           setIsAddModalOpen(false);
         }}
       />
