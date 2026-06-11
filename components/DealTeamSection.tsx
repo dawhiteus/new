@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { AddTeamMemberModal } from './AddTeamMemberModal';
 
-interface TeamMember {
+export interface TeamMember {
   id: string;
   name: string;
   role: string;
@@ -36,7 +36,7 @@ interface DealTeamSectionProps {
   dealId: string;
 }
 
-const sampleTeamMembers: TeamMember[] = [
+export const sampleTeamMembers: TeamMember[] = [
   {
     id: '1',
     name: 'Matthew Weiner',

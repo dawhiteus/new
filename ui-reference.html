@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Transaction Manager — UI Reference</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #E8EAED; color: #111827; padding: 48px 40px; display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start; }
+
+  .section { display: flex; flex-direction: column; gap: 10px; }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6B7280; }
+
+  /* ── Modal ── */
+  .modal { background: #fff; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.18); width: 440px; overflow: hidden; }
+  .modal-header { padding: 24px 28px 0; display: flex; align-items: flex-start; justify-content: space-between; }
+  .modal-title { font-size: 20px; font-weight: 700; color: #111827; }
+  .close-btn { width: 28px; height: 28px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #F3F4F6; color: #6B7280; flex-shrink: 0; }
+  .modal-body { padding: 20px 28px; display: flex; flex-direction: column; gap: 16px; }
+  .modal-footer { padding: 0 28px 24px; display: flex; justify-content: flex-end; gap: 10px; }
+
+  .form-label { font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 5px; display: block; }
+  .required { color: #EF4444; margin-left: 2px; }
+  .form-input {
+    width: 100%; padding: 9px 12px; border: 1px solid #E5E7EB; border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: #374151; background: #fff; outline: none;
+  }
+  .form-input::placeholder { color: #9CA3AF; }
+  .form-select {
+    width: 100%; padding: 9px 32px 9px 12px; border: 1px solid #E5E7EB; border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: #374151; background: #fff;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  .form-select.placeholder-shown { color: #9CA3AF; }
+
+  .btn-primary { padding: 9px 20px; background: #005B94; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn-outline { padding: 9px 20px; background: #fff; color: #374151; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; }
+
+  /* ── Tooltip card ── */
+  .tooltip-card { width: 268px; background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.14); overflow: hidden; }
+  .card-section { padding: 11px 14px; border-bottom: 1px solid #F3F4F6; }
+  .card-section:last-child { border-bottom: none; }
+  .card-title { font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 3px; line-height: 1.25; }
+  .card-sub   { font-size: 12px; color: #6B7280; }
+  .criteria-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+  .criteria-label { display: flex; align-items: center; gap: 5px; color: #6B7280; }
+  .criteria-count { font-weight: 600; color: #111827; }
+  .stat-grid { display: flex; align-items: stretch; }
+  .stat-item { flex: 1; }
+  .stat-num  { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+  .stat-lbl  { font-size: 11px; color: #6B7280; margin-top: 3px; }
+  .stat-div  { width: 1px; background: #E5E7EB; margin: 0 12px; }
+  .view-btn  {
+    width: 100%; padding: 8px 0; background: #005B94; color: #fff;
+    font-family: inherit; font-size: 13px; font-weight: 600; border-radius: 7px;
+    border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  svg.icon { display: inline-block; vertical-align: middle; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+  <!-- 1. Add Team Member Modal -->
+  <div class="section">
+    <div class="section-label">Add Team Member Modal</div>
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Add Team Member</div>
+        <button class="close-btn">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label class="form-label">Name <span class="required">*</span></label>
+          <input class="form-input" placeholder="Enter name" />
+        </div>
+        <div>
+          <label class="form-label">Role <span class="required">*</span></label>
+          <select class="form-select form-placeholder-shown">
+            <option value="" disabled selected>Select role</option>
+            <option>Lead Broker</option>
+            <option>Client Contact</option>
+            <option>Legal Counsel</option>
+            <option>Deal Coordinator</option>
+            <option>Finance Contact</option>
+            <option>Executive Sponsor</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Organization <span class="required">*</span></label>
+          <input class="form-input" placeholder="Enter organization" />
+        </div>
+        <div>
+          <label class="form-label">Type <span class="required">*</span></label>
+          <select class="form-select">
+            <option>Internal</option>
+            <option>External</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Email <span class="required">*</span></label>
+          <input class="form-input" type="email" placeholder="Enter email" />
+        </div>
+        <div>
+          <label class="form-label">Phone</label>
+          <input class="form-input" type="tel" placeholder="Enter phone (optional)" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline">Cancel</button>
+        <button class="btn-primary">Add Member</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. New Collection Modal -->
+  <div class="section">
+    <div class="section-label">New Collection Modal</div>
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">New Collection</div>
+        <button class="close-btn">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:12px;color:#6B7280">Requirement: <span style="font-weight:600;color:#374151">Tech Ventures SF Office</span></div>
+        <div>
+          <input class="form-input" placeholder="Collection Name" />
+        </div>
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <p style="font-size:13px;color:#1E40AF;line-height:1.55"><strong>The Create Collection Agent</strong> will source spaces based on this requirement's metadata — location, headcount, budget, and workspace type.</p>
+        </div>
+        <p style="font-size:12px;color:#6B7280;line-height:1.6">Once the collection is ready, a <strong style="color:#374151">collection link</strong> and <strong style="color:#374151">fitness assessment</strong> will appear in the Requirements table.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline">Cancel</button>
+        <button class="btn-primary">Create Collection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Collection Assessment Tooltip Card -->
+  <div class="section">
+    <div class="section-label">Collection Assessment Tooltip Card</div>
+    <div class="tooltip-card">
+      <div class="card-section">
+        <div class="card-title">NYC Executive Suites</div>
+        <div class="card-sub">12 spaces total</div>
+      </div>
+      <div class="card-section" style="display:flex;flex-direction:column;gap:7px">
+        <div class="criteria-row">
+          <span class="criteria-label">
+            <svg class="icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            In Midtown Manhattan
+          </span>
+          <span class="criteria-count">8 spaces</span>
+        </div>
+        <div class="criteria-row">
+          <span class="criteria-label">
+            <svg class="icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            Within $18,000/mo
+          </span>
+          <span class="criteria-count">6 spaces</span>
+        </div>
+        <div class="criteria-row">
+          <span class="criteria-label">
+            <svg class="icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            For 35–40 people
+          </span>
+          <span class="criteria-count">7 spaces</span>
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="stat-grid" style="padding:2px 0">
+          <div class="stat-item">
+            <div class="stat-num">10</div>
+            <div class="stat-lbl">Saved</div>
+          </div>
+          <div class="stat-div"></div>
+          <div class="stat-item">
+            <div class="stat-num">4</div>
+            <div class="stat-lbl">Shortlisted</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-section">
+        <div style="font-size:11px;color:#9CA3AF;margin-bottom:10px">Updated Nov 9, 2024</div>
+        <button class="view-btn">
+          View Collection
+          <svg class="icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
