@@ -260,7 +260,7 @@ const SAMPLE_DEALS: Deal[] = [
 
 const METRICS = [
   {
-    label: 'PIPELINE VALUE',
+    label: 'DEAL VALUE',
     value: '$10.75M',
     valueColor: '#10B981',
     sub: 'Total estimated value of active requirements',
