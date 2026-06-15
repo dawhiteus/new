@@ -74,10 +74,13 @@ function getStageBadgeStyle(stage: string) {
 // ─── Status badge colors ──────────────────────────────────────────────────────
 
 const statusBadgeStyles: Record<string, { backgroundColor: string; color: string }> = {
-  Draft:    { backgroundColor: '#9CA3AF', color: '#FFFFFF' },
-  Active:   { backgroundColor: '#10B981', color: '#FFFFFF' },
-  Executed: { backgroundColor: '#059669', color: '#FFFFFF' },
-  Archived: { backgroundColor: '#6B7280', color: '#FFFFFF' },
+  Draft:          { backgroundColor: '#0E7490', color: '#FFFFFF' },
+  Active:         { backgroundColor: '#16A34A', color: '#FFFFFF' },
+  Executed:       { backgroundColor: '#16A34A', color: '#FFFFFF' },
+  Archived:       { backgroundColor: '#6B7280', color: '#FFFFFF' },
+  Expired:        { backgroundColor: '#6B7280', color: '#FFFFFF' },
+  'Expiring Soon':  { backgroundColor: '#D97706', color: '#FFFFFF' },
+  'Pending Review': { backgroundColor: '#0E7490', color: '#FFFFFF' },
 };
 
 function getStatusBadgeStyle(status: string) {
@@ -808,10 +811,10 @@ function DealRow({
             ...statusBadge,
             display: 'inline-block',
             fontSize: '12px',
-            fontWeight: 500,
+            fontWeight: 600,
             fontFamily: 'Inter, sans-serif',
             borderRadius: '999px',
-            padding: '3px 10px',
+            padding: '4px 12px',
             whiteSpace: 'nowrap',
           }}
         >
