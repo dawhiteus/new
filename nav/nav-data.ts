@@ -64,7 +64,7 @@ export interface PageMeta extends NavItemDef {
 export const IA: Record<string, Product> = {
   ops: {
     id: 'ops',
-    label: 'Operations',
+    label: 'Workplace Operations',
     icon: 'briefcase',
     color: '#005b94',
     tagline: 'Run the workspace portfolio',
@@ -85,12 +85,12 @@ export const IA: Record<string, Product> = {
       },
       {
         id: 'la',
-        label: 'License Administration',
+        label: 'License Administrator',
         items: [
           { id: 'license-tracker', icon: 'file',         label: 'License Tracker' },
           { id: 'payments',        icon: 'credit-card',  label: 'Payments' },
           { id: 'funding',         icon: 'dollar-sign',  label: 'Funding Sources' },
-          { id: 'tasks',           icon: 'check-square', label: 'Tasks', badge: 3 },
+          { id: 'tasks',           icon: 'check-square', label: 'Tasks' },
         ],
       },
       {
@@ -104,26 +104,20 @@ export const IA: Record<string, Product> = {
   },
   strategy: {
     id: 'strategy',
-    label: 'Workplace Strategy',
+    label: 'Workplace Strategist',
     icon: 'bar-chart',
     color: '#00b8c4',
     tagline: 'Plan the portfolio',
     description: 'Portfolio analytics, spend modeling, hub planning.',
-    defaultPage: 'summary-overview',
+    defaultPage: 'portfolio-compiler',
     groups: [
       {
-        id: 'summary',
-        label: 'Enterprise Summary',
-        items: [
-          { id: 'summary-overview',  icon: 'home',        label: 'Overview' },
-        ],
-      },
-      {
         id: 'tools',
-        label: 'Strategy Tools',
+        label: 'Workplace Strategist',
         items: [
-          { id: 'portfolio-modeler', icon: 'layers', label: 'Portfolio Modeler' },
-          { id: 'hub-locator',       icon: 'map',    label: 'Hub Locator' },
+          { id: 'portfolio-compiler', icon: 'layers',    label: 'Portfolio Compiler' },
+          { id: 'flex-modeler',       icon: 'sliders',   label: 'Flex Modeler' },
+          { id: 'hub-locator',        icon: 'map',       label: 'Hub Locator' },
         ],
       },
     ],
