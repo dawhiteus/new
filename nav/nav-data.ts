@@ -76,7 +76,7 @@ export const IA: Record<string, Product> = {
         id: 'wm',
         label: 'Workplace Manager',
         items: [
-          { id: 'dashboard',       icon: 'home',         label: 'Dashboard' },
+          { id: 'dashboard',       icon: 'home',         label: 'Dashboard', url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/dashboard' },
           { id: 'teams',           icon: 'users',        label: 'Teams' },
           { id: 'locations',       icon: 'map-pinned',   label: 'Locations' },
           { id: 'activity',        icon: 'activity',     label: 'Activity' },
