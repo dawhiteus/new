@@ -101,10 +101,7 @@ function NavItemA({ item, active, onClick }: { item: NavItemDef; active: boolean
   const color = active ? '#fff' : locked ? T.textDisabled : T.text;
   const iconColor = active ? '#fff' : locked ? T.textDisabled : T.textMuted;
 
-  const handleClick = locked ? undefined : () => {
-    if (item.url) window.open(item.url, '_blank');
-    onClick();
-  };
+  const handleClick = locked ? undefined : onClick;
 
   return (
     <div
@@ -247,10 +244,9 @@ export interface SidebarAProps {
 }
 
 export function SidebarA({ profile, productId, activeId, onSelectPage }: SidebarAProps) {
-  const [expandedPillars, setExpandedPillars] = useState<Record<string, boolean>>({
-    ops: true,
-    strategy: false,
-  });
+  const [expandedPillars, setExpandedPillars] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(Object.keys(IA).map(id => [id, id === productId]))
+  );
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const togglePillar = (id: string) =>

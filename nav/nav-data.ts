@@ -234,6 +234,22 @@ export function firstAccessiblePage(profile: Profile, productId: string): string
   return null;
 }
 
+export function findPageByUrlPath(pathname: string): { pageId: string; productId: string } | null {
+  for (const productId of Object.keys(IA)) {
+    for (const g of IA[productId].groups) {
+      for (const item of g.items) {
+        if (item.url) {
+          try {
+            const itemPath = new URL(item.url).pathname;
+            if (itemPath === pathname) return { pageId: item.id, productId };
+          } catch {}
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export function firstAccessibleProduct(profile: Profile): string | null {
   for (const id of Object.keys(IA)) {
     if (productAccessible(profile, id)) return id;
