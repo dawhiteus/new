@@ -292,35 +292,67 @@ function getMarketBadgeStyle(rate: string): React.CSSProperties {
   return { backgroundColor: '#F3F4F6', color: '#6B7280' };
 }
 
-function MarketTooltip({ detail }: { detail: { costPerSeat: number; marketMedian: number; confidence: number; suggestion: string } }) {
+function MarketTooltip({ detail, pos }: { detail: { costPerSeat: number; marketMedian: number; confidence: number; suggestion: string }; pos: { x: number; y: number } }) {
   const delta = detail.costPerSeat - detail.marketMedian;
   const isAbove = delta > 0;
   const labels = ['', 'Insufficient', 'Low', 'Moderate', 'High', 'Excellent'];
   return (
     <div style={{
-      position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)',
-      width: 252, backgroundColor: '#fff', borderRadius: 12,
-      boxShadow: '0 8px 32px rgba(0,0,0,0.14)', border: '1px solid #E5E7EB',
-      padding: '14px 16px', zIndex: 1000, fontFamily: 'Inter, sans-serif',
-      pointerEvents: 'none', textAlign: 'left',
+      position: 'fixed',
+      left: pos.x,
+      top: pos.y,
+      transform: 'translate(-50%, calc(-100% - 10px))',
+      width: 276,
+      backgroundColor: '#fff',
+      borderRadius: 12,
+      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.08), 0 12px 32px -4px rgba(0,0,0,0.14)',
+      border: '1px solid #E5E7EB',
+      zIndex: 9999,
+      fontFamily: 'Inter, sans-serif',
+      pointerEvents: 'none',
+      overflow: 'hidden',
+      textAlign: 'left',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-        <div>
-          {[1,2,3,4,5].map(i => (
-            <span key={i} style={{ fontSize: 14, color: i <= detail.confidence ? '#F59E0B' : '#D1D5DB' }}>★</span>
-          ))}
+      {/* Confidence header */}
+      <div style={{ padding: '11px 14px', backgroundColor: '#F8FAFC', borderBottom: '1px solid #F0F2F5' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 1 }}>
+            {[1,2,3,4,5].map(i => (
+              <span key={i} style={{ fontSize: 15, color: i <= detail.confidence ? '#F59E0B' : '#D1D5DB', lineHeight: 1 }}>★</span>
+            ))}
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{labels[detail.confidence]} confidence</span>
         </div>
-        <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 500 }}>{labels[detail.confidence]} confidence</span>
       </div>
-      <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.55, marginBottom: 6 }}>
-        You're paying <strong>${detail.costPerSeat.toFixed(2)}/seat</strong> vs. market median{' '}
-        <strong>${detail.marketMedian.toFixed(2)}/seat</strong>
+
+      {/* Cost rows */}
+      <div style={{ padding: '12px 14px 10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+          <span style={{ fontSize: 12, color: '#6B7280' }}>Your rate</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>${detail.costPerSeat.toFixed(2)}/seat</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: '#6B7280' }}>Market median</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: '#6B7280' }}>${detail.marketMedian.toFixed(2)}/seat</span>
+        </div>
+
+        {/* Delta bar */}
+        <div style={{
+          marginTop: 10,
+          padding: '7px 11px',
+          borderRadius: 8,
+          backgroundColor: isAbove ? '#FEF2F2' : '#F0FDF4',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: isAbove ? '#DC2626' : '#16A34A' }}>
+            {isAbove ? `+$${delta.toFixed(2)}/seat more` : `-$${Math.abs(delta).toFixed(2)}/seat less`}
+          </span>
+        </div>
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: isAbove ? '#DC2626' : '#16A34A', marginBottom: 10 }}>
-        {isAbove ? `+$${delta.toFixed(2)}/seat more` : `-$${Math.abs(delta).toFixed(2)}/seat less`}
-      </div>
-      <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: 10, fontSize: 12, color: '#374151', lineHeight: 1.5 }}>
-        <strong>Suggestion:</strong> {detail.suggestion}
+
+      {/* Suggestion */}
+      <div style={{ padding: '9px 14px 13px', borderTop: '1px solid #F0F2F5' }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Suggestion</div>
+        <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.55 }}>{detail.suggestion}</div>
       </div>
     </div>
   );
@@ -339,7 +371,7 @@ export function LicenseTracker({
   const [generatedCollections, setGeneratedCollections] = useState<Set<number>>(new Set());
   const [isAlternativeSpacesModalOpen, setIsAlternativeSpacesModalOpen] = useState(false);
   const [currentLicenseForCollection, setCurrentLicenseForCollection] = useState<any>(null);
-  const [tooltipId, setTooltipId] = useState<number | null>(null);
+  const [tooltipState, setTooltipState] = useState<{ id: number; x: number; y: number } | null>(null);
 
   const filteredLicenses = licenses.filter(license => {
     const matchesSearch = license.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -988,9 +1020,12 @@ export function LicenseTracker({
                     </TableCell>
                     <TableCell className="py-4 px-6 text-center">
                       <div
-                        style={{ position: 'relative', display: 'inline-block' }}
-                        onMouseEnter={() => setTooltipId(license.id)}
-                        onMouseLeave={() => setTooltipId(null)}
+                        style={{ display: 'inline-block' }}
+                        onMouseEnter={(e) => {
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          setTooltipState({ id: license.id, x: rect.left + rect.width / 2, y: rect.top });
+                        }}
+                        onMouseLeave={() => setTooltipState(null)}
                       >
                         <span style={{
                           display: 'inline-flex', alignItems: 'center',
@@ -1001,8 +1036,8 @@ export function LicenseTracker({
                         }}>
                           {license.marketRateComparison}
                         </span>
-                        {tooltipId === license.id && MARKET_RATE_DETAILS[license.id] && (
-                          <MarketTooltip detail={MARKET_RATE_DETAILS[license.id]} />
+                        {tooltipState?.id === license.id && MARKET_RATE_DETAILS[license.id] && (
+                          <MarketTooltip detail={MARKET_RATE_DETAILS[license.id]} pos={{ x: tooltipState.x, y: tooltipState.y }} />
                         )}
                       </div>
                     </TableCell>
