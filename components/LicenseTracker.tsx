@@ -318,6 +318,8 @@ function MarketTooltip({ detail, pos }: { detail: { costPerSeat: number; marketM
       pointerEvents: 'none',
       overflow: 'hidden',
       textAlign: 'left',
+      whiteSpace: 'normal',
+      wordWrap: 'break-word',
     }}>
       {/* Confidence header */}
       <div style={{ padding: '11px 14px', backgroundColor: '#F8FAFC', borderBottom: '1px solid #F0F2F5' }}>
