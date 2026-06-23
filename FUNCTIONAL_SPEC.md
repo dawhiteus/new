@@ -1,6 +1,67 @@
-# Transaction Manager — Functional Specification
-**LiquidSpace · Broker Deal Management Tool**
-Version 1.0 · March 2026
+# LiquidSpace Operations Platform — Functional Specification
+**Workplace Manager · License Administrator · Transaction Manager**
+Version 1.1 · June 2026
+
+---
+
+## 0. Product Architecture
+
+This prototype covers three distinct product areas sharing a single application shell (sidebar + routing). Each area has its own entry-point component and supporting components.
+
+### 0.1 Product → Component Map
+
+#### Workplace Manager
+The dashboard for workplace/facilities teams managing office portfolios, locations, and teams.
+
+| Role | Component(s) |
+|---|---|
+| Entry point | `WorkplaceManagerDashboard.tsx` |
+| Dashboard & overview | `DashboardOverview.tsx`, `PortfolioOverview.tsx` |
+| Space comparison | `WorkspaceComparison.tsx`, `WorkspaceComparisonModal.tsx` |
+| Portfolio & reservations | `ReservationsView.tsx`, `SearchesView.tsx`, `ReviewsView.tsx` |
+| Sync & settings | `SyncCenter.tsx`, `SettingsPage.tsx`, `AlertsManager.tsx` |
+| Analytics | `USActivityHeatmap.jsx`, `CFODashboard.tsx` |
+
+#### License Administrator
+Manages workspace license agreements, payments, and funding sources for a portfolio of leases.
+
+| Role | Component(s) |
+|---|---|
+| Entry point | `LicenseTracker.tsx` |
+| Payments | `PaymentManagement.tsx`, `PaymentDetailsModal.tsx`, `PaymentActionsDropdown.tsx` |
+| Funding | `FundingSources.tsx`, `FundingSourceModal.tsx` |
+| License detail & upload | `LicenseDetailModal.tsx`, `UploadLicenseModal.tsx`, `LicenseActionsDropdown.tsx` |
+| Tasks | `Tasks.tsx`, `BrokerTasks.tsx` |
+| Renewals | `HighImpactRenewalsActionsDropdown.tsx`, `UpcomingRenewalsActionsDropdown.tsx` |
+
+#### Transaction Manager
+Broker-facing deal management — tracks workspace requirements from intake through execution.
+
+| Role | Component(s) |
+|---|---|
+| Entry point | `BrokerFlow.tsx` |
+| Deal table & metrics | `BrokerDealMetrics.tsx`, `WorkflowOverview.tsx` |
+| Deal details | `DealDetailsModal.tsx`, `DealFeed.tsx` |
+| Create / edit deal | `CreateEditDealModal.tsx` |
+| Team management | `DealTeamSection.tsx`, `AddTeamMemberModal.tsx` |
+| Tasks | `TransactionTasks.tsx`, `TaskActionDropdown.tsx`, `TaskOverviewActionsDropdown.tsx` |
+| Space sourcing | `SpaceSourcing.tsx`, `SpaceCard.tsx`, `SpaceDetailModal.tsx`, `AlternativeSpacesModal.tsx` |
+| Collections | `SpaceComparisonModal.tsx` |
+
+### 0.2 Shared Infrastructure
+
+| Role | Component(s) |
+|---|---|
+| App shell | `Sidebar.tsx`, `PageHeader.tsx`, `GlobalHeader.tsx`, `Header.tsx` |
+| AI / copilot | `ai-drawer.tsx`, `LiquidAI.tsx`, `copilot/AIAssistant.tsx`, `copilot/CopilotPanel.tsx` |
+| UI primitives | `components/ui/` (shadcn-based: Button, Dialog, Select, Tabs, Tooltip, etc.) |
+| Mock data | `components/data/` (notifications, sample spaces, sync data) |
+| TypeScript types | `components/types/workspace-types.ts` |
+| Utilities | `components/utils/workspace-utils.tsx` |
+
+### 0.3 File Structure Note
+
+All components live in a flat `components/` directory — no subdirectories per product area. This is intentional for a prototype. If this codebase graduates to a production build, the natural split would be `components/workplace-manager/`, `components/license-administrator/`, `components/transaction-manager/`, and `components/shared/`.
 
 ---
 
