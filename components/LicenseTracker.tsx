@@ -296,13 +296,19 @@ function MarketTooltip({ detail, pos }: { detail: { costPerSeat: number; marketM
   const delta = detail.costPerSeat - detail.marketMedian;
   const isAbove = delta > 0;
   const labels = ['', 'Insufficient', 'Low', 'Moderate', 'High', 'Excellent'];
+  const tooltipWidth = 276;
+  const margin = 10;
+  const clampedX = Math.min(
+    Math.max(pos.x, tooltipWidth / 2 + margin),
+    (typeof window !== 'undefined' ? window.innerWidth : 1200) - tooltipWidth / 2 - margin
+  );
   return (
     <div style={{
       position: 'fixed',
-      left: pos.x,
+      left: clampedX,
       top: pos.y,
       transform: 'translate(-50%, calc(-100% - 10px))',
-      width: 276,
+      width: tooltipWidth,
       backgroundColor: '#fff',
       borderRadius: 12,
       boxShadow: '0 4px 6px -1px rgba(0,0,0,0.08), 0 12px 32px -4px rgba(0,0,0,0.14)',
