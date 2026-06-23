@@ -93,12 +93,48 @@ const MAP_METROS = ALLSTATE_METROS
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
-const TEAMS = [
-  { team: 'Tel Tech Enterprise',     rate: 99.2, accepted: 4820, invited: 4860, spend: 2341892, trend:  1.8 },
-  { team: 'Engineering',             rate: 82.4, accepted:  145, invited:  176, spend:  487219, trend:  8.3 },
-  { team: 'Finance & Risk',          rate: 67.1, accepted:  114, invited:  170, spend:  362445, trend: -3.2 },
-  { team: 'Legal & Compliance',      rate:100.0, accepted:   52, invited:   52, spend:  198773, trend:  0.0 },
-  { team: 'People & Culture',        rate: 74.6, accepted:  213, invited:  285, spend:  521664, trend:  5.7 },
+const ADOPTION_TABLE = [
+  { team: 'Tel Tech Enterprise', invited: 6860, joined: 5840, rate: 85.1 },
+  { team: 'Engineering',         invited:  176, joined:  145, rate: 82.4 },
+  { team: 'Finance & Risk',      invited:  170, joined:  114, rate: 67.1 },
+  { team: 'Legal & Compliance',  invited:   52, joined:   52, rate:100.0 },
+  { team: 'People & Culture',    invited:  285, joined:  213, rate: 74.6 },
+  { team: 'Marketing',           invited:  145, joined:  110, rate: 75.9 },
+  { team: 'Sales',               invited:  320, joined:  248, rate: 77.5 },
+  { team: 'Product & Design',    invited:  140, joined:  118, rate: 84.3 },
+];
+
+const ENGAGEMENT_TABLE = [
+  { team: 'Tel Tech Enterprise', joined: 5840, booked: 4263, pct: 73 },
+  { team: 'Engineering',         joined:  145, booked:  133, pct: 92 },
+  { team: 'Finance & Risk',      joined:  114, booked:   68, pct: 60 },
+  { team: 'Legal & Compliance',  joined:   52, booked:   52, pct:100 },
+  { team: 'People & Culture',    joined:  213, booked:  162, pct: 76 },
+  { team: 'Marketing',           joined:  110, booked:   98, pct: 89 },
+  { team: 'Sales',               joined:  248, booked:  218, pct: 88 },
+  { team: 'Product & Design',    joined:  118, booked:  101, pct: 86 },
+];
+
+const SPEND_TABLE = [
+  { team: 'Tel Tech Enterprise', odCount: 1842, odSpend: 195340, dedCount: 11, dedSpend: 127619 },
+  { team: 'Engineering',         odCount:  452, odSpend:  61870, dedCount:  3, dedSpend:  35480 },
+  { team: 'Finance & Risk',      odCount:  248, odSpend:  43620, dedCount:  0, dedSpend:      0 },
+  { team: 'Legal & Compliance',  odCount:  198, odSpend:  32150, dedCount:  0, dedSpend:      0 },
+  { team: 'People & Culture',    odCount:  312, odSpend:  45890, dedCount:  0, dedSpend:      0 },
+  { team: 'Marketing',           odCount:  275, odSpend:  39389, dedCount:  1, dedSpend:  12034 },
+  { team: 'Sales',               odCount:  211, odSpend:  31650, dedCount:  0, dedSpend:      0 },
+  { team: 'Product & Design',    odCount:  112, odSpend:  14800, dedCount:  0, dedSpend:      0 },
+];
+
+const REVIEWS_TABLE = [
+  { name: 'Jamie Chen',     team: 'Tel Tech Enterprise', date: '06/15/2026', rating: 5, comment: 'N/A' },
+  { name: 'Morgan Lee',     team: 'Engineering',         date: '06/10/2026', rating: 4, comment: 'N/A' },
+  { name: 'Alex Rivera',    team: 'Marketing',           date: '05/28/2026', rating: 5, comment: 'Great location and workspace.' },
+  { name: 'Sam Patel',      team: 'Sales',               date: '05/14/2026', rating: 3, comment: 'N/A' },
+  { name: 'Jordan Kim',     team: 'Product & Design',    date: '05/02/2026', rating: 4, comment: 'N/A' },
+  { name: 'Taylor Brooks',  team: 'People & Culture',    date: '04/30/2026', rating: 5, comment: 'N/A' },
+  { name: 'Casey Nguyen',   team: 'Finance & Risk',      date: '04/22/2026', rating: 4, comment: 'N/A' },
+  { name: 'Priya Sharma',   team: 'Engineering',         date: '04/18/2026', rating: 5, comment: 'Would book again.' },
 ];
 
 const TREND_DATA = [
@@ -309,7 +345,7 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
   const [teamFilter, setTeamFilter] = useState('');
   const [perPage, setPerPage] = useState(5);
 
-  const filteredTeams = TEAMS.filter(t => !teamFilter || t.team.toLowerCase().includes(teamFilter.toLowerCase())).slice(0, perPage);
+  const q = teamFilter.toLowerCase();
 
   const trendColor = { adoption:'#0D9488', engagement:'#7C3AED', spend:'#059669' }[trendMetric];
   const trendKey = trendMetric;
@@ -416,47 +452,152 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
           })}
         </div>
 
-        {/* ── Team Adoption Breakdown ─────────────────────────────────────── */}
-        <AccentCard
-          title="Team Adoption Breakdown"
-          subtitle="User adoption and team activation metrics"
-          right={
-            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-              <div style={{ position:'relative' }}>
-                <Filter style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', width:13, height:13, color:'#9CA3AF' }} />
-                <input style={{ ...inputStyle, paddingLeft:28, width:160 }} placeholder="Filter teams..." value={teamFilter} onChange={e => setTeamFilter(e.target.value)} />
-              </div>
-              <select style={{ ...selectStyle, width:150 }} value={perPage} onChange={e => setPerPage(Number(e.target.value))}>
-                <option value={5}>5 entries per page</option>
-                <option value={10}>10 entries per page</option>
-              </select>
-            </div>
-          }
-        >
-          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-            <thead>
-              <tr style={{ borderBottom:'1px solid #E5E7EB' }}>
-                {['Team ↕', 'Activation Rate ↕', 'Accepted / Invited', 'Current Spend ↕', 'Activation Trend'].map(h => (
-                  <th key={h} style={{ padding:'9px 12px', textAlign:'left', fontSize:12, fontWeight:600, color:'#6B7280', letterSpacing:'0.03em', whiteSpace:'nowrap', cursor:'pointer' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTeams.map((row, i) => (
-                <tr key={row.team} style={{ borderBottom: i < filteredTeams.length-1 ? '1px solid #F3F4F6' : 'none' }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor='#F9FAFB')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor='transparent')}
-                >
-                  <td style={{ padding:'13px 12px', fontWeight:500, color:'#111827' }}>{row.team}</td>
-                  <td style={{ padding:'13px 12px', color:'#374151' }}>{row.rate.toFixed(1)}%</td>
-                  <td style={{ padding:'13px 12px', color:'#374151' }}>{row.accepted.toLocaleString()} / {row.invited.toLocaleString()}</td>
-                  <td style={{ padding:'13px 12px', fontWeight:600, color:'#374151' }}>{fmtFull(row.spend)}</td>
-                  <td style={{ padding:'13px 12px' }}><TrendBadge value={row.trend} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </AccentCard>
+        {/* ── Dynamic Metric Table ───────────────────────────────────────── */}
+        {(() => {
+          const titleMap: Record<string, [string, string]> = {
+            adoption:   ['Team Adoption Breakdown',   'User adoption and team activation metrics'],
+            engagement: ['Team Engagement Breakdown', 'Booking activity relative to team size'],
+            spend:      ['Team Spend Breakdown',       'OnDemand and dedicated reservation costs by team'],
+            reviews:    ['Recent Reviews',             'Individual member ratings and comments'],
+          };
+          const [title, subtitle] = titleMap[activeMetric] ?? titleMap.adoption;
+          const thSt: React.CSSProperties = { padding:'9px 12px', textAlign:'left', fontSize:12, fontWeight:600, color:'#6B7280', letterSpacing:'0.03em', whiteSpace:'nowrap', cursor:'pointer' };
+          const td: React.CSSProperties = { padding:'13px 12px', color:'#374151' };
+          const tdName: React.CSSProperties = { padding:'13px 12px', fontWeight:500, color:'#111827' };
+          const totalTr: React.CSSProperties = { borderTop:'2px solid #E5E7EB', backgroundColor:'#F9FAFB' };
+          const totalTd: React.CSSProperties = { padding:'13px 12px', fontWeight:700, color:'#111827' };
+          const hov = { onMouseEnter: (e: React.MouseEvent<HTMLTableRowElement>) => (e.currentTarget.style.backgroundColor='#F9FAFB'), onMouseLeave: (e: React.MouseEvent<HTMLTableRowElement>) => (e.currentTarget.style.backgroundColor='transparent') };
+
+          return (
+            <AccentCard
+              title={title}
+              subtitle={subtitle}
+              right={
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ position:'relative' }}>
+                    <Filter style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', width:13, height:13, color:'#9CA3AF' }} />
+                    <input style={{ ...inputStyle, paddingLeft:28, width:160 }} placeholder="Filter..." value={teamFilter} onChange={e => setTeamFilter(e.target.value)} />
+                  </div>
+                  <select style={{ ...selectStyle, width:150 }} value={perPage} onChange={e => setPerPage(Number(e.target.value))}>
+                    <option value={5}>5 entries per page</option>
+                    <option value={10}>10 entries per page</option>
+                  </select>
+                </div>
+              }
+            >
+              {activeMetric === 'adoption' && (() => {
+                const rows = ADOPTION_TABLE.filter(r => !q || r.team.toLowerCase().includes(q)).slice(0, perPage);
+                return (
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                    <thead><tr style={{ borderBottom:'1px solid #E5E7EB' }}>
+                      {['Team ↕','Total Invited ↕','Total Joined ↕','Adoption'].map(h => <th key={h} style={thSt}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {rows.map((row, i) => (
+                        <tr key={row.team} style={{ borderBottom: i < rows.length-1 ? '1px solid #F3F4F6' : 'none' }} {...hov}>
+                          <td style={tdName}>{row.team}</td>
+                          <td style={td}>{row.invited.toLocaleString()}</td>
+                          <td style={td}>{row.joined.toLocaleString()}</td>
+                          <td style={td}>{row.rate.toFixed(1)}%</td>
+                        </tr>
+                      ))}
+                      <tr style={totalTr}>
+                        <td style={totalTd}>Total</td><td style={totalTd}>8,148</td><td style={totalTd}>6,840</td><td style={totalTd}>84.0%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                );
+              })()}
+
+              {activeMetric === 'engagement' && (() => {
+                const rows = ENGAGEMENT_TABLE.filter(r => !q || r.team.toLowerCase().includes(q)).slice(0, perPage);
+                return (
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                    <thead><tr style={{ borderBottom:'1px solid #E5E7EB' }}>
+                      {['Team ↕','Employees Joined ↕','Employees Booked ↕','Engagement %'].map(h => <th key={h} style={thSt}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {rows.map((row, i) => (
+                        <tr key={row.team} style={{ borderBottom: i < rows.length-1 ? '1px solid #F3F4F6' : 'none' }} {...hov}>
+                          <td style={tdName}>{row.team}</td>
+                          <td style={td}>{row.joined.toLocaleString()}</td>
+                          <td style={td}>{row.booked.toLocaleString()}</td>
+                          <td style={td}>{row.pct}%</td>
+                        </tr>
+                      ))}
+                      <tr style={totalTr}>
+                        <td style={totalTd}>Total</td><td style={totalTd}>6,840</td><td style={totalTd}>5,095</td><td style={totalTd}>75%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                );
+              })()}
+
+              {activeMetric === 'spend' && (() => {
+                const rows = SPEND_TABLE.filter(r => !q || r.team.toLowerCase().includes(q)).slice(0, perPage);
+                const bL: React.CSSProperties = { borderLeft:'1px solid #F3F4F6' };
+                return (
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...thSt, verticalAlign:'bottom' }} rowSpan={2}>Team</th>
+                        <th style={{ ...thSt, textAlign:'center', borderBottom:'1px solid #E5E7EB', ...bL }} colSpan={2}>OnDemand</th>
+                        <th style={{ ...thSt, textAlign:'center', borderBottom:'1px solid #E5E7EB', ...bL }} colSpan={2}>Dedicated</th>
+                        <th style={{ ...thSt, textAlign:'center', borderBottom:'1px solid #E5E7EB', ...bL }} colSpan={2}>Total</th>
+                      </tr>
+                      <tr style={{ borderBottom:'1px solid #E5E7EB' }}>
+                        {['Count','Spend','Count','Spend','Count','Spend'].map((h, i) => (
+                          <th key={i} style={{ padding:'6px 12px', textAlign:'left', fontSize:11, fontWeight:600, color:'#9CA3AF', ...(i % 2 === 0 ? bL : {}) }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, i) => (
+                        <tr key={row.team} style={{ borderBottom: i < rows.length-1 ? '1px solid #F3F4F6' : 'none' }} {...hov}>
+                          <td style={tdName}>{row.team}</td>
+                          <td style={{ ...td, ...bL }}>{row.odCount.toLocaleString()}</td>
+                          <td style={td}>{fmtFull(row.odSpend)}</td>
+                          <td style={{ ...td, ...bL }}>{row.dedCount.toLocaleString()}</td>
+                          <td style={td}>{row.dedSpend > 0 ? fmtFull(row.dedSpend) : '$0'}</td>
+                          <td style={{ ...td, ...bL }}>{(row.odCount + row.dedCount).toLocaleString()}</td>
+                          <td style={{ ...td, fontWeight:600, color:'#111827' }}>{fmtFull(row.odSpend + row.dedSpend)}</td>
+                        </tr>
+                      ))}
+                      <tr style={totalTr}>
+                        <td style={totalTd}>Total</td>
+                        <td style={{ ...totalTd, ...bL }}>3,650</td><td style={totalTd}>$464,709</td>
+                        <td style={{ ...totalTd, ...bL }}>15</td><td style={totalTd}>$175,133</td>
+                        <td style={{ ...totalTd, ...bL }}>3,665</td><td style={totalTd}>$639,842</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                );
+              })()}
+
+              {activeMetric === 'reviews' && (() => {
+                const rows = REVIEWS_TABLE.filter(r => !q || r.name.toLowerCase().includes(q) || r.team.toLowerCase().includes(q)).slice(0, perPage);
+                return (
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                    <thead><tr style={{ borderBottom:'1px solid #E5E7EB' }}>
+                      {['Name','Team','Date','Review','Comments'].map(h => <th key={h} style={thSt}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {rows.map((row, i) => (
+                        <tr key={`${row.name}-${row.date}`} style={{ borderBottom: i < rows.length-1 ? '1px solid #F3F4F6' : 'none' }} {...hov}>
+                          <td style={tdName}>{row.name}</td>
+                          <td style={td}>{row.team}</td>
+                          <td style={td}>{row.date}</td>
+                          <td style={td}>{row.rating}</td>
+                          <td style={td}>{row.comment}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              })()}
+            </AccentCard>
+          );
+        })()}
 
         {/* ── Trends Over Time ────────────────────────────────────────────── */}
         <AccentCard
