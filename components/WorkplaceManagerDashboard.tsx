@@ -6,7 +6,7 @@ import {
 import {
   Users, Activity, DollarSign, Star, ChevronDown,
   ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Filter,
-  Building2, Lightbulb, Settings, Database, LayoutDashboard,
+  Building2, Lightbulb, Database, LayoutDashboard,
 } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import USActivityHeatmap from './USActivityHeatmap';
@@ -251,7 +251,7 @@ function FilterPill({ label, value }: { label: string; value: string }) {
 
 function SCard({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ backgroundColor:'#fff', borderRadius:'14px', border:'1px solid #E5E7EB', boxShadow:'0 1px 4px rgba(0,0,0,0.06)', overflow:'hidden', ...style }}>
+    <div style={{ backgroundColor:'#fff', borderRadius:'12px', border:'1px solid #E5E7EB', boxShadow:'0 1px 3px rgba(0,0,0,0.06)', overflow:'hidden', ...style }}>
       {children}
     </div>
   );
@@ -341,7 +341,7 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
       <PageHeader
         icon={<LayoutDashboard style={{ width:22, height:22, color:'#fff' }} />}
         title="Dashboard"
-        subtitle="LiquidSpace workplace analytics and operational insights"
+        subtitle="Monitor adoption, engagement, and spend across your workplace portfolio."
         onAIAssistantOpen={onAIAssistantOpen}
         isAIDrawerOpen={isAIDrawerOpen}
         hideAIButton
@@ -376,13 +376,12 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
           {METRIC_CARDS.map(m => {
             const isActive = activeMetric === m.key;
             return (
-              <div key={m.key} onClick={() => setActiveMetric(m.key)} style={{ backgroundColor:'#fff', borderRadius:14, border: isActive ? '2px solid #005B94' : '1px solid #E5E7EB', boxShadow: isActive ? '0 0 0 3px rgba(0,91,148,0.08)' : '0 1px 4px rgba(0,0,0,0.06)', padding:'18px 20px', cursor:'pointer', display:'flex', flexDirection:'column', gap:10, transition:'border-color 150ms, box-shadow 150ms' }}>
+              <div key={m.key} onClick={() => setActiveMetric(m.key)} style={{ backgroundColor:'#fff', borderRadius:12, border: isActive ? '2px solid #005B94' : '1px solid #E5E7EB', boxShadow: isActive ? '0 0 0 3px rgba(0,91,148,0.08)' : '0 1px 3px rgba(0,0,0,0.06)', padding:'18px 20px', cursor:'pointer', display:'flex', flexDirection:'column', gap:10, transition:'border-color 150ms, box-shadow 150ms' }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <div style={{ width:28, height:28, borderRadius:7, backgroundColor:m.iconBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{m.icon}</div>
                     <div>
                       <div style={{ fontSize:13, fontWeight:600, color:'#111827' }}>{m.label}</div>
-                      <div style={{ fontSize:11, color:'#9CA3AF' }}>Click for details</div>
                     </div>
                   </div>
                   <TrendBadge value={m.trend} />
@@ -398,7 +397,7 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
                       <span style={{ fontSize:12, fontWeight:600, color:'#374151' }}>{m.subVal}{m.subSuffix}</span>
                     </div>
                     <div style={{ height:6, backgroundColor:'#E5E7EB', borderRadius:'9999px', overflow:'hidden' }}>
-                      <div style={{ width:`${m.progressVal}%`, height:'100%', backgroundColor:C.navy, borderRadius:'9999px' }} />
+                      <div style={{ width:`${m.progressVal}%`, height:'100%', backgroundColor:C.primary, borderRadius:'9999px' }} />
                     </div>
                   </>
                 ) : (
@@ -449,7 +448,7 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor='transparent')}
                 >
                   <td style={{ padding:'13px 12px', fontWeight:500, color:'#111827' }}>{row.team}</td>
-                  <td style={{ padding:'13px 12px', color:'#374151' }}>{row.rate.toFixed(1)}</td>
+                  <td style={{ padding:'13px 12px', color:'#374151' }}>{row.rate.toFixed(1)}%</td>
                   <td style={{ padding:'13px 12px', color:'#374151' }}>{row.accepted.toLocaleString()} / {row.invited.toLocaleString()}</td>
                   <td style={{ padding:'13px 12px', fontWeight:600, color:'#374151' }}>{fmtFull(row.spend)}</td>
                   <td style={{ padding:'13px 12px' }}><TrendBadge value={row.trend} /></td>
@@ -558,7 +557,7 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
                     onMouseLeave={ev => (ev.currentTarget.style.backgroundColor='transparent')}
                   >
                     <td style={{ padding:'11px 10px' }}>
-                      <div style={{ width:24, height:24, borderRadius:'50%', backgroundColor:C.navy, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700 }}>{e.rank}</div>
+                      <div style={{ width:24, height:24, borderRadius:'50%', backgroundColor:C.primary, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700 }}>{e.rank}</div>
                     </td>
                     <td style={{ padding:'11px 10px' }}>
                       <div style={{ fontSize:12, fontWeight:700, color:'#111827', letterSpacing:'0.04em' }}>{e.name}</div>
@@ -746,35 +745,28 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
           </IconCard>
         </div>
 
-        {/* ── More from LiquidSpace ───────────────────────────────────────── */}
-        <div style={{ backgroundColor:'#EEF2F7', borderRadius:16, padding:'32px 24px', textAlign:'center' }}>
-          <Lightbulb style={{ width:28, height:28, color:C.primary, margin:'0 auto 12px' }} />
-          <h2 style={{ fontSize:20, fontWeight:700, color:'#111827', margin:'0 0 6px' }}>More from LiquidSpace</h2>
-          <p style={{ fontSize:14, color:'#6B7280', margin:'0 0 24px' }}>Connect insights across your portfolio and unlock more tools in the platform.</p>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:16, marginBottom:24 }}>
+        {/* ── Related Tools ───────────────────────────────────────────────── */}
+        <SCard style={{ padding:'20px 24px' }}>
+          <div style={{ fontSize:13, fontWeight:600, color:'#6B7280', marginBottom:14, textTransform:'uppercase', letterSpacing:'0.06em' }}>Related Tools</div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 }}>
             {[
-              { icon:<TrendingUp style={{ width:18, height:18, color:C.primary }} />, title:'Scenario Planner', desc:'Model future portfolio configurations by feature or business unit.' },
-              { icon:<Building2 style={{ width:18, height:18, color:'#059669' }} />, title:'License Admin', desc:'Manage licenses, renewals, and compliance in one place.' },
-              { icon:<Database style={{ width:18, height:18, color:C.amber }} />, title:'Data API', desc:'Export workplace usage and spend data into your own reporting systems.' },
-            ].map(({ icon, title, desc }) => (
-              <div key={title} style={{ backgroundColor:'#fff', borderRadius:12, border:'1px solid #E5E7EB', padding:'16px 18px', textAlign:'left', display:'flex', alignItems:'flex-start', gap:12, cursor:'pointer' }}
-                onMouseEnter={e => (e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)')}
+              { icon:<TrendingUp style={{ width:16, height:16, color:C.primary }} />,  iconBg:'#E3F2FD', title:'Scenario Planner',  desc:'Model future portfolio configurations by business unit.' },
+              { icon:<Building2  style={{ width:16, height:16, color:'#059669' }} />,  iconBg:'#E8F5E8', title:'License Admin',      desc:'Manage licenses, renewals, and compliance in one place.' },
+              { icon:<Database   style={{ width:16, height:16, color:C.amber   }} />,  iconBg:'#FFF3E0', title:'Data API',           desc:'Export workplace usage and spend data into your own systems.' },
+            ].map(({ icon, iconBg, title, desc }) => (
+              <div key={title} style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'14px 16px', borderRadius:10, border:'1px solid #E5E7EB', cursor:'pointer', transition:'box-shadow 150ms' }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.07)')}
                 onMouseLeave={e => (e.currentTarget.style.boxShadow='none')}
               >
-                <div style={{ width:32, height:32, borderRadius:8, backgroundColor:'#F3F4F6', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{icon}</div>
+                <div style={{ width:30, height:30, borderRadius:7, backgroundColor:iconBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{icon}</div>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:14, fontWeight:600, color:'#111827', marginBottom:4 }}>{title}</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'#111827', marginBottom:3 }}>{title}</div>
                   <div style={{ fontSize:12, color:'#6B7280', lineHeight:1.5 }}>{desc}</div>
                 </div>
-                <span style={{ color:'#9CA3AF', fontSize:16 }}>→</span>
               </div>
             ))}
           </div>
-          <button style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'11px 28px', borderRadius:9999, backgroundColor:C.navy, color:'#fff', fontSize:14, fontWeight:600, border:'none', cursor:'pointer', fontFamily:'Inter, sans-serif' }}>
-            <Lightbulb style={{ width:16, height:16 }} />
-            Explore More Tools
-          </button>
-        </div>
+        </SCard>
 
         </AIAssistant>
       </div>
