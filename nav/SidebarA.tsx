@@ -266,6 +266,8 @@ export function SidebarA({ profile, productId, activeId, onSelectPage }: Sidebar
       display: 'flex',
       flexDirection: 'column',
       overflowY: 'auto',
+      fontSize: 14,
+      lineHeight: 1.5,
     }}>
       {Object.values(IA).map(product => {
         const accessible = !!(profile.products[product.id]?.unlocked);
