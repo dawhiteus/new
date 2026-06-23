@@ -259,6 +259,7 @@ export function SidebarA({ profile, productId, activeId, onSelectPage }: Sidebar
 
   return (
     <aside style={{
+      all: 'initial',
       width: 244,
       flexShrink: 0,
       background: '#fff',
@@ -272,6 +273,7 @@ export function SidebarA({ profile, productId, activeId, onSelectPage }: Sidebar
       fontWeight: 400,
       letterSpacing: 'normal',
       color: T.text,
+      boxSizing: 'border-box',
     }}>
       {Object.values(IA).map(product => {
         const accessible = !!(profile.products[product.id]?.unlocked);
