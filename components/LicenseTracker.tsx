@@ -272,9 +272,59 @@ const licenseTypeData = [
 
 const COLORS = {
   'Flex (Hourly)': '#B3D9FF',
-  'Dedicated (External)': '#80C7FF', 
+  'Dedicated (External)': '#80C7FF',
   'Dedicated (LiquidSpace)': '#005B94'
 };
+
+const MARKET_RATE_DETAILS: Record<number, { costPerSeat: number; marketMedian: number; confidence: number; comparables: number; suggestion: string }> = {
+  1: { costPerSeat: 248.40, marketMedian: 270.00, confidence: 4, comparables: 31, suggestion: 'Well-positioned for renewal; strong negotiating position.' },
+  2: { costPerSeat: 386.13, marketMedian: 345.52, confidence: 4, comparables: 28, suggestion: 'Review at renewal; consider renegotiation.' },
+  3: { costPerSeat: 512.63, marketMedian: 528.49, confidence: 3, comparables: 45, suggestion: 'Near market rate; monitor closely ahead of renewal.' },
+  4: { costPerSeat: 318.40, marketMedian: 374.59, confidence: 5, comparables: 22, suggestion: 'Excellent value; prioritize long-term renewal.' },
+  5: { costPerSeat: 460.00, marketMedian: 438.10, confidence: 2, comparables:  8, suggestion: 'Limited comparables; verify rate with local broker before renewal.' },
+  6: { costPerSeat: 183.33, marketMedian: 235.04, confidence: 5, comparables: 37, suggestion: 'Significantly below market; excellent deal. Exercise renewal option early.' },
+};
+
+function getMarketBadgeStyle(rate: string): React.CSSProperties {
+  const v = parseFloat(rate);
+  if (v > 5)  return { backgroundColor: '#FEE2E2', color: '#DC2626' };
+  if (v < -5) return { backgroundColor: '#DCFCE7', color: '#16A34A' };
+  return { backgroundColor: '#F3F4F6', color: '#6B7280' };
+}
+
+function MarketTooltip({ detail }: { detail: { costPerSeat: number; marketMedian: number; confidence: number; suggestion: string } }) {
+  const delta = detail.costPerSeat - detail.marketMedian;
+  const isAbove = delta > 0;
+  const labels = ['', 'Insufficient', 'Low', 'Moderate', 'High', 'Excellent'];
+  return (
+    <div style={{
+      position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)',
+      width: 252, backgroundColor: '#fff', borderRadius: 12,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.14)', border: '1px solid #E5E7EB',
+      padding: '14px 16px', zIndex: 1000, fontFamily: 'Inter, sans-serif',
+      pointerEvents: 'none', textAlign: 'left',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+        <div>
+          {[1,2,3,4,5].map(i => (
+            <span key={i} style={{ fontSize: 14, color: i <= detail.confidence ? '#F59E0B' : '#D1D5DB' }}>★</span>
+          ))}
+        </div>
+        <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 500 }}>{labels[detail.confidence]} confidence</span>
+      </div>
+      <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.55, marginBottom: 6 }}>
+        You're paying <strong>${detail.costPerSeat.toFixed(2)}/seat</strong> vs. market median{' '}
+        <strong>${detail.marketMedian.toFixed(2)}/seat</strong>
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: isAbove ? '#DC2626' : '#16A34A', marginBottom: 10 }}>
+        {isAbove ? `+$${delta.toFixed(2)}/seat more` : `-$${Math.abs(delta).toFixed(2)}/seat less`}
+      </div>
+      <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: 10, fontSize: 12, color: '#374151', lineHeight: 1.5 }}>
+        <strong>Suggestion:</strong> {detail.suggestion}
+      </div>
+    </div>
+  );
+}
 
 export function LicenseTracker({
   onAIAssistantOpen = () => {},
@@ -289,6 +339,7 @@ export function LicenseTracker({
   const [generatedCollections, setGeneratedCollections] = useState<Set<number>>(new Set());
   const [isAlternativeSpacesModalOpen, setIsAlternativeSpacesModalOpen] = useState(false);
   const [currentLicenseForCollection, setCurrentLicenseForCollection] = useState<any>(null);
+  const [tooltipId, setTooltipId] = useState<number | null>(null);
 
   const filteredLicenses = licenses.filter(license => {
     const matchesSearch = license.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -936,14 +987,24 @@ export function LicenseTracker({
                       {formatCurrency(license.cost)}
                     </TableCell>
                     <TableCell className="py-4 px-6 text-center">
-                      <span style={{ 
-                        fontSize: '14px', 
-                        fontWeight: 600, 
-                        color: getMarketRateColor(license.marketRateComparison),
-                        fontFamily: 'Inter, sans-serif' 
-                      }}>
-                        {license.marketRateComparison}
-                      </span>
+                      <div
+                        style={{ position: 'relative', display: 'inline-block' }}
+                        onMouseEnter={() => setTooltipId(license.id)}
+                        onMouseLeave={() => setTooltipId(null)}
+                      >
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center',
+                          padding: '3px 10px', borderRadius: 9999,
+                          fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif',
+                          cursor: 'default', whiteSpace: 'nowrap',
+                          ...getMarketBadgeStyle(license.marketRateComparison),
+                        }}>
+                          {license.marketRateComparison}
+                        </span>
+                        {tooltipId === license.id && MARKET_RATE_DETAILS[license.id] && (
+                          <MarketTooltip detail={MARKET_RATE_DETAILS[license.id]} />
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="py-4 px-6" style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>
                       {license.endDate}
