@@ -243,7 +243,7 @@ export interface SidebarAProps {
 
 export function SidebarA({ profile, productId, activeId, onSelectPage }: SidebarAProps) {
   const [expandedPillars, setExpandedPillars] = useState<Record<string, boolean>>(
-    () => Object.fromEntries(Object.keys(IA).map(id => [id, id === productId]))
+    () => Object.fromEntries(Object.keys(IA).map(id => [id, true]))
   );
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
