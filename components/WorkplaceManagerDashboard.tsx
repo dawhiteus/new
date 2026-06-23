@@ -11,6 +11,7 @@ import {
 import { PageHeader } from './PageHeader';
 import USActivityHeatmap from './USActivityHeatmap';
 import rawMetros from './data/allstate-metros.json';
+import { DataAssistant } from './DataAssistant';
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 
@@ -335,6 +336,7 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
   };
 
   return (
+    <>
     <div style={{ minHeight:'100vh', backgroundColor:'#F1F4F9', fontFamily:'Inter, sans-serif' }}>
 
       <PageHeader
@@ -768,6 +770,8 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
 
       </div>
     </div>
+    <DataAssistant />
+    </>
   );
 }
 
