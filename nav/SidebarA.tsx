@@ -59,6 +59,7 @@ function PillarHeader({
         border: 'none',
         borderBottom: `1px solid ${T.border}`,
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+        lineHeight: 1,
         transition: 'background 100ms ease',
       }}
     >
@@ -192,6 +193,7 @@ function GroupSection({
           color: T.textMuted,
           cursor: 'pointer',
           fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+          lineHeight: 1,
         }}
       >
         <span>{group.label}</span>
