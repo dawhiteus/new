@@ -30,8 +30,8 @@ export function UniversalNav() {
           // Same app — use React Router (no page reload)
           navigate(new URL(item.url).pathname);
         } else {
-          // Cross-app — open in new tab
-          window.open(item.url, '_blank');
+          // Cross-app — same tab full navigation
+          window.location.href = item.url;
         }
         return;
       }
