@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from './ui/button';
 import { toast } from './ui/toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
@@ -733,10 +734,43 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
 
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
+  const [searchParams] = useSearchParams();
+  const [injectedDeal, setInjectedDeal] = useState<Deal | null>(null);
+
+  // Read hub-originated requirement from URL params (set by Workplace Strategist)
+  useEffect(() => {
+    if (searchParams.get('newReq') !== '1') return;
+    const reqId  = searchParams.get('reqId')        ?? `REQ-${Math.floor(1000 + Math.random() * 9000)}`;
+    const company = searchParams.get('company')     ?? 'Unknown';
+    const city    = searchParams.get('city')        ?? 'Unknown';
+    const estValue = parseInt(searchParams.get('estValue') ?? '0', 10);
+    const seats    = parseInt(searchParams.get('seats')    ?? '20', 10);
+    const wsType   = searchParams.get('workspaceType')     ?? 'Office Suite';
+    const today = new Date().toISOString().split('T')[0];
+    setInjectedDeal({
+      id: reqId,
+      dealName: `${company} ${city} Hub Sourcing`,
+      clientName: company,
+      city,
+      workspaceType: wsType,
+      dealStage: 'Intake',
+      size: seats * 75,
+      estValue,
+      status: 'Active',
+      lastUpdated: today,
+      broker: 'Sarah Chen',
+    });
+    // Clear params from URL so refresh doesn't re-inject
+    window.history.replaceState({}, '', window.location.pathname);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const cities = Array.from(new Set(deals.map((d) => d.city))).sort();
 
-  const filtered = deals.filter((d) => {
+  // Prepend hub-originated deal at top of page 1 (not subject to filters — always pinned)
+  const allDeals = injectedDeal ? [injectedDeal, ...deals] : deals;
+  const filtered = allDeals.filter((d) => {
+    if (d.id === injectedDeal?.id) return true; // pinned deal always shows
     const q = search.toLowerCase();
     const matchesSearch =
       !q ||
@@ -962,6 +996,7 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
                     key={deal.id}
                     deal={deal}
                     isLast={idx === paginated.length - 1}
+                    isNew={deal.id === injectedDeal?.id}
                     onClick={() => openDeal(deal)}
                     assessment={liveAssessments[deal.id]}
                     onCreateCollection={() => {
@@ -1185,12 +1220,14 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
 function DealRow({
   deal,
   isLast,
+  isNew,
   onClick,
   assessment,
   onCreateCollection,
 }: {
   deal: Deal;
   isLast: boolean;
+  isNew?: boolean;
   onClick: () => void;
   assessment: CollectionAssessment | undefined;
   onCreateCollection: () => void;
@@ -1209,16 +1246,27 @@ function DealRow({
       onMouseLeave={() => setHovered(false)}
       style={{
         borderBottom: isLast ? 'none' : '1px solid #E5E7EB',
-        backgroundColor: hovered ? '#F9FAFB' : '#FFFFFF',
+        backgroundColor: isNew ? (hovered ? '#ECFDF5' : '#F0FDF4') : (hovered ? '#F9FAFB' : '#FFFFFF'),
         cursor: 'pointer',
         transition: 'background-color 0.12s',
       }}
     >
       {/* Transaction Name */}
       <td style={{ padding: '14px 16px' }}>
-        <span style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: 'Inter, sans-serif' }}>
-          {deal.dealName}
-        </span>
+        <div className="flex items-center gap-2">
+          {isNew && (
+            <span style={{
+              fontSize: '10px', fontWeight: 700, color: '#FFFFFF',
+              backgroundColor: '#059669', borderRadius: '4px',
+              padding: '1px 6px', letterSpacing: '0.05em', flexShrink: 0,
+            }}>
+              NEW
+            </span>
+          )}
+          <span style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: 'Inter, sans-serif' }}>
+            {deal.dealName}
+          </span>
+        </div>
       </td>
 
       {/* Client Name */}
