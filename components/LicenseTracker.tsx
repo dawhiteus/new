@@ -267,7 +267,7 @@ const mockLicenses = [
 const licenseTypeData = [
   { name: 'Flex (Hourly)',          value: 38, color: '#B3D9FF', percentage: 24.7 },
   { name: 'Dedicated (External)',   value: 72, color: '#80C7FF', percentage: 46.8 },
-  { name: 'Dedicated (LS)',         value: 44, color: '#005B94', percentage: 28.6 },
+  { name: 'Dedicated (LiquidSpace)', value: 44, color: '#005B94', percentage: 28.6 },
 ];
 
 const COLORS = {
@@ -839,13 +839,13 @@ export function LicenseTracker({
                 </div>
               </div>
               
-              <div className="h-48 relative">
+              <div style={{ height: 148 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                     <Pie
                       data={licenseTypeData}
                       cx="50%"
-                      cy="45%"
+                      cy="50%"
                       labelLine={false}
                       label={renderCustomLabel}
                       outerRadius={60}
@@ -856,31 +856,22 @@ export function LicenseTracker({
                       stroke="#ffffff"
                     >
                       {licenseTypeData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.color}
-                        />
+                        <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
-                
-                {/* Custom Legend */}
-                <div className="absolute bottom-0 left-0 right-0">
-                  <div className="flex justify-center gap-4">
-                    {licenseTypeData.map((entry, index) => (
-                      <div key={index} className="flex items-center gap-1">
-                        <div 
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: entry.color }}
-                        />
-                        <span style={{ fontSize: '11px', fontWeight: 400, color: '#6b7280', fontFamily: 'Inter, sans-serif' }}>
-                          {entry.name.split(' ')[0]}
-                        </span>
-                      </div>
-                    ))}
+              </div>
+
+              {/* Legend */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 12 }}>
+                {licenseTypeData.map((entry, index) => (
+                  <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: 9999, backgroundColor: entry.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: '#6b7280', fontFamily: 'Inter, sans-serif', flex: 1 }}>{entry.name}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>{entry.value}</span>
                   </div>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>
