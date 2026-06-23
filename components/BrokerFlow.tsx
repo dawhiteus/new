@@ -432,20 +432,22 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
           padding: '28px 32px 32px',
         }}
       >
-        <div className="flex items-start justify-between">
+        <div className="max-w-7xl mx-auto flex items-start justify-between">
           <div>
-            <h1
-              style={{
-                fontSize: '28px',
-                fontWeight: 700,
-                color: '#FFFFFF',
-                letterSpacing: '-0.3px',
-                marginBottom: '4px',
-              }}
-            >
-              Transactions
-            </h1>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.75)' }}>
+            <div className="flex items-center gap-3" style={{ marginBottom: '4px' }}>
+              <FileText className="h-7 w-7" style={{ color: 'rgba(255,255,255,0.85)' }} />
+              <h1
+                style={{
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: '#FFFFFF',
+                  letterSpacing: '-0.3px',
+                }}
+              >
+                Transactions
+              </h1>
+            </div>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.75)', paddingLeft: '40px' }}>
               Manage your workspace requirements and track opportunities.
             </p>
           </div>
@@ -473,7 +475,7 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
 
       {/* ── Metric Cards ────────────────────────────────────────────── */}
       <div style={{ padding: '24px 32px 0' }}>
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <div className="max-w-7xl mx-auto grid gap-4" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
           {METRICS.map((m) => (
             <div
               key={m.label}
@@ -517,6 +519,7 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
 
       {/* ── Table Container ─────────────────────────────────────────── */}
       <div style={{ padding: '24px 32px' }}>
+        <div className="max-w-7xl mx-auto">
         <div
           className="rounded-xl bg-white"
           style={{ border: '1px solid #E5E7EB', overflow: 'hidden' }}
@@ -615,6 +618,7 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
               )}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
 

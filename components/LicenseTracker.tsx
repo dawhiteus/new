@@ -703,7 +703,7 @@ export function LicenseTracker({
       />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-8 py-6 space-y-6">
         {/* Enhanced Summary Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Enhanced Total Licenses Card */}
