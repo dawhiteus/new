@@ -59,34 +59,34 @@ const mockLicenses = [
       landlord: { name: 'Tel Tech Properties LLC', phone: '(425) 555-0200', email: 'facilities@teltech.com' },
       broker: { name: 'Jennifer Walsh, CBRE', phone: '(425) 555-0156', email: 'jennifer.walsh@cbre.com' }
     }
+
   },
   {
     id: 2,
     city: 'Atlanta',
     type: 'Regional Hub',
-    address: 'Tel Tech Regional Center, 3424 Peachtree Rd NE',
+    address: 'WeWork Peachtree, 3424 Peachtree Rd NE',
     size: '180,000 sq ft',
     cost: 685000,
     marketRateComparison: '+12%',
     startDate: '2022-06-01',
     endDate: '2025-05-31',
-    operator: 'Tel Tech Corporation',
+    operator: 'WeWork',
     status: 'High Priority Renewal',
     paymentInfo: 'Monthly ACH Auto-Pay',
     daysUntilExpiration: 156,
     hasContract: true,
     isActive: true,
     isRenewable: true,
-    // Add additional fields for the detail modal
-    name: 'Tel Tech Regional Hub',
-    property: 'Peachtree Center',
+    name: 'Tel Tech Atlanta Regional Hub',
+    property: 'WeWork Peachtree Center',
     location: 'Atlanta, GA',
     monthlyRent: 685000,
     squareFootage: 180000,
     renewalStatus: 'Renewal Notice Sent',
     lastModified: '2024-08-20',
     documents: [
-      { name: 'Regional Hub License Agreement', type: 'PDF', size: '3.8 MB', uploadDate: '2022-06-01' },
+      { name: 'WeWork Enterprise License Agreement', type: 'PDF', size: '3.8 MB', uploadDate: '2022-06-01' },
       { name: 'Telecommunications Infrastructure Plan', type: 'PDF', size: '2.2 MB', uploadDate: '2022-05-15' }
     ],
     financials: {
@@ -96,7 +96,7 @@ const mockLicenses = [
       totalFirstYear: 9590000
     },
     contacts: {
-      landlord: { name: 'Tel Tech Properties Southeast', phone: '(404) 555-0198', email: 'atlanta@teltech.com' },
+      landlord: { name: 'WeWork Enterprise Sales', phone: '(404) 555-0198', email: 'enterprise@wework.com' },
       broker: { name: 'Marcus Johnson, JLL', phone: '(404) 555-0142', email: 'marcus.johnson@jll.com' }
     }
   },
@@ -104,29 +104,28 @@ const mockLicenses = [
     id: 3,
     city: 'New York',
     type: 'Engineering Center',
-    address: 'Tel Tech NYC, 101 Avenue of the Americas',
+    address: 'Industrious 101 Avenue of the Americas',
     size: '95,000 sq ft',
     cost: 485000,
     marketRateComparison: '-3%',
     startDate: '2023-07-01',
     endDate: '2025-06-30',
-    operator: 'Tel Tech Corporation',
+    operator: 'Industrious',
     status: 'Recently Renewed',
     paymentInfo: 'Monthly Auto-Pay',
     daysUntilExpiration: 245,
     hasContract: true,
     isActive: true,
     isRenewable: true,
-    // Add additional fields for the detail modal
-    name: 'Tel Tech East Coast Operations',
-    property: '101 Avenue of the Americas',
+    name: 'Tel Tech NYC Engineering Center',
+    property: 'Industrious 101 Avenue of the Americas',
     location: 'New York, NY',
     monthlyRent: 485000,
     squareFootage: 95000,
     renewalStatus: 'Renewed',
     lastModified: '2024-06-15',
     documents: [
-      { name: 'Engineering Center License', type: 'PDF', size: '2.9 MB', uploadDate: '2023-07-01' },
+      { name: 'Industrious Enterprise License', type: 'PDF', size: '2.9 MB', uploadDate: '2023-07-01' },
       { name: 'Security Infrastructure Plan', type: 'PDF', size: '1.6 MB', uploadDate: '2023-06-20' },
       { name: 'Renewed Agreement 2025-2027', type: 'PDF', size: '3.1 MB', uploadDate: '2024-06-15' }
     ],
@@ -137,7 +136,7 @@ const mockLicenses = [
       totalFirstYear: 6790000
     },
     contacts: {
-      landlord: { name: 'Tel Tech Real Estate', phone: '(212) 555-0174', email: 'nyc@teltech.com' },
+      landlord: { name: 'Industrious Enterprise Team', phone: '(212) 555-0174', email: 'enterprise@industrious.com' },
       broker: { name: 'David Chen, Newmark', phone: '(212) 555-0189', email: 'david.chen@newmark.com' }
     }
   },
@@ -158,7 +157,6 @@ const mockLicenses = [
     hasContract: true,
     isActive: true,
     isRenewable: true,
-    // Add additional fields for the detail modal
     name: 'Tel Tech Partnership Center',
     property: 'Tel Tech Partnership Campus',
     location: 'Seattle, WA',
@@ -173,7 +171,7 @@ const mockLicenses = [
     financials: {
       monthlyRent: 398000,
       securityDeposit: 796000,
-      brokerFee: 0, // Direct partnership
+      brokerFee: 0,
       totalFirstYear: 5572000
     },
     contacts: {
@@ -185,20 +183,19 @@ const mockLicenses = [
     id: 5,
     city: 'London',
     type: 'Global Finance Center',
-    address: 'Tel Tech Global Finance Center, One Canada Square',
+    address: 'One Canada Square, Canary Wharf',
     size: '200,000 sq ft',
     cost: 920000,
     marketRateComparison: '+5%',
     startDate: '2022-11-01',
     endDate: '2025-10-31',
-    operator: 'Tel Tech Corporation',
+    operator: 'Canary Wharf Group',
     status: 'Pre-Negotiation',
     paymentInfo: 'Monthly Sterling Transfer',
     daysUntilExpiration: 398,
     hasContract: true,
     isActive: true,
     isRenewable: true,
-    // Add additional fields for the detail modal
     name: 'Tel Tech Global Finance Center',
     property: 'One Canada Square',
     location: 'London, UK',
@@ -207,7 +204,7 @@ const mockLicenses = [
     renewalStatus: 'Pre-Negotiation',
     lastModified: '2024-08-30',
     documents: [
-      { name: 'UK Financial Services License', type: 'PDF', size: '5.1 MB', uploadDate: '2022-11-01' },
+      { name: 'Canary Wharf Lease Agreement', type: 'PDF', size: '5.1 MB', uploadDate: '2022-11-01' },
       { name: 'FCA Compliance Certificate', type: 'PDF', size: '2.4 MB', uploadDate: '2024-01-15' },
       { name: 'Brexit Impact Assessment', type: 'PDF', size: '1.9 MB', uploadDate: '2023-03-10' }
     ],
@@ -218,7 +215,7 @@ const mockLicenses = [
       totalFirstYear: 14720000
     },
     contacts: {
-      landlord: { name: 'Tel Tech Management Ltd', phone: '+44 20 7555 0200', email: 'leasing@teltech.co.uk' },
+      landlord: { name: 'Canary Wharf Group plc', phone: '+44 20 7555 0200', email: 'leasing@canarywharf.com' },
       broker: { name: 'Sarah Williams, Savills', phone: '+44 20 7555 0156', email: 'sarah.williams@savills.com' }
     }
   },
@@ -226,29 +223,28 @@ const mockLicenses = [
     id: 6,
     city: 'Dallas',
     type: 'Innovation Lab',
-    address: 'Tel Tech Innovation Lab, 2600 Commerce St',
+    address: 'Regus 2600 Commerce St',
     size: '68,000 sq ft',
     cost: 198000,
     marketRateComparison: '-22%',
     startDate: '2023-01-01',
     endDate: '2025-12-31',
-    operator: 'Tel Tech Corporation',
+    operator: 'Regus / IWG',
     status: 'Performing Well',
-    paymentInfo: 'Bi-Annual Payment',
+    paymentInfo: 'Monthly Invoice',
     daysUntilExpiration: 456,
     hasContract: true,
     isActive: true,
     isRenewable: true,
-    // Add additional fields for the detail modal
-    name: 'Tel Tech Innovation Lab',
-    property: 'Deep Ellum Innovation Complex',
+    name: 'Tel Tech Dallas Innovation Lab',
+    property: 'Regus Deep Ellum',
     location: 'Dallas, TX',
     monthlyRent: 198000,
     squareFootage: 68000,
     renewalStatus: 'Early Renewal Option',
     lastModified: '2024-07-22',
     documents: [
-      { name: 'Innovation Lab License', type: 'PDF', size: '2.7 MB', uploadDate: '2023-01-01' },
+      { name: 'Regus Enterprise License Agreement', type: 'PDF', size: '2.7 MB', uploadDate: '2023-01-01' },
       { name: 'R&D Tax Incentive Agreement', type: 'PDF', size: '1.3 MB', uploadDate: '2023-01-15' }
     ],
     financials: {
@@ -258,7 +254,7 @@ const mockLicenses = [
       totalFirstYear: 3168000
     },
     contacts: {
-      landlord: { name: 'Tel Tech Innovation Alliance', phone: '(214) 555-0167', email: 'leasing@teltech.org' },
+      landlord: { name: 'IWG / Regus Enterprise', phone: '(214) 555-0167', email: 'enterprise@iwgplc.com' },
       broker: { name: 'Roberto Martinez, CBRE', phone: '(214) 555-0134', email: 'roberto.martinez@cbre.com' }
     }
   },
