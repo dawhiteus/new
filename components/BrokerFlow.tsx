@@ -141,6 +141,58 @@ const MOCK_ASSESSMENTS: Record<string, {
     lastAssessed: 'Nov 5, 2024',
     collectionName: 'SF Financial District Pack',
   },
+  '7': {
+    strong: 6,
+    partial: 4,
+    weak: 1,
+    inMarket: 9,
+    withinBudget: 7,
+    sizeMatch: 8,
+    location: 'Park Avenue, NYC',
+    headcount: '180–200 people',
+    budget: '$210,000/mo',
+    lastAssessed: 'Nov 12, 2024',
+    collectionName: 'NYC Tier-1 Tower Suites',
+  },
+  '9': {
+    strong: 3,
+    partial: 5,
+    weak: 3,
+    inMarket: 6,
+    withinBudget: 5,
+    sizeMatch: 6,
+    location: 'Uptown Dallas',
+    headcount: '90–110 people',
+    budget: '$88,000/mo',
+    lastAssessed: 'Nov 10, 2024',
+    collectionName: 'Dallas Premium Offices',
+  },
+  '11': {
+    strong: 7,
+    partial: 3,
+    weak: 0,
+    inMarket: 9,
+    withinBudget: 8,
+    sizeMatch: 9,
+    location: 'Seaport, Boston',
+    headcount: '55–65 people',
+    budget: '$48,000/mo',
+    lastAssessed: 'Nov 11, 2024',
+    collectionName: 'Boston Innovation District',
+  },
+  '15': {
+    strong: 4,
+    partial: 4,
+    weak: 2,
+    inMarket: 7,
+    withinBudget: 5,
+    sizeMatch: 6,
+    location: 'Energy Corridor, Houston',
+    headcount: '45–55 people',
+    budget: '$38,000/mo',
+    lastAssessed: 'Nov 8, 2024',
+    collectionName: 'Houston Energy Corridor Pack',
+  },
 };
 
 type CollectionAssessment = (typeof MOCK_ASSESSMENTS)[string];
@@ -183,23 +235,219 @@ const SAMPLE_DEALS: Deal[] = [
     size: 5000,
     estValue: 125000,
     status: 'Active',
-    lastUpdated: '2025-11-10',
+    lastUpdated: '2026-06-10',
     broker: 'Sarah Chen',
-    closeDate: 'Dec 1, 2025',
+    closeDate: 'Aug 1, 2026',
   },
   {
-    id: '2',
-    dealName: 'Tech Ventures SF Office',
-    clientName: 'Tech Ventures',
-    city: 'San Francisco',
+    id: '7',
+    dealName: 'JPMorgan Chase NYC Trading Floor',
+    clientName: 'JPMorgan Chase',
+    city: 'New York',
+    workspaceType: 'Headquarters',
+    dealStage: 'Negotiation',
+    size: 22000,
+    estValue: 2100000,
+    status: 'Active',
+    lastUpdated: '2026-06-12',
+    broker: 'Sarah Chen',
+    closeDate: 'Sep 15, 2026',
+  },
+  {
+    id: '8',
+    dealName: 'Amazon Seattle HQ Phase 2',
+    clientName: 'Amazon',
+    city: 'Seattle',
+    workspaceType: 'Headquarters',
+    dealStage: 'Evaluation',
+    size: 18500,
+    estValue: 1800000,
+    status: 'Active',
+    lastUpdated: '2026-06-11',
+    broker: 'Michael Torres',
+    closeDate: 'Oct 1, 2026',
+  },
+  {
+    id: '9',
+    dealName: 'Goldman Sachs Dallas Operations',
+    clientName: 'Goldman Sachs',
+    city: 'Dallas',
+    workspaceType: 'Office Suite',
+    dealStage: 'Proposal',
+    size: 9800,
+    estValue: 920000,
+    status: 'Active',
+    lastUpdated: '2026-06-09',
+    broker: 'Sarah Chen',
+    closeDate: 'Sep 30, 2026',
+  },
+  {
+    id: '10',
+    dealName: 'Deloitte Chicago Regional Hub',
+    clientName: 'Deloitte',
+    city: 'Chicago',
+    workspaceType: 'Headquarters',
+    dealStage: 'Proposal',
+    size: 7200,
+    estValue: 680000,
+    status: 'Active',
+    lastUpdated: '2026-06-08',
+    broker: 'Michael Torres',
+    closeDate: 'Aug 30, 2026',
+  },
+  {
+    id: '11',
+    dealName: 'Microsoft Boston Innovation Center',
+    clientName: 'Microsoft',
+    city: 'Boston',
+    workspaceType: 'Office Suite',
+    dealStage: 'Contracting',
+    size: 5500,
+    estValue: 520000,
+    status: 'Active',
+    lastUpdated: '2026-06-13',
+    broker: 'Sarah Chen',
+    closeDate: 'Jul 15, 2026',
+  },
+  {
+    id: '12',
+    dealName: 'BlackRock NYC Asset Management',
+    clientName: 'BlackRock',
+    city: 'New York',
+    workspaceType: 'Office Suite',
+    dealStage: 'Proposal',
+    size: 5000,
+    estValue: 495000,
+    status: 'Active',
+    lastUpdated: '2026-06-07',
+    broker: 'Jessica Park',
+    closeDate: 'Oct 15, 2026',
+  },
+  {
+    id: '13',
+    dealName: 'Pfizer Boston Life Sciences Suite',
+    clientName: 'Pfizer',
+    city: 'Boston',
+    workspaceType: 'Coworking',
+    dealStage: 'Proposal',
+    size: 4200,
+    estValue: 420000,
+    status: 'Active',
+    lastUpdated: '2026-06-06',
+    broker: 'Jessica Park',
+    closeDate: 'Nov 1, 2026',
+  },
+  {
+    id: '14',
+    dealName: 'Johnson & Johnson NYC Advisory Hub',
+    clientName: 'Johnson & Johnson',
+    city: 'New York',
+    workspaceType: 'Private Office',
+    dealStage: 'Evaluation',
+    size: 4000,
+    estValue: 415000,
+    status: 'Active',
+    lastUpdated: '2026-06-05',
+    broker: 'Sarah Chen',
+    closeDate: 'Nov 15, 2026',
+  },
+  {
+    id: '15',
+    dealName: 'IBM Houston Energy Sector',
+    clientName: 'IBM',
+    city: 'Houston',
+    workspaceType: 'Office Suite',
+    dealStage: 'Negotiation',
+    size: 4100,
+    estValue: 412000,
+    status: 'Active',
+    lastUpdated: '2026-06-10',
+    broker: 'Michael Torres',
+    closeDate: 'Aug 20, 2026',
+  },
+  {
+    id: '16',
+    dealName: 'Cisco Austin Engineering Center',
+    clientName: 'Cisco',
+    city: 'Austin',
+    workspaceType: 'Office Suite',
+    dealStage: 'Negotiation',
+    size: 3600,
+    estValue: 365000,
+    status: 'Active',
+    lastUpdated: '2026-06-09',
+    broker: 'Michael Torres',
+    closeDate: 'Aug 10, 2026',
+  },
+  {
+    id: '17',
+    dealName: 'BCG Washington DC Office',
+    clientName: 'Boston Consulting Group',
+    city: 'Washington DC',
     workspaceType: 'Coworking',
     dealStage: 'Intake',
-    size: 2000,
-    estValue: 98000,
+    size: 3200,
+    estValue: 345000,
     status: 'Active',
-    lastUpdated: '2025-11-09',
+    lastUpdated: '2026-06-04',
+    broker: 'Jessica Park',
+    closeDate: 'Dec 1, 2026',
+  },
+  {
+    id: '18',
+    dealName: 'Salesforce Miami Hub',
+    clientName: 'Salesforce',
+    city: 'Miami',
+    workspaceType: 'Private Office',
+    dealStage: 'Evaluation',
+    size: 3000,
+    estValue: 310000,
+    status: 'Active',
+    lastUpdated: '2026-06-03',
+    broker: 'Sarah Chen',
+    closeDate: 'Nov 30, 2026',
+  },
+  {
+    id: '19',
+    dealName: 'Oracle Los Angeles Regional Office',
+    clientName: 'Oracle',
+    city: 'Los Angeles',
+    workspaceType: 'Office Suite',
+    dealStage: 'Intake',
+    size: 2800,
+    estValue: 290000,
+    status: 'Active',
+    lastUpdated: '2026-06-02',
     broker: 'Michael Torres',
-    closeDate: 'Jan 15, 2026',
+    closeDate: 'Jan 15, 2027',
+  },
+  {
+    id: '20',
+    dealName: 'Vanguard Philadelphia Operations',
+    clientName: 'Vanguard',
+    city: 'Philadelphia',
+    workspaceType: 'Headquarters',
+    dealStage: 'Contracting',
+    size: 2700,
+    estValue: 285000,
+    status: 'Active',
+    lastUpdated: '2026-06-11',
+    broker: 'Sarah Chen',
+    closeDate: 'Jul 31, 2026',
+  },
+  {
+    id: '21',
+    dealName: 'Accenture Denver Technology Hub',
+    clientName: 'Accenture',
+    city: 'Denver',
+    workspaceType: 'Coworking',
+    dealStage: 'Intake',
+    size: 2400,
+    estValue: 245000,
+    status: 'Active',
+    lastUpdated: '2026-06-01',
+    broker: 'Jessica Park',
+    closeDate: 'Jan 1, 2027',
   },
   {
     id: '3',
@@ -211,23 +459,37 @@ const SAMPLE_DEALS: Deal[] = [
     size: 8000,
     estValue: 240000,
     status: 'Active',
-    lastUpdated: '2025-11-08',
+    lastUpdated: '2026-06-08',
     broker: 'Sarah Chen',
-    closeDate: 'Dec 20, 2025',
+    closeDate: 'Sep 20, 2026',
   },
   {
-    id: '4',
-    dealName: 'StartupX Austin Space',
-    clientName: 'StartupX',
-    city: 'Austin',
+    id: '22',
+    dealName: 'McKinsey San Francisco Office',
+    clientName: 'McKinsey & Company',
+    city: 'San Francisco',
     workspaceType: 'Private Office',
-    dealStage: 'Contracting',
-    size: 1200,
-    estValue: 45000,
+    dealStage: 'Intake',
+    size: 2200,
+    estValue: 240000,
     status: 'Active',
-    lastUpdated: '2025-11-11',
+    lastUpdated: '2026-05-30',
     broker: 'Michael Torres',
-    closeDate: 'Nov 30, 2025',
+    closeDate: 'Feb 1, 2027',
+  },
+  {
+    id: '23',
+    dealName: 'PwC Seattle Client Center',
+    clientName: 'PricewaterhouseCoopers',
+    city: 'Seattle',
+    workspaceType: 'Office Suite',
+    dealStage: 'Evaluation',
+    size: 1800,
+    estValue: 175000,
+    status: 'Active',
+    lastUpdated: '2026-05-28',
+    broker: 'Jessica Park',
+    closeDate: 'Dec 15, 2026',
   },
   {
     id: '5',
@@ -239,10 +501,53 @@ const SAMPLE_DEALS: Deal[] = [
     size: 4000,
     estValue: 115000,
     status: 'Active',
-    lastUpdated: '2025-11-06',
+    lastUpdated: '2026-06-06',
     broker: 'Michael Torres',
-    closeDate: 'Feb 1, 2026',
+    closeDate: 'Feb 1, 2027',
   },
+  {
+    id: '24',
+    dealName: 'KPMG Atlanta Advisory Suite',
+    clientName: 'KPMG',
+    city: 'Atlanta',
+    workspaceType: 'Coworking',
+    dealStage: 'Evaluation',
+    size: 1100,
+    estValue: 110000,
+    status: 'Active',
+    lastUpdated: '2026-05-27',
+    broker: 'Sarah Chen',
+    closeDate: 'Jan 31, 2027',
+  },
+  {
+    id: '2',
+    dealName: 'Tech Ventures SF Office',
+    clientName: 'Tech Ventures',
+    city: 'San Francisco',
+    workspaceType: 'Coworking',
+    dealStage: 'Intake',
+    size: 2000,
+    estValue: 98000,
+    status: 'Active',
+    lastUpdated: '2026-06-09',
+    broker: 'Michael Torres',
+    closeDate: 'Jan 15, 2027',
+  },
+  {
+    id: '4',
+    dealName: 'StartupX Austin Space',
+    clientName: 'StartupX',
+    city: 'Austin',
+    workspaceType: 'Private Office',
+    dealStage: 'Contracting',
+    size: 1200,
+    estValue: 45000,
+    status: 'Active',
+    lastUpdated: '2026-06-11',
+    broker: 'Michael Torres',
+    closeDate: 'Jul 30, 2026',
+  },
+  // ── Archived / Executed ──────────────────────────────────────────
   {
     id: '6',
     dealName: 'HealthTech Seattle Workspace',
@@ -253,9 +558,51 @@ const SAMPLE_DEALS: Deal[] = [
     size: 3000,
     estValue: 75000,
     status: 'Archived',
-    lastUpdated: '2025-11-05',
+    lastUpdated: '2026-04-15',
     broker: 'Sarah Chen',
-    closeDate: 'Nov 5, 2025',
+    closeDate: 'Apr 15, 2026',
+  },
+  {
+    id: '25',
+    dealName: 'Lyft Portland Office',
+    clientName: 'Lyft',
+    city: 'Portland',
+    workspaceType: 'Coworking',
+    dealStage: 'Execution',
+    size: 900,
+    estValue: 88000,
+    status: 'Executed',
+    lastUpdated: '2026-03-28',
+    broker: 'Michael Torres',
+    closeDate: 'Mar 28, 2026',
+  },
+  {
+    id: '26',
+    dealName: 'Pinterest Denver Studio',
+    clientName: 'Pinterest',
+    city: 'Denver',
+    workspaceType: 'Private Office',
+    dealStage: 'Execution',
+    size: 1400,
+    estValue: 145000,
+    status: 'Archived',
+    lastUpdated: '2026-02-14',
+    broker: 'Jessica Park',
+    closeDate: 'Feb 14, 2026',
+  },
+  {
+    id: '27',
+    dealName: 'Stripe Nashville Office',
+    clientName: 'Stripe',
+    city: 'Nashville',
+    workspaceType: 'Office Suite',
+    dealStage: 'Execution',
+    size: 950,
+    estValue: 92000,
+    status: 'Executed',
+    lastUpdated: '2026-01-31',
+    broker: 'Sarah Chen',
+    closeDate: 'Jan 31, 2026',
   },
 ];
 
@@ -384,6 +731,9 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
   const [createTarget, setCreateTarget] = useState<Deal | null>(null);
   const [collectionName, setCollectionName] = useState('');
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
   const cities = Array.from(new Set(deals.map((d) => d.city))).sort();
 
   const filtered = deals.filter((d) => {
@@ -399,6 +749,11 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
     const matchesCity   = !cityFilter   || d.city      === cityFilter;
     return matchesSearch && matchesStage && matchesStatus && matchesCity;
   });
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => { setCurrentPage(1); }, [search, stageFilter, statusFilter, cityFilter]);
 
   function openDeal(deal: Deal) {
     setSelectedDeal(deal);
@@ -602,11 +957,11 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
                   </td>
                 </tr>
               ) : (
-                filtered.map((deal, idx) => (
+                paginated.map((deal, idx) => (
                   <DealRow
                     key={deal.id}
                     deal={deal}
-                    isLast={idx === filtered.length - 1}
+                    isLast={idx === paginated.length - 1}
                     onClick={() => openDeal(deal)}
                     assessment={liveAssessments[deal.id]}
                     onCreateCollection={() => {
@@ -618,6 +973,78 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
               )}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div
+              style={{
+                padding: '12px 20px',
+                borderTop: '1px solid #E5E7EB',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span style={{ fontSize: '13px', color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} requirements
+              </span>
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '13px',
+                    fontFamily: 'Inter, sans-serif',
+                    borderRadius: '6px',
+                    border: '1px solid #E5E7EB',
+                    backgroundColor: '#FFFFFF',
+                    color: currentPage === 1 ? '#D1D5DB' : '#374151',
+                    cursor: currentPage === 1 ? 'default' : 'pointer',
+                  }}
+                >
+                  Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      fontSize: '13px',
+                      fontFamily: 'Inter, sans-serif',
+                      borderRadius: '6px',
+                      border: '1px solid',
+                      borderColor: page === currentPage ? '#005B94' : '#E5E7EB',
+                      backgroundColor: page === currentPage ? '#005B94' : '#FFFFFF',
+                      color: page === currentPage ? '#FFFFFF' : '#374151',
+                      cursor: 'pointer',
+                      fontWeight: page === currentPage ? 600 : 400,
+                    }}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '13px',
+                    fontFamily: 'Inter, sans-serif',
+                    borderRadius: '6px',
+                    border: '1px solid #E5E7EB',
+                    backgroundColor: '#FFFFFF',
+                    color: currentPage === totalPages ? '#D1D5DB' : '#374151',
+                    cursor: currentPage === totalPages ? 'default' : 'pointer',
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         </div>
       </div>
