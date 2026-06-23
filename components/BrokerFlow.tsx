@@ -263,10 +263,10 @@ const SAMPLE_DEALS: Deal[] = [
 
 const METRICS = [
   {
-    label: 'DEAL VALUE',
+    label: 'REQUIREMENT COSTS',
     value: '$10.75M',
     valueColor: '#10B981',
-    sub: 'Total estimated value of active requirements',
+    sub: 'Total estimated cost of active requirements',
     Icon: TrendingUp,
     iconColor: '#10B981',
   },
