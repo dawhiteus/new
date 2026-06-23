@@ -94,11 +94,11 @@ const MAP_METROS = ALLSTATE_METROS
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const TEAMS = [
-  { team: 'Allstate Enterprise',            rate: 99.2, accepted: 4820, invited: 4860, spend: 2341892, trend:  1.8 },
-  { team: 'BU Funded – Technology',          rate: 82.4, accepted:  145, invited:  176, spend:  487219, trend:  8.3 },
-  { team: 'BU Funded – Finance & Risk',      rate: 67.1, accepted:  114, invited:  170, spend:  362445, trend: -3.2 },
-  { team: 'BU Funded – Legal & Compliance',  rate:100.0, accepted:   52, invited:   52, spend:  198773, trend:  0.0 },
-  { team: 'BU Funded – HR & People',         rate: 74.6, accepted:  213, invited:  285, spend:  521664, trend:  5.7 },
+  { team: 'Tel Tech Enterprise',     rate: 99.2, accepted: 4820, invited: 4860, spend: 2341892, trend:  1.8 },
+  { team: 'Engineering',             rate: 82.4, accepted:  145, invited:  176, spend:  487219, trend:  8.3 },
+  { team: 'Finance & Risk',          rate: 67.1, accepted:  114, invited:  170, spend:  362445, trend: -3.2 },
+  { team: 'Legal & Compliance',      rate:100.0, accepted:   52, invited:   52, spend:  198773, trend:  0.0 },
+  { team: 'People & Culture',        rate: 74.6, accepted:  213, invited:  285, spend:  521664, trend:  5.7 },
 ];
 
 const TREND_DATA = [
@@ -123,11 +123,11 @@ const MAP_PEAK_VALUE = Math.max(..._TD_ADOPTIONS);
 const MAP_GROWTH     = parseFloat(((_TD_ADOPTIONS[_TD_ADOPTIONS.length - 1] - _TD_ADOPTIONS[0]) / _TD_ADOPTIONS[0] * 100).toFixed(1));
 
 const EMPLOYEES = [
-  { rank: 1, name: 'JENNIFER MARTINEZ', team: 'Claims',       bookings:  12, spend: 924455 },
-  { rank: 2, name: 'DAVID CHEN',         team: 'Claims',       bookings:  11, spend: 786312 },
-  { rank: 3, name: 'SARAH ANDERSON',     team: 'Technology',   bookings: 454, spend: 203891 },
-  { rank: 4, name: 'MICHAEL RODRIGUEZ',  team: 'Underwriting', bookings: 454, spend: 234561 },
-  { rank: 5, name: 'LISA JOHNSON',       team: 'BU Funded',    bookings:   9, spend: 612443 },
+  { rank: 1, name: 'ALEX MORGAN',    team: 'Engineering',  bookings:  12, spend: 924455 },
+  { rank: 2, name: 'PRIYA SHARMA',   team: 'Engineering',  bookings:  11, spend: 786312 },
+  { rank: 3, name: 'JAMES WALKER',   team: 'Product',      bookings: 454, spend: 203891 },
+  { rank: 4, name: 'CASEY NGUYEN',   team: 'Finance',      bookings: 454, spend: 234561 },
+  { rank: 5, name: 'TAYLOR BROOKS',  team: 'Legal',        bookings:   9, spend: 612443 },
 ];
 
 // Top 5 markets by total spend — real data from allstate-metros.json

@@ -10,16 +10,16 @@ const SUMMARY =
   'Adoption reached 84% across 6,840 enrolled employees — up 20% over the past 12 months. ' +
   'Total spend of $639K is led by Atlanta ($83K, 13%) and New York ($52K, 8%). ' +
   'Average cost per reservation is $174. Tuesday drives peak utilization at 9,100 bookings. ' +
-  'BU Legal & Compliance leads activation at 100%; Finance & Risk lags at 67.1%.';
+  'Legal & Compliance leads activation at 100%; Finance & Risk lags at 67.1%.';
 
 function getResponse(q: string): string {
   const t = q.toLowerCase();
   if (/market|city|atlanta|new york|columbia|spend/.test(t))
     return 'Atlanta leads at $83K total spend — 13% of the portfolio. New York follows at $52K (8%) and Columbia, MD at $31K (5%). These three markets account for 26% of total spend.';
   if (/adoption|growth|trend|increase/.test(t))
-    return 'Adoption grew from 70% to 84% over 12 months — a +20% lift. BU Legal & Compliance is at 100% activation. Finance & Risk is the laggard at 67.1% with a −3.2% trend.';
+    return 'Adoption grew from 70% to 84% over 12 months — a +20% lift. Legal & Compliance is at 100% activation. Finance & Risk is the laggard at 67.1% with a −3.2% trend.';
   if (/team|bu funded|enterprise|group/.test(t))
-    return 'Allstate Enterprise drives the bulk of activity at 99.2% adoption across 4,820 members. Among BU Funded teams, Legal & Compliance is fully activated; Finance & Risk is at 67.1% and declining.';
+    return 'Tel Tech Enterprise drives the bulk of activity at 99.2% adoption across 4,820 members. Among functional teams, Legal & Compliance is fully activated; Finance & Risk is at 67.1% and declining.';
   if (/cost|price|average|per reservation|\$174/.test(t))
     return 'The average cost per reservation is $174 across 3,667 total bookings. Atlanta and New York pull the average up — both markets have above-average per-booking spend.';
   if (/engagement|active|monthly|mau/.test(t))
