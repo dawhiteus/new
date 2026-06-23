@@ -265,10 +265,9 @@ const mockLicenses = [
 ];
 
 const licenseTypeData = [
-  { name: 'Innovation Labs', value: 23, color: '#B3D9FF', percentage: 10.3 },
-  { name: 'Partnership Hubs', value: 45, color: '#80C7FF', percentage: 20.2 },
-  { name: 'Enterprise Centers', value: 89, color: '#28A745', percentage: 39.9 },
-  { name: 'Global Headquarters', value: 66, color: '#005B94', percentage: 29.6 },
+  { name: 'Flex (Hourly)',          value: 38, color: '#B3D9FF', percentage: 24.7 },
+  { name: 'Dedicated (External)',   value: 72, color: '#80C7FF', percentage: 46.8 },
+  { name: 'Dedicated (LS)',         value: 44, color: '#005B94', percentage: 28.6 },
 ];
 
 const COLORS = {
