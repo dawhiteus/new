@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import USActivityHeatmap from './USActivityHeatmap';
-import { AIAssistant, SummaryButton } from './copilot';
 import rawMetros from './data/allstate-metros.json';
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
@@ -349,12 +348,11 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
         <FilterPill label="Region" value="US" />
         <FilterPill label="Team" value="All" />
         <FilterPill label="Period" value="This Month" />
-        <SummaryButton onClick={() => {}} isLoading={false} />
       </PageHeader>
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
       <div style={{ maxWidth:1440, margin:'0 auto', padding:'24px 32px 48px', display:'flex', flexDirection:'column', gap:20 }}>
-        <AIAssistant context="dashboard">
+
 
         {/* ── Stat Cards ─────────────────────────────────────────────────── */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:16 }}>
@@ -768,7 +766,6 @@ export function WorkplaceManagerDashboard({ isAIDrawerOpen = false, onAIAssistan
           </div>
         </SCard>
 
-        </AIAssistant>
       </div>
     </div>
   );
