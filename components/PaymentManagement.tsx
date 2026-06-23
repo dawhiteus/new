@@ -305,28 +305,6 @@ export function PaymentManagement({
               >
                 Export Data
               </Button>
-              <Button
-                onClick={onAIAssistantOpen}
-                className={`h-10 px-4 bg-white/20 hover:bg-white/30 text-white border border-white/30 transition-colors ${
-                  isAIDrawerOpen ? 'bg-white/30' : ''
-                } shadow-[0px_4px_16px_0px_rgba(0,0,0,0.1)]`}
-                style={{ fontSize: '14px', fontWeight: 500, fontFamily: 'Inter, sans-serif', borderRadius: '8px' }}
-              >
-                <div className="w-4 h-4 mr-2 relative">
-                  <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16">
-                    <g>
-                      <path d="M8 5.33333V2.66667H5.33333" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                      <path d={svgPaths.p1ed63c00} stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                      <path d="M1.33333 9.33333H2.66667" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                      <path d="M13.3333 9.33333H14.6667" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                      <path d="M10 8.66667V10" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                      <path d="M6 8.66667V10" stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                    </g>
-                  </svg>
-                  <div className="absolute bg-[#0080fc] opacity-[0.86] rounded-full w-[8.279px] h-[8.279px] top-[-3.14px] left-[11.31px]" />
-                </div>
-                LiquidAI
-              </Button>
             </div>
           </div>
         </div>
