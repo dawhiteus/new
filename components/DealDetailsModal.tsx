@@ -59,6 +59,7 @@ import {
   RefreshCw,
   Share2,
   Bookmark,
+  GripVertical,
 } from 'lucide-react';
 import { MessagingThread } from './MessagingThread';
 import { DealTeamSection, TeamMember, sampleTeamMembers } from './DealTeamSection';
@@ -919,6 +920,222 @@ const workflowStages = [
     ]
   },
 ];
+
+type CollectionCategory = 'Recommended' | 'Saved' | 'Shortlisted';
+
+// Column widths shared between header row and data rows for pixel-perfect alignment.
+// Address is stacked under the space name to keep the table within the modal width.
+const C_GAP = 12;
+const C = {
+  handle:   { width: 12,  flexShrink: 0 as const },
+  thumb:    { width: 44,  flexShrink: 0 as const },
+  nameaddr: { flex: 1,    minWidth: 140 },
+  type:     { width: 100, flexShrink: 0 as const },
+  cap:      { width: 72,  flexShrink: 0 as const },
+  price:    { width: 76,  flexShrink: 0 as const },
+  avail:    { width: 126, flexShrink: 0 as const },
+};
+
+const SECTION_META: { key: CollectionCategory; color: string }[] = [
+  { key: 'Recommended', color: '#1D9E75' },
+  { key: 'Saved',       color: '#185FA5' },
+  { key: 'Shortlisted', color: '#BA7517' },
+];
+
+function typeStyle(type: string): React.CSSProperties {
+  switch (type) {
+    case 'Office Suite':   return { backgroundColor: '#EFF6FF', color: '#1D4ED8' };
+    case 'Team Office':    return { backgroundColor: '#F5F3FF', color: '#6D28D9' };
+    case 'Coworking':      return { backgroundColor: '#ECFDF5', color: '#065F46' };
+    case 'Private Office': return { backgroundColor: '#FFF7ED', color: '#C2410C' };
+    default:               return { backgroundColor: '#F3F4F6', color: '#374151' };
+  }
+}
+
+function fmtPrice(p: number) {
+  return `$${p >= 1000 ? `${(p / 1000).toFixed(0)}K` : p.toLocaleString()}/mo`;
+}
+
+function CollectionTab({ city }: { city: string }) {
+  const initialSpaces = getCollectionSpaces(city);
+
+  const [assignments, setAssignments] = useState<Record<string, CollectionCategory>>(() =>
+    Object.fromEntries(initialSpaces.map(s => [s.id, s.category as CollectionCategory]))
+  );
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<CollectionCategory | null>(null);
+
+  const spaces = initialSpaces.map(s => ({ ...s, category: assignments[s.id] ?? s.category }));
+
+  function onDragStart(e: React.DragEvent, id: string) {
+    setDraggingId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function onDragOver(e: React.DragEvent, cat: CollectionCategory) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDropTarget(cat);
+  }
+
+  function onDrop(e: React.DragEvent, cat: CollectionCategory) {
+    e.preventDefault();
+    if (draggingId) setAssignments(prev => ({ ...prev, [draggingId]: cat }));
+    setDraggingId(null);
+    setDropTarget(null);
+  }
+
+  function onDragEnd() {
+    setDraggingId(null);
+    setDropTarget(null);
+  }
+
+  const hdr: React.CSSProperties = {
+    fontSize: 11, fontWeight: 600, color: '#9CA3AF',
+    textTransform: 'uppercase', letterSpacing: '0.05em',
+  };
+
+  return (
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Page header */}
+      <div style={{ padding: '16px 24px', borderBottom: '1px solid #F0F2F5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FAFAFA' }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>{city} Workspace Collection</div>
+          <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Showing {spaces.length} alternative workspaces · drag rows to re-categorise</div>
+        </div>
+        <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
+          {SECTION_META.map(s => {
+            const count = spaces.filter(sp => sp.category === s.key).length;
+            return count > 0 ? (
+              <span key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: s.color, display: 'inline-block', flexShrink: 0 }} />
+                <span style={{ color: s.color, fontWeight: 600 }}>{count}</span>
+                <span style={{ color: '#6B7280' }}>{s.key}</span>
+              </span>
+            ) : null;
+          })}
+        </div>
+      </div>
+
+      {/* Column headers — must exactly mirror data row layout */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: C_GAP, padding: '7px 24px', borderBottom: '1px solid #F0F2F5', backgroundColor: '#F8F9FA' }}>
+        <div style={C.handle} />
+        <div style={C.thumb} />
+        <div style={{ ...C.nameaddr, ...hdr }}>Workspace</div>
+        <div style={{ ...C.type,     ...hdr }}>Type</div>
+        <div style={{ ...C.cap,      ...hdr }}>Capacity</div>
+        <div style={{ ...C.price,    ...hdr }}>Price</div>
+        <div style={{ ...C.avail,    ...hdr }}>Availability</div>
+      </div>
+
+      {/* Sections */}
+      {SECTION_META.map(({ key, color }) => {
+        const group = spaces.filter(s => s.category === key);
+        const isTarget = dropTarget === key && draggingId !== null;
+
+        return (
+          <div
+            key={key}
+            onDragOver={e => onDragOver(e, key)}
+            onDrop={e => onDrop(e, key)}
+            onDragLeave={e => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropTarget(null);
+            }}
+            style={{
+              transition: 'background 0.12s',
+              ...(isTarget ? { backgroundColor: '#EEF6FF', outline: '2px dashed #185FA5', outlineOffset: -2 } : {}),
+            }}
+          >
+            {/* Section label */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 24px 5px' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{key}</span>
+              <div style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
+              <span style={{ fontSize: 11, color: '#9CA3AF' }}>{group.length}</span>
+            </div>
+
+            {/* Empty drop hint */}
+            {group.length === 0 && (
+              <div style={{ padding: '10px 24px 14px 52px', fontSize: 12, color: '#9CA3AF', fontStyle: 'italic' }}>
+                Drop spaces here to move them to {key}
+              </div>
+            )}
+
+            {/* Space rows */}
+            {group.map(space => (
+              <div
+                key={space.id}
+                draggable
+                onDragStart={e => onDragStart(e, space.id)}
+                onDragEnd={onDragEnd}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: C_GAP,
+                  padding: '10px 24px', borderBottom: '1px solid #F3F4F6',
+                  opacity: draggingId === space.id ? 0.35 : 1,
+                  cursor: 'grab', userSelect: 'none',
+                  transition: 'opacity 0.12s, background 0.1s',
+                }}
+                onMouseEnter={e => { if (!draggingId) e.currentTarget.style.backgroundColor = '#F8FAFF'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; }}
+              >
+                {/* Drag handle */}
+                <div style={{ ...C.handle, color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <GripVertical size={13} />
+                </div>
+
+                {/* Thumbnail */}
+                <img
+                  src={space.image}
+                  alt={space.name}
+                  style={{ ...C.thumb, height: 44, borderRadius: 7, objectFit: 'cover' as const, flexShrink: 0 }}
+                />
+
+                {/* Workspace: name, address, stars — stacked */}
+                <div style={{ ...C.nameaddr, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {space.name}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {space.address}
+                  </div>
+                  <div style={{ marginTop: 2 }}>
+                    <span style={{ color: '#F59E0B', fontSize: 11 }}>{'★'.repeat(Math.floor(space.rating))}</span>
+                    <span style={{ color: '#E5E7EB', fontSize: 11 }}>{'★'.repeat(5 - Math.floor(space.rating))}</span>
+                    <span style={{ color: '#9CA3AF', marginLeft: 3, fontSize: 10 }}>{space.rating.toFixed(1)}</span>
+                  </div>
+                </div>
+
+                {/* Type badge */}
+                <div style={{ ...C.type }}>
+                  <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 500, ...typeStyle(space.type) }}>
+                    {space.type}
+                  </span>
+                </div>
+
+                {/* Capacity */}
+                <div style={{ ...C.cap, fontSize: 13, color: '#374151' }}>{space.capacity}</div>
+
+                {/* Price */}
+                <div style={{ ...C.price, fontSize: 13, fontWeight: 600, color: '#111827' }}>{fmtPrice(space.price)}</div>
+
+                {/* Availability */}
+                <div style={{ ...C.avail }}>
+                  <span style={{
+                    display: 'inline-block', padding: '3px 9px', borderRadius: 9999, fontSize: 11, fontWeight: 500,
+                    ...(space.isAvailable
+                      ? { backgroundColor: '#ECFDF5', color: '#065F46' }
+                      : { backgroundColor: '#FEF3C7', color: '#92400E' }),
+                  }}>
+                    {space.isAvailable ? 'Available Now' : 'Offline w/ Lease'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDetailsModalProps) {
   const [newNote, setNewNote] = useState('');
@@ -2346,138 +2563,7 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
             {/* Collection Tab */}
             {collectionTabVisible && (
               <TabsContent value="collection" className="mt-0">
-                {(() => {
-                  const spaces = getCollectionSpaces(deal.city);
-                  const sections = [
-                    { key: 'Recommended' as const, color: '#1D9E75' },
-                    { key: 'Saved'       as const, color: '#185FA5' },
-                    { key: 'Shortlisted' as const, color: '#BA7517' },
-                  ];
-
-                  const typeStyle = (type: string): React.CSSProperties => {
-                    switch (type) {
-                      case 'Office Suite':   return { backgroundColor: '#EFF6FF', color: '#1D4ED8' };
-                      case 'Team Office':    return { backgroundColor: '#F5F3FF', color: '#6D28D9' };
-                      case 'Coworking':      return { backgroundColor: '#ECFDF5', color: '#065F46' };
-                      case 'Private Office': return { backgroundColor: '#FFF7ED', color: '#C2410C' };
-                      default:               return { backgroundColor: '#F3F4F6', color: '#374151' };
-                    }
-                  };
-
-                  const fmtPrice = (p: number) => `$${p >= 1000 ? `${(p / 1000).toFixed(0)}K` : p.toLocaleString()}/mo`;
-
-                  return (
-                    <div style={{ fontFamily: 'Inter, sans-serif' }}>
-                      {/* Header */}
-                      <div style={{ padding: '16px 24px', borderBottom: '1px solid #F0F2F5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FAFAFA' }}>
-                        <div>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>{deal.city} Workspace Collection</div>
-                          <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Showing {spaces.length} alternative workspaces</div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#6B7280' }}>
-                          {sections.map(s => {
-                            const count = spaces.filter(sp => sp.category === s.key).length;
-                            return count > 0 ? (
-                              <span key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: s.color, display: 'inline-block' }} />
-                                <span style={{ color: s.color, fontWeight: 600 }}>{count}</span> {s.key}
-                              </span>
-                            ) : null;
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Column headers */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 24px', borderBottom: '1px solid #F0F2F5', backgroundColor: '#F8F9FA' }}>
-                        <div style={{ width: 52, flexShrink: 0 }} />
-                        <div style={{ minWidth: 200, maxWidth: 220, flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Workspace</div>
-                        <div style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Address</div>
-                        <div style={{ flexShrink: 0, width: 120, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</div>
-                        <div style={{ minWidth: 90, flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Capacity</div>
-                        <div style={{ minWidth: 90, flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price</div>
-                        <div style={{ flexShrink: 0, width: 130, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Availability</div>
-                        <div style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amenities</div>
-                      </div>
-
-                      {/* Sections */}
-                      {sections.map(({ key, color }) => {
-                        const group = spaces.filter(s => s.category === key);
-                        if (!group.length) return null;
-                        return (
-                          <div key={key}>
-                            {/* Section label */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 24px 6px' }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{key}</span>
-                              <div style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
-                              <span style={{ fontSize: 11, color: '#9CA3AF' }}>{group.length}</span>
-                            </div>
-
-                            {/* Rows */}
-                            {group.map((space) => (
-                              <div
-                                key={space.id}
-                                style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 24px', borderBottom: '1px solid #F3F4F6' }}
-                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F8FAFF')}
-                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
-                              >
-                                {/* Thumbnail */}
-                                <img src={space.image} alt={space.name} style={{ width: 52, height: 52, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-
-                                {/* Name + rating */}
-                                <div style={{ minWidth: 200, maxWidth: 220, flexShrink: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>{space.name}</div>
-                                  <div style={{ fontSize: 12, marginTop: 2 }}>
-                                    <span style={{ color: '#F59E0B' }}>{'★'.repeat(Math.floor(space.rating))}</span>
-                                    <span style={{ color: '#D1D5DB' }}>{'★'.repeat(5 - Math.floor(space.rating))}</span>
-                                    <span style={{ color: '#9CA3AF', marginLeft: 4, fontSize: 11 }}>{space.rating.toFixed(1)}</span>
-                                  </div>
-                                </div>
-
-                                {/* Address */}
-                                <div style={{ flex: 1, fontSize: 12, color: '#6B7280', lineHeight: 1.4, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {space.address}
-                                </div>
-
-                                {/* Type */}
-                                <div style={{ flexShrink: 0, width: 120 }}>
-                                  <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: 9999, fontSize: 12, fontWeight: 500, ...typeStyle(space.type) }}>
-                                    {space.type}
-                                  </span>
-                                </div>
-
-                                {/* Capacity */}
-                                <div style={{ fontSize: 13, color: '#374151', minWidth: 90, flexShrink: 0 }}>{space.capacity}</div>
-
-                                {/* Price */}
-                                <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', minWidth: 90, flexShrink: 0 }}>{fmtPrice(space.price)}</div>
-
-                                {/* Availability */}
-                                <div style={{ flexShrink: 0, width: 130 }}>
-                                  <span style={{
-                                    display: 'inline-block', padding: '3px 9px', borderRadius: 9999, fontSize: 12, fontWeight: 500,
-                                    ...(space.isAvailable ? { backgroundColor: '#ECFDF5', color: '#065F46' } : { backgroundColor: '#FEF3C7', color: '#92400E' }),
-                                  }}>
-                                    {space.isAvailable ? 'Available Now' : 'Offline w/ Lease'}
-                                  </span>
-                                </div>
-
-                                {/* Amenities */}
-                                <div style={{ display: 'flex', gap: 4, flexShrink: 0, flexWrap: 'nowrap' }}>
-                                  {space.amenities.slice(0, 2).map(a => (
-                                    <span key={a} style={{ fontSize: 11, color: '#6B7280', backgroundColor: '#F3F4F6', padding: '2px 7px', borderRadius: 9999, whiteSpace: 'nowrap' }}>{a}</span>
-                                  ))}
-                                  {space.amenities.length > 2 && (
-                                    <span style={{ fontSize: 11, color: '#9CA3AF', backgroundColor: '#F3F4F6', padding: '2px 7px', borderRadius: 9999 }}>+{space.amenities.length - 2}</span>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
+                <CollectionTab city={deal.city} />
               </TabsContent>
             )}
 
