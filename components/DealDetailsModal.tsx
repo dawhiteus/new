@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from './ui/toast';
 import {
   Dialog,
@@ -82,6 +82,7 @@ interface DealDetailsModalProps {
   deal: Deal;
   isOpen: boolean;
   onClose: () => void;
+  defaultTab?: string;
 }
 
 interface Task {
@@ -918,11 +919,15 @@ const workflowStages = [
   },
 ];
 
-export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProps) {
+export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDetailsModalProps) {
   const [newNote, setNewNote] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadData, setUploadData] = useState({ category: '', description: '' });
-  const [activeTab, setActiveTab] = useState('summary');
+  const [activeTab, setActiveTab] = useState(defaultTab ?? 'summary');
+
+  useEffect(() => {
+    if (isOpen) setActiveTab(defaultTab ?? 'summary');
+  }, [isOpen, defaultTab]);
   const [expandedStages, setExpandedStages] = useState<string[]>(['lease-negotiation']); // Start with current stage expanded
   const [timelineFilter, setTimelineFilter] = useState<'all' | 'tasks' | 'stages'>('all');
   
@@ -1164,8 +1169,9 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
     dealId: '#TL-NYC-98321',
   });
 
-  // Collection tab becomes visible once a Market Sourcing Agent task is complete
-  const collectionTabVisible = Object.values(stageTasks).some((tasks) =>
+  // Collection tab becomes visible once a Market Sourcing Agent task is complete,
+  // or when the modal is opened directly to the collection tab
+  const collectionTabVisible = defaultTab === 'collection' || Object.values(stageTasks).some((tasks) =>
     tasks.some(
       (t) =>
         (t.agentTaskType === 'Build collection' || t.agentTaskType === 'Create Collection') &&
@@ -1249,7 +1255,7 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="px-8 pt-6 pb-4 flex-shrink-0" style={{ backgroundColor: '#F8F9FA' }}>
             <TabsList
-              className="grid grid-cols-5 gap-2 bg-white border rounded-lg p-1 h-11"
+              className={`grid ${collectionTabVisible ? 'grid-cols-6' : 'grid-cols-5'} gap-2 bg-white border rounded-lg p-1 h-11`}
               style={{ borderColor: '#E5E7EB' }}
             >
               <TabsTrigger
@@ -1287,6 +1293,15 @@ export function DealDetailsModal({ deal, isOpen, onClose }: DealDetailsModalProp
               >
                 Timeline
               </TabsTrigger>
+              {collectionTabVisible && (
+                <TabsTrigger
+                  value="collection"
+                  className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white rounded-md h-9 transition-all"
+                  style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+                >
+                  Collection
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 

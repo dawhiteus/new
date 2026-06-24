@@ -725,6 +725,7 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
 
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailModalTab, setDetailModalTab] = useState<string>('summary');
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editDeal, setEditDeal] = useState<Deal | undefined>(undefined);
@@ -1003,6 +1004,11 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
                       setCreateTarget(deal);
                       setCollectionName('');
                     }}
+                    onViewCollection={() => {
+                      setSelectedDeal(deal);
+                      setDetailModalTab('collection');
+                      setIsDetailOpen(true);
+                    }}
                   />
                 ))
               )}
@@ -1089,7 +1095,8 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
         <DealDetailsModal
           deal={selectedDeal}
           isOpen={isDetailOpen}
-          onClose={() => setIsDetailOpen(false)}
+          onClose={() => { setIsDetailOpen(false); setDetailModalTab('summary'); }}
+          defaultTab={detailModalTab}
         />
       )}
 
@@ -1224,6 +1231,7 @@ function DealRow({
   onClick,
   assessment,
   onCreateCollection,
+  onViewCollection,
 }: {
   deal: Deal;
   isLast: boolean;
@@ -1231,6 +1239,7 @@ function DealRow({
   onClick: () => void;
   assessment: CollectionAssessment | undefined;
   onCreateCollection: () => void;
+  onViewCollection: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const [assessHovered, setAssessHovered] = useState(false);
@@ -1428,7 +1437,7 @@ function DealRow({
               </div>
               <button
                 style={{ width: '100%', padding: '8px 0', backgroundColor: '#005B94', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 600, borderRadius: 7, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                onClick={() => toast.info(`Opening ${assessment.collectionName}…`)}
+                onClick={(e) => { e.stopPropagation(); onViewCollection(); }}
               >
                 View Collection
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
