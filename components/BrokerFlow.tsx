@@ -953,7 +953,7 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
                   { label: 'SERVICE PROVIDER',      width: '12%' },
                   { label: 'STATUS',                width: '8%'  },
                   { label: 'STAGE',                 width: '11%' },
-                  { label: 'EST. VALUE',            width: '10%' },
+                  { label: 'COST/MOS',              width: '10%' },
                   { label: 'COLLECTION',            width: '14%' },
                   { label: 'ACTIONS',               width: '7%'  },
                 ].map((col) => (
