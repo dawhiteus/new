@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getCollectionSpaces } from './data/collectionSpaces';
 import { toast } from './ui/toast';
 import {
   Dialog,
@@ -2344,222 +2345,139 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
 
             {/* Collection Tab */}
             {collectionTabVisible && (
-              <TabsContent value="collection" className="p-6 mt-0">
-                <div className="space-y-4">
+              <TabsContent value="collection" className="mt-0">
+                {(() => {
+                  const spaces = getCollectionSpaces(deal.city);
+                  const sections = [
+                    { key: 'Recommended' as const, color: '#1D9E75' },
+                    { key: 'Saved'       as const, color: '#185FA5' },
+                    { key: 'Shortlisted' as const, color: '#BA7517' },
+                  ];
 
-                  {/* ── Fitness Card ─────────────────────────────────── */}
-                  <Card className="bg-white border overflow-hidden" style={{ borderColor: '#E5E7EB' }}>
-                    <div className="flex items-stretch">
-                      {/* Signal panel */}
-                      <div
-                        className="flex-shrink-0 flex flex-col justify-center"
-                        style={{ width: '200px', padding: '18px 16px', borderRight: '1px solid #E5E7EB' }}
-                      >
-                        <div style={{ fontSize: '11px', fontWeight: 500, color: '#9CA3AF', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '6px', fontFamily: 'Inter, sans-serif' }}>
-                          Collection fitness
-                        </div>
-                        <div style={{ fontSize: '28px', fontWeight: 500, color: signalColor, marginBottom: '3px', fontFamily: 'Inter, sans-serif', lineHeight: 1.1 }}>
-                          {MOCK_COLLECTION.fitness_signal}
-                        </div>
-                        <div style={{ fontSize: '12px', color: signalColor, marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
-                          {MOCK_COLLECTION.tier_counts.strong} strong match{MOCK_COLLECTION.tier_counts.strong !== 1 ? 'es' : ''}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.45, fontFamily: 'Inter, sans-serif' }}>
-                          Top pick: {MOCK_COLLECTION.top_recommendation.name} at {MOCK_COLLECTION.top_recommendation.match_pct}% fit.
-                        </div>
-                      </div>
+                  const typeStyle = (type: string): React.CSSProperties => {
+                    switch (type) {
+                      case 'Office Suite':   return { backgroundColor: '#EFF6FF', color: '#1D4ED8' };
+                      case 'Team Office':    return { backgroundColor: '#F5F3FF', color: '#6D28D9' };
+                      case 'Coworking':      return { backgroundColor: '#ECFDF5', color: '#065F46' };
+                      case 'Private Office': return { backgroundColor: '#FFF7ED', color: '#C2410C' };
+                      default:               return { backgroundColor: '#F3F4F6', color: '#374151' };
+                    }
+                  };
 
-                      {/* Tier bars */}
-                      <div className="flex-1 flex flex-col justify-center" style={{ padding: '16px', gap: '9px' }}>
-                        {([
-                          { key: 'strong',  label: 'Strong',  color: '#1D9E75', count: MOCK_COLLECTION.tier_counts.strong },
-                          { key: 'partial', label: 'Partial', color: '#BA7517', count: MOCK_COLLECTION.tier_counts.partial },
-                          { key: 'weak',    label: 'No match', color: '#E24B4A', count: MOCK_COLLECTION.tier_counts.weak },
-                        ] as const).map((tier) => {
-                          const total = MOCK_COLLECTION.tier_counts.strong + MOCK_COLLECTION.tier_counts.partial + MOCK_COLLECTION.tier_counts.weak;
-                          return (
-                            <div key={tier.key} className="flex items-center" style={{ gap: '10px' }}>
-                              <div className="rounded-full flex-shrink-0" style={{ width: '8px', height: '8px', backgroundColor: tier.color }} />
-                              <div style={{ fontSize: '12px', color: '#6B7280', width: '52px', fontFamily: 'Inter, sans-serif' }}>{tier.label}</div>
-                              <div className="flex-1 rounded-full overflow-hidden" style={{ height: '5px', backgroundColor: '#F0F0ED' }}>
-                                <div className="h-full rounded-full" style={{ width: `${(tier.count / total) * 100}%`, backgroundColor: tier.color }} />
-                              </div>
-                              <div style={{ fontSize: '12px', fontWeight: 500, color: '#555', width: '16px', textAlign: 'right', fontFamily: 'Inter, sans-serif' }}>{tier.count}</div>
-                            </div>
-                          );
-                        })}
-                        {/* Gap note */}
-                        <div className="pt-2 border-t" style={{ borderColor: '#E5E7EB', marginTop: '2px' }}>
-                          <div style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif' }}>
-                            {MOCK_COLLECTION.gaps.join(' · ')}
-                          </div>
+                  const fmtPrice = (p: number) => `$${p >= 1000 ? `${(p / 1000).toFixed(0)}K` : p.toLocaleString()}/mo`;
+
+                  return (
+                    <div style={{ fontFamily: 'Inter, sans-serif' }}>
+                      {/* Header */}
+                      <div style={{ padding: '16px 24px', borderBottom: '1px solid #F0F2F5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FAFAFA' }}>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>{deal.city} Workspace Collection</div>
+                          <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Showing {spaces.length} alternative workspaces</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#6B7280' }}>
+                          {sections.map(s => {
+                            const count = spaces.filter(sp => sp.category === s.key).length;
+                            return count > 0 ? (
+                              <span key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: s.color, display: 'inline-block' }} />
+                                <span style={{ color: s.color, fontWeight: 600 }}>{count}</span> {s.key}
+                              </span>
+                            ) : null;
+                          })}
                         </div>
                       </div>
-                    </div>
 
-                    {/* Footer */}
-                    <div className="flex items-center justify-between px-4 py-2.5 border-t" style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAF8' }}>
-                      <div className="flex items-center gap-1.5" style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif' }}>
-                        <Bot className="h-3.5 w-3.5" />
-                        Assessed {MOCK_COLLECTION.collection.lastAssessed} · Collection Assessment Agent
+                      {/* Column headers */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 24px', borderBottom: '1px solid #F0F2F5', backgroundColor: '#F8F9FA' }}>
+                        <div style={{ width: 52, flexShrink: 0 }} />
+                        <div style={{ minWidth: 200, maxWidth: 220, flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Workspace</div>
+                        <div style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Address</div>
+                        <div style={{ flexShrink: 0, width: 120, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</div>
+                        <div style={{ minWidth: 90, flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Capacity</div>
+                        <div style={{ minWidth: 90, flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price</div>
+                        <div style={{ flexShrink: 0, width: 130, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Availability</div>
+                        <div style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amenities</div>
                       </div>
-                      <a
-                        href="#"
-                        onClick={(e) => e.preventDefault()}
-                        className="flex items-center gap-1 hover:underline"
-                        style={{ fontSize: '12px', color: '#185FA5', fontFamily: 'Inter, sans-serif', textDecoration: 'none' }}
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        View collection
-                      </a>
-                    </div>
-                  </Card>
 
-                  {/* ── Two-column metadata ───────────────────────────── */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Collection metadata */}
-                    <Card className="bg-white border" style={{ borderColor: '#E5E7EB' }}>
-                      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b" style={{ borderColor: '#E5E7EB' }}>
-                        <FileText className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
-                        <span style={{ fontSize: '12px', fontWeight: 500, color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>Collection metadata</span>
-                      </div>
-                      <div className="px-4 py-1">
-                        {[
-                          { key: 'Collection name', val: MOCK_COLLECTION.collection.name },
-                          { key: 'Spaces',          val: `${MOCK_COLLECTION.collection.spaceCount} candidates` },
-                          { key: 'Sourced by',      val: MOCK_COLLECTION.collection.sourcedBy },
-                          { key: 'Sourced on',      val: MOCK_COLLECTION.collection.sourcedOn },
-                          { key: 'Last assessed',   val: MOCK_COLLECTION.collection.lastAssessed },
-                          { key: 'Assessments run', val: String(MOCK_COLLECTION.collection.assessmentsRun) },
-                        ].map((row, i, arr) => (
-                          <div
-                            key={row.key}
-                            className="flex justify-between items-baseline py-1.5"
-                            style={{ borderBottom: i < arr.length - 1 ? '1px solid #F0F0ED' : 'none', fontSize: '12px', fontFamily: 'Inter, sans-serif' }}
-                          >
-                            <span style={{ color: '#777' }}>{row.key}</span>
-                            <span style={{ fontWeight: 500, color: '#1a1a1a', textAlign: 'right' }}>{row.val}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-
-                    {/* Sourcing criteria */}
-                    <Card className="bg-white border" style={{ borderColor: '#E5E7EB' }}>
-                      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b" style={{ borderColor: '#E5E7EB' }}>
-                        <Target className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
-                        <span style={{ fontSize: '12px', fontWeight: 500, color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>Criteria assessed</span>
-                      </div>
-                      <div className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1.5">
-                          {MOCK_COLLECTION.criteria.map((c) => (
-                            <span
-                              key={c.label}
-                              style={{
-                                fontSize: '11px',
-                                padding: '3px 9px',
-                                borderRadius: '20px',
-                                fontFamily: 'Inter, sans-serif',
-                                ...(c.tier === 'Strong'
-                                  ? { backgroundColor: '#E1F5EE', color: '#085041', border: '1px solid #9FE1CB' }
-                                  : c.tier === 'Partial'
-                                  ? { backgroundColor: '#FAEEDA', color: '#633806', border: '1px solid #FAC775' }
-                                  : { backgroundColor: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5' })
-                              }}
-                            >
-                              {c.label}
-                            </span>
-                          ))}
-                        </div>
-                        {MOCK_COLLECTION.criteriaNote && (
-                          <div
-                            className="flex items-center gap-1 mt-2.5 pt-2"
-                            style={{ borderTop: '1px solid #E5E7EB', fontSize: '11px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif' }}
-                          >
-                            <AlertTriangle className="h-3 w-3 flex-shrink-0" style={{ color: '#BA7517' }} />
-                            {MOCK_COLLECTION.criteriaNote}
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* ── Assessment history ────────────────────────────── */}
-                  <Card className="bg-white border overflow-hidden" style={{ borderColor: '#E5E7EB' }}>
-                    <div className="flex items-center gap-1.5 px-4 py-2.5 border-b" style={{ borderColor: '#E5E7EB' }}>
-                      <Clock className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
-                      <span style={{ fontSize: '12px', fontWeight: 500, color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>Assessment history</span>
-                    </div>
-                    <div>
-                      {MOCK_COLLECTION.history.map((entry, i) => {
-                        const iconStyle =
-                          entry.type === 'assessment_blocked'
-                            ? { bg: '#FEE2E2', color: '#991B1B' }  // red — error state only
-                            : { bg: '#F0F0ED', color: '#4B5563' }; // single neutral for all other events
-
-                        const IconComp =
-                          entry.type === 'requirement_update'  ? Edit
-                          : entry.type === 'sourced'           ? Search
-                          : entry.type === 'resourced'         ? RefreshCw
-                          : entry.type === 'space_added'       ? Plus
-                          : entry.type === 'space_removed'     ? Minus
-                          : entry.type === 'collection_shared' ? Share2
-                          : entry.type === 'space_shortlisted' ? Bookmark
-                          : entry.type === 'assessment_blocked'? AlertCircle
-                          : Bot; // initial_assessment, reassessment
-
+                      {/* Sections */}
+                      {sections.map(({ key, color }) => {
+                        const group = spaces.filter(s => s.category === key);
+                        if (!group.length) return null;
                         return (
-                          <div
-                            key={i}
-                            className="flex gap-3 px-4 py-3"
-                            style={{ borderBottom: i < MOCK_COLLECTION.history.length - 1 ? '1px solid #F0F0ED' : 'none' }}
-                          >
-                            <div
-                              className="flex-shrink-0 flex items-center justify-center rounded-full mt-0.5"
-                              style={{ width: '28px', height: '28px', backgroundColor: iconStyle.bg }}
-                            >
-                              <IconComp className="h-3.5 w-3.5" style={{ color: iconStyle.color }} />
+                          <div key={key}>
+                            {/* Section label */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 24px 6px' }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{key}</span>
+                              <div style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
+                              <span style={{ fontSize: 11, color: '#9CA3AF' }}>{group.length}</span>
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-baseline justify-between mb-0.5">
-                                <span style={{ fontSize: '13px', fontWeight: 500, color: '#1a1a1a', fontFamily: 'Inter, sans-serif' }}>
-                                  {entry.title}
-                                </span>
-                                <span style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', marginLeft: '12px' }}>
-                                  {entry.time}
-                                </span>
-                              </div>
-                              <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: '1.5', fontFamily: 'Inter, sans-serif' }}>
-                                {entry.desc}
-                              </div>
-                              {entry.delta && (
-                                <div
-                                  className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded"
-                                  style={{
-                                    fontSize: '11px',
-                                    fontWeight: 500,
-                                    fontFamily: 'Inter, sans-serif',
-                                    ...(entry.delta.direction === 'down'
-                                      ? { backgroundColor: '#FAEEDA', color: '#633806' }
-                                      : entry.delta.direction === 'up'
-                                      ? { backgroundColor: '#E1F5EE', color: '#085041' }
-                                      : { backgroundColor: '#F0F0ED', color: '#666' })
-                                  }}
-                                >
-                                  {entry.delta.direction === 'down'    && <TrendingDown className="h-3 w-3" />}
-                                  {entry.delta.direction === 'up'      && <TrendingUp className="h-3 w-3" />}
-                                  {entry.delta.direction === 'neutral' && <CheckCircle2 className="h-3 w-3" />}
-                                  {entry.delta.label}
+
+                            {/* Rows */}
+                            {group.map((space) => (
+                              <div
+                                key={space.id}
+                                style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 24px', borderBottom: '1px solid #F3F4F6' }}
+                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F8FAFF')}
+                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+                              >
+                                {/* Thumbnail */}
+                                <img src={space.image} alt={space.name} style={{ width: 52, height: 52, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+
+                                {/* Name + rating */}
+                                <div style={{ minWidth: 200, maxWidth: 220, flexShrink: 0 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>{space.name}</div>
+                                  <div style={{ fontSize: 12, marginTop: 2 }}>
+                                    <span style={{ color: '#F59E0B' }}>{'★'.repeat(Math.floor(space.rating))}</span>
+                                    <span style={{ color: '#D1D5DB' }}>{'★'.repeat(5 - Math.floor(space.rating))}</span>
+                                    <span style={{ color: '#9CA3AF', marginLeft: 4, fontSize: 11 }}>{space.rating.toFixed(1)}</span>
+                                  </div>
                                 </div>
-                              )}
-                            </div>
+
+                                {/* Address */}
+                                <div style={{ flex: 1, fontSize: 12, color: '#6B7280', lineHeight: 1.4, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {space.address}
+                                </div>
+
+                                {/* Type */}
+                                <div style={{ flexShrink: 0, width: 120 }}>
+                                  <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: 9999, fontSize: 12, fontWeight: 500, ...typeStyle(space.type) }}>
+                                    {space.type}
+                                  </span>
+                                </div>
+
+                                {/* Capacity */}
+                                <div style={{ fontSize: 13, color: '#374151', minWidth: 90, flexShrink: 0 }}>{space.capacity}</div>
+
+                                {/* Price */}
+                                <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', minWidth: 90, flexShrink: 0 }}>{fmtPrice(space.price)}</div>
+
+                                {/* Availability */}
+                                <div style={{ flexShrink: 0, width: 130 }}>
+                                  <span style={{
+                                    display: 'inline-block', padding: '3px 9px', borderRadius: 9999, fontSize: 12, fontWeight: 500,
+                                    ...(space.isAvailable ? { backgroundColor: '#ECFDF5', color: '#065F46' } : { backgroundColor: '#FEF3C7', color: '#92400E' }),
+                                  }}>
+                                    {space.isAvailable ? 'Available Now' : 'Offline w/ Lease'}
+                                  </span>
+                                </div>
+
+                                {/* Amenities */}
+                                <div style={{ display: 'flex', gap: 4, flexShrink: 0, flexWrap: 'nowrap' }}>
+                                  {space.amenities.slice(0, 2).map(a => (
+                                    <span key={a} style={{ fontSize: 11, color: '#6B7280', backgroundColor: '#F3F4F6', padding: '2px 7px', borderRadius: 9999, whiteSpace: 'nowrap' }}>{a}</span>
+                                  ))}
+                                  {space.amenities.length > 2 && (
+                                    <span style={{ fontSize: 11, color: '#9CA3AF', backgroundColor: '#F3F4F6', padding: '2px 7px', borderRadius: 9999 }}>+{space.amenities.length - 2}</span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         );
                       })}
                     </div>
-                  </Card>
-
-                </div>
+                  );
+                })()}
               </TabsContent>
             )}
 
