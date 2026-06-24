@@ -243,7 +243,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '7',
     dealName: 'JPMorgan Chase NYC Trading Floor',
-    clientName: 'JPMorgan Chase',
+    clientName: 'Tel Tech',
     city: 'New York',
     workspaceType: 'Headquarters',
     dealStage: 'Negotiation',
@@ -257,7 +257,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '8',
     dealName: 'Amazon Seattle HQ Phase 2',
-    clientName: 'Amazon',
+    clientName: 'Tel Tech',
     city: 'Seattle',
     workspaceType: 'Headquarters',
     dealStage: 'Evaluation',
@@ -271,7 +271,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '9',
     dealName: 'Goldman Sachs Dallas Operations',
-    clientName: 'Goldman Sachs',
+    clientName: 'Tel Tech',
     city: 'Dallas',
     workspaceType: 'Office Suite',
     dealStage: 'Proposal',
@@ -285,7 +285,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '10',
     dealName: 'Deloitte Chicago Regional Hub',
-    clientName: 'Deloitte',
+    clientName: 'Tel Tech',
     city: 'Chicago',
     workspaceType: 'Headquarters',
     dealStage: 'Proposal',
@@ -299,7 +299,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '11',
     dealName: 'Microsoft Boston Innovation Center',
-    clientName: 'Microsoft',
+    clientName: 'Tel Tech',
     city: 'Boston',
     workspaceType: 'Office Suite',
     dealStage: 'Contracting',
@@ -313,7 +313,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '12',
     dealName: 'BlackRock NYC Asset Management',
-    clientName: 'BlackRock',
+    clientName: 'Tel Tech',
     city: 'New York',
     workspaceType: 'Office Suite',
     dealStage: 'Proposal',
@@ -327,7 +327,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '13',
     dealName: 'Pfizer Boston Life Sciences Suite',
-    clientName: 'Pfizer',
+    clientName: 'Tel Tech',
     city: 'Boston',
     workspaceType: 'Coworking',
     dealStage: 'Proposal',
@@ -341,7 +341,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '14',
     dealName: 'Johnson & Johnson NYC Advisory Hub',
-    clientName: 'Johnson & Johnson',
+    clientName: 'Tel Tech',
     city: 'New York',
     workspaceType: 'Private Office',
     dealStage: 'Evaluation',
@@ -355,7 +355,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '15',
     dealName: 'IBM Houston Energy Sector',
-    clientName: 'IBM',
+    clientName: 'Tel Tech',
     city: 'Houston',
     workspaceType: 'Office Suite',
     dealStage: 'Negotiation',
@@ -369,7 +369,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '16',
     dealName: 'Cisco Austin Engineering Center',
-    clientName: 'Cisco',
+    clientName: 'Tel Tech',
     city: 'Austin',
     workspaceType: 'Office Suite',
     dealStage: 'Negotiation',
@@ -383,7 +383,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '17',
     dealName: 'BCG Washington DC Office',
-    clientName: 'Boston Consulting Group',
+    clientName: 'Tel Tech',
     city: 'Washington DC',
     workspaceType: 'Coworking',
     dealStage: 'Intake',
@@ -397,7 +397,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '18',
     dealName: 'Salesforce Miami Hub',
-    clientName: 'Salesforce',
+    clientName: 'Tel Tech',
     city: 'Miami',
     workspaceType: 'Private Office',
     dealStage: 'Evaluation',
@@ -411,7 +411,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '19',
     dealName: 'Oracle Los Angeles Regional Office',
-    clientName: 'Oracle',
+    clientName: 'Tel Tech',
     city: 'Los Angeles',
     workspaceType: 'Office Suite',
     dealStage: 'Intake',
@@ -425,7 +425,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '20',
     dealName: 'Vanguard Philadelphia Operations',
-    clientName: 'Vanguard',
+    clientName: 'Tel Tech',
     city: 'Philadelphia',
     workspaceType: 'Headquarters',
     dealStage: 'Contracting',
@@ -439,7 +439,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '21',
     dealName: 'Accenture Denver Technology Hub',
-    clientName: 'Accenture',
+    clientName: 'Tel Tech',
     city: 'Denver',
     workspaceType: 'Coworking',
     dealStage: 'Intake',
@@ -453,7 +453,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '3',
     dealName: 'Global Finance Boston Hub',
-    clientName: 'Global Finance Corp',
+    clientName: 'Tel Tech',
     city: 'Boston',
     workspaceType: 'Headquarters',
     dealStage: 'Proposal',
@@ -467,7 +467,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '22',
     dealName: 'McKinsey San Francisco Office',
-    clientName: 'McKinsey & Company',
+    clientName: 'Tel Tech',
     city: 'San Francisco',
     workspaceType: 'Private Office',
     dealStage: 'Intake',
@@ -481,7 +481,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '23',
     dealName: 'PwC Seattle Client Center',
-    clientName: 'PricewaterhouseCoopers',
+    clientName: 'Tel Tech',
     city: 'Seattle',
     workspaceType: 'Office Suite',
     dealStage: 'Evaluation',
@@ -495,7 +495,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '5',
     dealName: 'MediaCo Chicago Office',
-    clientName: 'MediaCo',
+    clientName: 'Tel Tech',
     city: 'Chicago',
     workspaceType: 'Headquarters',
     dealStage: 'Intake',
@@ -509,7 +509,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '24',
     dealName: 'KPMG Atlanta Advisory Suite',
-    clientName: 'KPMG',
+    clientName: 'Tel Tech',
     city: 'Atlanta',
     workspaceType: 'Coworking',
     dealStage: 'Evaluation',
@@ -523,7 +523,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '2',
     dealName: 'Tech Ventures SF Office',
-    clientName: 'Tech Ventures',
+    clientName: 'Tel Tech',
     city: 'San Francisco',
     workspaceType: 'Coworking',
     dealStage: 'Intake',
@@ -537,7 +537,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '4',
     dealName: 'StartupX Austin Space',
-    clientName: 'StartupX',
+    clientName: 'Tel Tech',
     city: 'Austin',
     workspaceType: 'Private Office',
     dealStage: 'Contracting',
@@ -552,7 +552,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '6',
     dealName: 'HealthTech Seattle Workspace',
-    clientName: 'HealthTech Inc',
+    clientName: 'Tel Tech',
     city: 'Seattle',
     workspaceType: 'Private Office',
     dealStage: 'Execution',
@@ -566,7 +566,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '25',
     dealName: 'Lyft Portland Office',
-    clientName: 'Lyft',
+    clientName: 'Tel Tech',
     city: 'Portland',
     workspaceType: 'Coworking',
     dealStage: 'Execution',
@@ -580,7 +580,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '26',
     dealName: 'Pinterest Denver Studio',
-    clientName: 'Pinterest',
+    clientName: 'Tel Tech',
     city: 'Denver',
     workspaceType: 'Private Office',
     dealStage: 'Execution',
@@ -594,7 +594,7 @@ const SAMPLE_DEALS: Deal[] = [
   {
     id: '27',
     dealName: 'Stripe Nashville Office',
-    clientName: 'Stripe',
+    clientName: 'Tel Tech',
     city: 'Nashville',
     workspaceType: 'Office Suite',
     dealStage: 'Execution',
