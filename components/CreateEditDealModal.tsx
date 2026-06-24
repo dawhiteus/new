@@ -112,6 +112,8 @@ export function CreateEditDealModal({ isOpen, onClose, deal }: CreateEditDealMod
     status:           deal?.status === 'Executed' || deal?.status === 'Archived' ? 'Active' : (deal?.status || 'Active'),
     headcount:        '',
     term:             '',
+    startDate:        '',
+    termMonths:       '',
     requirementNotes: '',
   });
   const [showAdditional, setShowAdditional] = useState(false);
@@ -423,16 +425,63 @@ export function CreateEditDealModal({ isOpen, onClose, deal }: CreateEditDealMod
               />
             </div>
 
-            {/* Estimated Value */}
+            {/* Estimated Cost */}
             <div>
               <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                Estimated Value ($) *
+                Estimated Cost *
               </Label>
               <Input
                 type="number"
                 value={formData.estValue}
                 onChange={(e) => setFormData({ ...formData, estValue: e.target.value })}
-                placeholder="Enter estimated value"
+                placeholder="Enter estimated cost"
+                required
+                className="mt-2 border-gray-300"
+                style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+              />
+            </div>
+
+            {/* Capacity */}
+            <div>
+              <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+                Capacity *
+              </Label>
+              <Input
+                type="number"
+                value={formData.headcount}
+                onChange={(e) => setFormData({ ...formData, headcount: e.target.value })}
+                placeholder="e.g. 50"
+                required
+                className="mt-2 border-gray-300"
+                style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+              />
+            </div>
+
+            {/* Start Date */}
+            <div>
+              <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+                Start Date *
+              </Label>
+              <Input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                required
+                className="mt-2 border-gray-300"
+                style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+              />
+            </div>
+
+            {/* Term (months) */}
+            <div>
+              <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+                Term (months) *
+              </Label>
+              <Input
+                type="number"
+                value={formData.termMonths}
+                onChange={(e) => setFormData({ ...formData, termMonths: e.target.value })}
+                placeholder="e.g. 12"
                 required
                 className="mt-2 border-gray-300"
                 style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
@@ -489,38 +538,6 @@ export function CreateEditDealModal({ isOpen, onClose, deal }: CreateEditDealMod
 
             {showAdditional && (
               <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t" style={{ borderColor: '#E5E7EB' }}>
-                <div>
-                  <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                    Capacity / Headcount
-                  </Label>
-                  <Input
-                    type="number"
-                    value={formData.headcount}
-                    onChange={(e) => setFormData({ ...formData, headcount: e.target.value })}
-                    placeholder="Enter headcount"
-                    className="mt-2 border-gray-300"
-                    style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                  />
-                </div>
-
-                <div>
-                  <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                    Term
-                  </Label>
-                  <Select value={formData.term} onValueChange={(v) => setFormData({ ...formData, term: v })}>
-                    <SelectTrigger className="mt-2 border-gray-300" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                      <SelectValue placeholder="Select term" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Flexible">Flexible</SelectItem>
-                      <SelectItem value="Less than 6 months">Less than 6 months</SelectItem>
-                      <SelectItem value="6–12 months">6–12 months</SelectItem>
-                      <SelectItem value="12–24 months">12–24 months</SelectItem>
-                      <SelectItem value="24+ months">24+ months</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="col-span-2">
                   <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
                     Requirement Notes

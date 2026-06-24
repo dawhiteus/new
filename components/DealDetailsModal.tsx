@@ -1381,7 +1381,9 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
     status: deal.status,
     broker: deal.broker,
     createdDate: '2025-10-01',
-    expectedCloseDate: '2025-12-01',
+    startDate: '2026-01-01',
+    capacity: '50',
+    termMonths: '12',
     primaryContactName: leadBroker?.name ?? '',
     primaryContactEmail: leadBroker?.email ?? '',
     dealId: '#TL-NYC-98321',
@@ -1634,15 +1636,29 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
                       />
                     </div>
 
-                    {/* Row 3 */}
+                    {/* Row 3 — cost, capacity, stage */}
                     <div className="relative">
                       <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Estimated Value ($)
+                        Estimated Cost
                       </Label>
                       <Input
                         type="number"
                         value={editedDeal.estValue}
                         onChange={(e) => setEditedDeal({ ...editedDeal, estValue: e.target.value })}
+                        className="border-gray-300"
+                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
+                        Capacity
+                      </Label>
+                      <Input
+                        type="number"
+                        value={editedDeal.capacity}
+                        onChange={(e) => setEditedDeal({ ...editedDeal, capacity: e.target.value })}
+                        placeholder="e.g. 50"
                         className="border-gray-300"
                         style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
                       />
@@ -1660,6 +1676,7 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
                       </div>
                     </div>
 
+                    {/* Row 4 — status, start date, term */}
                     <div>
                       <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
                         Status
@@ -1680,7 +1697,34 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
                       </Select>
                     </div>
 
-                    {/* Row 4 */}
+                    <div className="relative">
+                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
+                        Start Date
+                      </Label>
+                      <Input
+                        type="date"
+                        value={editedDeal.startDate}
+                        onChange={(e) => setEditedDeal({ ...editedDeal, startDate: e.target.value })}
+                        className="border-gray-300"
+                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
+                        Term (months)
+                      </Label>
+                      <Input
+                        type="number"
+                        value={editedDeal.termMonths}
+                        onChange={(e) => setEditedDeal({ ...editedDeal, termMonths: e.target.value })}
+                        placeholder="e.g. 12"
+                        className="border-gray-300"
+                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
+                      />
+                    </div>
+
+                    {/* Row 5 — dates + contact */}
                     <div>
                       <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
                         Created Date
@@ -1694,21 +1738,6 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
                       />
                     </div>
 
-                    <div className="relative">
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Expected Close Date
-                      </Label>
-                      <Input
-                        type="date"
-                        value={editedDeal.expectedCloseDate}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, expectedCloseDate: e.target.value })}
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-
-                    {/* Row 5 — Lead derived from team */}
-                    {/* Row 5 */}
                     <div>
                       <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
                         Lead
@@ -1721,9 +1750,9 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
                       />
                     </div>
 
-                    <div className="col-span-2">
+                    <div>
                       <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Lead Email
+                        LiquidSpace TM
                       </Label>
                       <Input
                         type="email"
