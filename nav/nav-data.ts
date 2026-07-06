@@ -76,12 +76,12 @@ export const IA: Record<string, Product> = {
         id: 'wm',
         label: 'Workplace Manager',
         items: [
-          { id: 'dashboard',       icon: 'home',         label: 'Dashboard', url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/dashboard' },
-          { id: 'teams',           icon: 'users',        label: 'Teams' },
-          { id: 'locations',       icon: 'map-pinned',   label: 'Locations' },
-          { id: 'activity',        icon: 'activity',     label: 'Activity' },
-          { id: 'setup',           icon: 'settings',     label: 'Setup' },
-          { id: 'branding',        icon: 'palette',      label: 'Branding' },
+          { id: 'dashboard',       icon: 'home',         label: 'Dashboard',  url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/dashboard' },
+          { id: 'teams',           icon: 'users',        label: 'Teams',      url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/teams' },
+          { id: 'locations',       icon: 'map-pinned',   label: 'Locations',  url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/locations' },
+          { id: 'activity',        icon: 'activity',     label: 'Activity',   url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/activity' },
+          { id: 'setup',           icon: 'settings',     label: 'Setup',      url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/setup' },
+          { id: 'branding',        icon: 'palette',      label: 'Branding',   url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/branding' },
         ],
       },
       {
