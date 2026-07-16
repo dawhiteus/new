@@ -314,8 +314,11 @@ export function TransactionTasks({ onAIAssistantOpen = () => {}, isAIDrawerOpen 
   const [sortAsc, setSortAsc]     = useState(true);
 
   // Detail modal
-  const [detailTask, setDetailTask]   = useState<TransactionTask | null>(null);
-  const [noteInput, setNoteInput]     = useState('');
+  const [detailTask, setDetailTask]     = useState<TransactionTask | null>(null);
+  const [noteInput, setNoteInput]       = useState('');
+  const [editDueDate, setEditDueDate]   = useState('');
+  const [editAssignedTo, setEditAssignedTo] = useState('');
+  const [editStatus, setEditStatus]     = useState<TaskStatus>('Open');
 
   // New task modal
   const [showNew, setShowNew]     = useState(false);
@@ -355,6 +358,25 @@ export function TransactionTasks({ onAIAssistantOpen = () => {}, isAIDrawerOpen 
   const handleRemove = (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
     toast.info('Task removed.');
+  };
+
+  const openDetail = (task: TransactionTask) => {
+    setDetailTask(task);
+    setNoteInput('');
+    setEditDueDate(task.dueDate);
+    setEditAssignedTo(task.assignedTo);
+    setEditStatus(task.status);
+  };
+
+  const handleSaveDetail = () => {
+    if (!detailTask) return;
+    setTasks(prev => prev.map(t =>
+      t.id === detailTask.id
+        ? { ...t, dueDate: editDueDate, assignedTo: editAssignedTo, status: editStatus }
+        : t
+    ));
+    toast.success('Task updated.');
+    setDetailTask(null);
   };
 
   const handleComplete = (id: string) => {
@@ -609,7 +631,7 @@ export function TransactionTasks({ onAIAssistantOpen = () => {}, isAIDrawerOpen 
                     {/* Actions */}
                     <TableCell style={{ paddingTop: '14px', paddingBottom: '14px', textAlign: 'right' }}>
                       <RowMenu
-                        onViewDetails={() => { setDetailTask(task); setNoteInput(''); }}
+                        onViewDetails={() => openDetail(task)}
                         onRemove={() => handleRemove(task.id)}
                       />
                     </TableCell>
@@ -646,33 +668,50 @@ export function TransactionTasks({ onAIAssistantOpen = () => {}, isAIDrawerOpen 
 
             {/* Body */}
             <div style={{ padding: '20px' }} className="space-y-4">
-              {/* Status row */}
+              {/* Status — editable */}
               <div className="flex items-center justify-between">
                 <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>Status</span>
-                <span style={{
-                  padding: '3px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 500, fontFamily: 'Inter, sans-serif',
-                  backgroundColor: detailTask.status === 'Completed' ? '#DCFCE7' : '#FEF3C7',
-                  color: detailTask.status === 'Completed' ? '#166534' : '#92400E',
-                }}>
-                  {detailTask.status}
-                </span>
+                <select
+                  value={editStatus}
+                  onChange={e => setEditStatus(e.target.value as TaskStatus)}
+                  style={{
+                    fontSize: '12px', fontWeight: 500, fontFamily: 'Inter, sans-serif',
+                    padding: '3px 24px 3px 10px', borderRadius: '20px',
+                    border: '1px solid transparent', cursor: 'pointer', appearance: 'auto',
+                    backgroundColor: editStatus === 'Completed' ? '#DCFCE7' : '#FEF3C7',
+                    color: editStatus === 'Completed' ? '#166534' : '#92400E',
+                  }}
+                >
+                  <option value="Open">Open</option>
+                  <option value="Completed">Completed</option>
+                </select>
               </div>
 
-              {/* Due Date */}
+              {/* Due Date — editable */}
               <div className="flex items-center justify-between">
                 <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>Due Date</span>
-                <span style={{ fontSize: '14px', color: isOverdue(detailTask.dueDate) && detailTask.status === 'Open' ? '#EF4444' : '#374151', fontFamily: 'Inter, sans-serif' }}>
-                  {formatDateLong(detailTask.dueDate)}
-                </span>
+                <input
+                  type="date"
+                  value={editDueDate}
+                  onChange={e => setEditDueDate(e.target.value)}
+                  style={{
+                    fontSize: '14px', fontFamily: 'Inter, sans-serif',
+                    color: editDueDate && isOverdue(editDueDate) && editStatus === 'Open' ? '#EF4444' : '#374151',
+                    border: '1px solid #D1D5DB', borderRadius: '6px', padding: '3px 6px', outline: 'none', cursor: 'pointer',
+                  }}
+                />
               </div>
 
-              {/* Assigned To */}
-              <div className="flex items-center justify-between">
-                <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>Assigned To</span>
-                {detailTask.assignedTo
-                  ? <span style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>{detailTask.assignedTo}</span>
-                  : <button style={{ fontSize: '13px', color: '#005B94', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>Assign</button>
-                }
+              {/* Assigned To — editable */}
+              <div className="flex items-center justify-between gap-4">
+                <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}>Assigned To</span>
+                <input
+                  type="text"
+                  value={editAssignedTo}
+                  onChange={e => setEditAssignedTo(e.target.value)}
+                  placeholder="email@company.com"
+                  style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '3px 8px', outline: 'none', width: '100%', maxWidth: 200 }}
+                />
               </div>
 
               {/* Task type chip */}
@@ -728,15 +767,13 @@ export function TransactionTasks({ onAIAssistantOpen = () => {}, isAIDrawerOpen 
 
               {/* Footer buttons */}
               <div className="flex gap-2 pt-1">
-                {detailTask.status !== 'Completed' && (
-                  <button
-                    onClick={() => handleComplete(detailTask.id)}
-                    className="flex-1"
-                    style={{ padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#16A34A', color: '#fff', fontSize: '14px', fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
-                  >
-                    Complete
-                  </button>
-                )}
+                <button
+                  onClick={handleSaveDetail}
+                  className="flex-1"
+                  style={{ padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#005B94', color: '#fff', fontSize: '14px', fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+                >
+                  Save Changes
+                </button>
                 <button
                   onClick={() => setDetailTask(null)}
                   className="flex-1"
