@@ -1,28 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PageHeader } from './PageHeader';
-import { Card, CardContent } from './ui/card';
-import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { AlertTriangle, User, CheckCircle, MoreHorizontal, Clock, Users, ListTodo } from 'lucide-react';
-import { TaskActionDropdown } from './TaskActionDropdown';
-import { AssignOwnerModal } from './AssignOwnerModal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from './ui/table';
+import {
+  ListTodo,
+  AlertCircle,
+  Clock,
+  ChevronsUpDown,
+  UserPlus,
+  MoreHorizontal,
+  AlertTriangle,
+} from 'lucide-react';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Task {
   id: string;
   type: 'Setup' | 'Operational';
   task: string;
   trigger: string;
-  assignedTo?: {
-    name: string;
-    initials: string;
-  };
+  assignedTo?: { name: string; initials: string };
   action: string;
   status: 'pending' | 'completed';
-  dueDate?: string; // ISO date string e.g. '2026-09-30'
+  dueDate?: string;
 }
+
+type SortKey = 'task' | 'type' | 'trigger' | 'dueDate' | 'assignedTo' | 'status';
+type Urgency = 'overdue' | 'soon' | 'upcoming' | 'none';
+
+// ── Mock data ─────────────────────────────────────────────────────────────────
 
 const mockTasks: Task[] = [
   {
@@ -130,12 +151,9 @@ const mockTasks: Task[] = [
   },
 ];
 
-// ── Due date helpers ──────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-type Urgency = 'overdue' | 'soon' | 'upcoming' | 'none';
-
-function getDueDateUrgency(dueDate?: string): Urgency {
-  if (!dueDate) return 'none';
+function getDueDateUrgency(dueDate: string): Urgency {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const due = new Date(dueDate + 'T00:00:00');
@@ -145,113 +163,145 @@ function getDueDateUrgency(dueDate?: string): Urgency {
   return 'upcoming';
 }
 
-function formatDueDate(dueDate?: string): string {
-  if (!dueDate) return '—';
-  const d = new Date(dueDate + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+function isOverdue(dueDate?: string): boolean {
+  if (!dueDate) return false;
+  return getDueDateUrgency(dueDate) === 'overdue';
 }
 
-const URGENCY_STYLE: Record<Urgency, React.CSSProperties> = {
-  overdue:  { backgroundColor: '#FEE2E2', color: '#991B1B' },
-  soon:     { backgroundColor: '#FEF3C7', color: '#92400E' },
-  upcoming: { backgroundColor: '#EFF6FF', color: '#1D4ED8' },
-  none:     {},
-};
+function formatDate(dueDate: string): string {
+  const [y, m, d] = dueDate.split('-');
+  return `${m}/${d}/${y}`;
+}
+
+function formatDateLong(dueDate: string): string {
+  return new Date(dueDate + 'T00:00:00').toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+
+// ── Inline row menu ───────────────────────────────────────────────────────────
+
+function RowMenu({
+  onEdit,
+  onMarkComplete,
+  onRemove,
+}: {
+  onEdit: () => void;
+  onMarkComplete: () => void;
+  onRemove: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  const item = (label: string, color: string, onClick: () => void) => (
+    <button
+      onClick={() => { setOpen(false); onClick(); }}
+      style={{
+        display: 'block', width: '100%', textAlign: 'left',
+        padding: '9px 14px', fontSize: '13px', fontFamily: 'Inter, sans-serif',
+        color, background: 'none', border: 'none', cursor: 'pointer',
+      }}
+      className="hover:bg-gray-50"
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{ padding: '4px 6px', borderRadius: '6px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', color: '#9CA3AF' }}
+        className="hover:bg-gray-100"
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: '100%', zIndex: 50,
+          backgroundColor: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.10)', minWidth: '150px', overflow: 'hidden',
+        }}>
+          {item('Edit Task', '#374151', onEdit)}
+          {item('Mark as Complete', '#374151', onMarkComplete)}
+          {item('Remove', '#EF4444', onRemove)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 interface TasksProps {
   onAIAssistantOpen?: () => void;
   isAIDrawerOpen?: boolean;
 }
 
-export function Tasks({
-  onAIAssistantOpen = () => {},
-  isAIDrawerOpen = false
-}: TasksProps) {
+export function Tasks({ onAIAssistantOpen = () => {}, isAIDrawerOpen = false }: TasksProps) {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedTaskForAssignment, setSelectedTaskForAssignment] = useState<string | null>(null);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editDueDate, setEditDueDate] = useState('');
-  const [editStatus, setEditStatus] = useState<'pending' | 'completed'>('pending');
 
-  // Calculate metrics
-  const setupTasks = tasks.filter(task => task.type === 'Setup');
-  const completedSetupTasks = setupTasks.filter(task => task.status === 'completed');
-  const setupProgress = (completedSetupTasks.length / setupTasks.length) * 100;
-  
-  const activeTasks = tasks.filter(task => task.status === 'pending');
-  const unassignedTasks = activeTasks.filter(task => !task.assignedTo);
-  const myTasks = activeTasks.filter(task => task.assignedTo?.name === 'John Smith'); // Mock current user
+  // Filters
+  const [filterType, setFilterType]     = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterAssignee, setFilterAssignee] = useState('');
 
-  const getTypeBadgeStyle = (type: string) => {
-    if (type === 'Setup') {
-      return 'bg-gray-500 text-white';
-    }
-    return 'bg-primary text-primary-foreground';
+  // Sort
+  const [sortKey, setSortKey] = useState<SortKey>('dueDate');
+  const [sortAsc, setSortAsc] = useState(true);
+
+  // Edit dialog
+  const [editingTask, setEditingTask]   = useState<Task | null>(null);
+  const [editDueDate, setEditDueDate]   = useState('');
+  const [editStatus, setEditStatus]     = useState<'pending' | 'completed'>('pending');
+
+  // Inline assign
+  const [assigningId, setAssigningId]   = useState<string | null>(null);
+  const [assignInput, setAssignInput]   = useState('');
+
+  // ── Derived ──────────────────────────────────────────────────────────────
+  const activeTasks  = tasks.filter(t => t.status === 'pending');
+  const overdueTasks = activeTasks.filter(t => isOverdue(t.dueDate));
+  const uniqueAssignees = Array.from(new Set(tasks.map(t => t.assignedTo?.name).filter(Boolean))) as string[];
+
+  const visible = tasks
+    .filter(t => !filterType     || t.type === filterType)
+    .filter(t => !filterStatus   || t.status === filterStatus)
+    .filter(t => !filterAssignee || t.assignedTo?.name === filterAssignee)
+    .sort((a, b) => {
+      let av = '';
+      let bv = '';
+      if (sortKey === 'assignedTo') { av = a.assignedTo?.name ?? ''; bv = b.assignedTo?.name ?? ''; }
+      else { av = (a[sortKey] ?? '') as string; bv = (b[sortKey] ?? '') as string; }
+      return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) setSortAsc(a => !a);
+    else { setSortKey(key); setSortAsc(true); }
   };
 
-  // Task action handlers
-  const handleMarkComplete = (taskId: string) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId 
-        ? { ...task, status: 'completed' as const }
-        : task
-    ));
+  // ── Actions ───────────────────────────────────────────────────────────────
+  const handleMarkComplete = (id: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'completed' } : t));
   };
 
-  const handleReassignTask = (taskId: string) => {
-    // In a real app, this would open a user picker modal
-    console.log('Reassigning task:', taskId);
-    // For demo purposes, just log the action
+  const handleRemove = (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
   };
 
-  const handleDismissTask = (taskId: string) => {
-    // Non-destructive dismissal - could add a 'dismissed' status
-    setTasks(prev => prev.filter(task => task.id !== taskId));
-  };
-
-  const handleGoToLicense = (taskId: string) => {
-    // In a real app, this would navigate to the license details
-    console.log('Navigating to license for task:', taskId);
-    // For demo purposes, just log the action
-  };
-
-  const handleAssignClick = (taskId: string) => {
-    setSelectedTaskForAssignment(taskId);
-    setShowAssignModal(true);
-  };
-
-  const handleAssignOwner = (email: string) => {
-    if (selectedTaskForAssignment) {
-      // Create a simple user object from email
-      const newAssignee = {
-        name: email.split('@')[0] || email, // Use email prefix as name
-        initials: (email.split('@')[0] || email).substring(0, 2).toUpperCase()
-      };
-
-      setTasks(prev => prev.map(task => 
-        task.id === selectedTaskForAssignment 
-          ? { ...task, assignedTo: newAssignee }
-          : task
-      ));
-      
-      console.log('Assigned task', selectedTaskForAssignment, 'to', email);
-    }
-    setSelectedTaskForAssignment(null);
-  };
-
-  const handleCloseAssignModal = () => {
-    setShowAssignModal(false);
-    setSelectedTaskForAssignment(null);
-  };
-
-  const handleEditTask = (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      setEditingTask(task);
-      setEditDueDate(task.dueDate ?? '');
-      setEditStatus(task.status);
-    }
+  const handleOpenEdit = (task: Task) => {
+    setEditingTask(task);
+    setEditDueDate(task.dueDate ?? '');
+    setEditStatus(task.status);
   };
 
   const handleSaveEdit = () => {
@@ -264,8 +314,47 @@ export function Tasks({
     setEditingTask(null);
   };
 
+  const handleAssign = (id: string) => {
+    if (!assignInput.trim()) return;
+    const name = assignInput.trim();
+    const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, assignedTo: { name, initials } } : t));
+    setAssigningId(null);
+    setAssignInput('');
+  };
+
+  // ── Sub-components ────────────────────────────────────────────────────────
+  const selectStyle: React.CSSProperties = {
+    padding: '6px 28px 6px 10px',
+    fontSize: '13px',
+    fontFamily: 'Inter, sans-serif',
+    color: '#374151',
+    border: '1px solid #D1D5DB',
+    borderRadius: '6px',
+    backgroundColor: '#fff',
+    cursor: 'pointer',
+    appearance: 'auto',
+    outline: 'none',
+  };
+
+  const SortHeader = ({ label, sortId }: { label: string; sortId: SortKey }) => (
+    <TableHead
+      onClick={() => handleSort(sortId)}
+      style={{
+        fontSize: '11px', fontWeight: 700, color: '#374151',
+        fontFamily: 'Inter, sans-serif', textTransform: 'uppercase',
+        letterSpacing: '0.06em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none',
+      }}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        <ChevronsUpDown className="h-3 w-3 text-gray-400" />
+      </span>
+    </TableHead>
+  );
+
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--surface-page, #F9FAFB)' }}>
       <PageHeader
         icon={<ListTodo className="h-6 w-6" />}
         title="Tasks"
@@ -274,314 +363,170 @@ export function Tasks({
         isAIDrawerOpen={isAIDrawerOpen}
       />
 
-      {/* Main Content */}
-      <div className="p-6 max-w-7xl mx-auto">
-        <Card 
-          className="bg-white border-0 shadow-card"
-          style={{ borderRadius: '12px' }}
-        >
-          <CardContent className="p-6">
-            {/* Redesigned Summary Section */}
-            <div className="mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Setup Progress - Spans 2 Columns */}
-                <div className="md:col-span-2">
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100 h-full">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <CheckCircle className="w-6 h-6 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 
-                          style={{ fontSize: '18px', fontWeight: 600, fontFamily: 'Inter, sans-serif', color: '#374151' }}
-                        >
-                          Setup Progress
-                        </h3>
-                        <p 
-                          className="text-muted-foreground"
-                          style={{ fontSize: '14px', fontWeight: 400, fontFamily: 'Inter, sans-serif', color: '#6B7280' }}
-                        >
-                          {completedSetupTasks.length} of {setupTasks.length} tasks completed
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div 
-                          className="text-3xl font-bold text-blue-600"
-                          style={{ fontSize: '28px', fontWeight: 700, fontFamily: 'Inter, sans-serif' }}
-                        >
-                          {Math.round(setupProgress)}%
-                        </div>
-                      </div>
-                    </div>
-                    <Progress 
-                      value={setupProgress} 
-                      className="h-3"
-                      style={{ backgroundColor: '#E5E7EB' }}
-                    />
-                    <p 
-                      className="text-sm text-muted-foreground mt-3"
-                      style={{ fontSize: '12px', fontWeight: 400, fontFamily: 'Inter, sans-serif', color: '#6B7280' }}
-                    >
-                      Complete setup tasks to unlock full platform functionality
-                    </p>
-                  </div>
-                </div>
+      <div className="p-6 max-w-7xl mx-auto space-y-5">
 
-                {/* Active Tasks */}
-                <div>
-                  <div className="bg-white rounded-lg p-6 border border-gray-200 h-full">
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                        <Clock className="w-6 h-6 text-orange-600" />
-                      </div>
-                      <p 
-                        style={{ fontSize: '14px', fontWeight: 400, fontFamily: 'Inter, sans-serif', color: '#6B7280' }}
-                      >
-                        Active Tasks
-                      </p>
-                      <p 
-                        style={{ fontSize: '32px', fontWeight: 700, fontFamily: 'Inter, sans-serif', color: '#374151', lineHeight: '1' }}
-                        className="mt-2"
-                      >
-                        {activeTasks.length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Unassigned Tasks */}
-                <div>
-                  <div className="bg-white rounded-lg p-6 border border-gray-200 h-full">
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                        <Users className="w-6 h-6 text-gray-600" />
-                      </div>
-                      <p 
-                        style={{ fontSize: '14px', fontWeight: 400, fontFamily: 'Inter, sans-serif', color: '#6B7280' }}
-                      >
-                        Unassigned
-                      </p>
-                      <p 
-                        style={{ fontSize: '32px', fontWeight: 700, fontFamily: 'Inter, sans-serif', color: '#374151', lineHeight: '1' }}
-                        className="mt-2"
-                      >
-                        {unassignedTasks.length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+        {/* ── Metric cards ─────────────────────────────────────────────── */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-xl border border-gray-200 p-6 flex flex-col items-center justify-center gap-2">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FEF3C7' }}>
+                <Clock className="w-6 h-6" style={{ color: '#F59E0B' }} />
               </div>
-
-              {/* My Inbox - Separate Row */}
-              <div className="mt-6">
-                <div 
-                  className="rounded-lg p-6"
-                  style={{ backgroundColor: '#005B94' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                        <User className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 
-                          style={{ fontSize: '20px', fontWeight: 600, fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}
-                        >
-                          My Inbox ({myTasks.length})
-                        </h3>
-                        <p 
-                          style={{ fontSize: '14px', fontWeight: 400, fontFamily: 'Inter, sans-serif', color: 'rgba(255, 255, 255, 0.9)' }}
-                        >
-                          Tasks assigned to you
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div 
-                          className="text-3xl font-bold"
-                          style={{ fontSize: '32px', fontWeight: 700, fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}
-                        >
-                          {myTasks.length}
-                        </div>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                        style={{ fontSize: '12px', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}
-                      >
-                        View All Tasks
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <p style={{ fontSize: '14px', color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: '4px' }}>Active Tasks</p>
+              <p style={{ fontSize: '36px', fontWeight: 700, color: '#111827', fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>
+                {activeTasks.length}
+              </p>
             </div>
+            <div className="rounded-xl border border-gray-200 p-6 flex flex-col items-center justify-center gap-2">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FEE2E2' }}>
+                <AlertCircle className="w-6 h-6" style={{ color: '#EF4444' }} />
+              </div>
+              <p style={{ fontSize: '14px', color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: '4px' }}>Overdue</p>
+              <p style={{ fontSize: '36px', fontWeight: 700, color: '#EF4444', fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>
+                {overdueTasks.length}
+              </p>
+            </div>
+          </div>
+        </div>
 
-            {/* Tasks Table */}
-            <div>
-              <Table>
-                <TableHeader>
-                  <TableRow 
-                    className="border-b"
-                    style={{ borderColor: '#E5E7EB' }}
-                  >
-                    <TableHead 
-                      className="text-left py-3 px-4"
-                      style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                    >
-                      Type
-                    </TableHead>
-                    <TableHead 
-                      className="text-left py-3 px-4"
-                      style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                    >
-                      Task
-                    </TableHead>
-                    <TableHead
-                      className="text-left py-3 px-4"
-                      style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                    >
-                      Trigger
-                    </TableHead>
-                    <TableHead
-                      className="text-left py-3 px-4"
-                      style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}
-                    >
-                      Due Date
-                    </TableHead>
-                    <TableHead
-                      className="text-left py-3 px-4"
-                      style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                    >
-                      Assigned To
-                    </TableHead>
-                    <TableHead 
-                      className="text-left py-3 px-4"
-                      style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                    >
-                      Action
-                    </TableHead>
+        {/* ── Table card ───────────────────────────────────────────────── */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5">
+
+          {/* Filters */}
+          <div className="flex items-center gap-2 flex-wrap mb-5">
+            <select value={filterType} onChange={e => setFilterType(e.target.value)} style={selectStyle}>
+              <option value="">All Types</option>
+              <option value="Operational">Operational</option>
+              <option value="Setup">Setup</option>
+            </select>
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyle}>
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+            </select>
+            <select value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)} style={selectStyle}>
+              <option value="">All Assignees</option>
+              {uniqueAssignees.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+
+          {/* Table */}
+          <Table>
+            <TableHeader>
+              <TableRow style={{ borderColor: '#E5E7EB' }}>
+                <SortHeader label="Type"        sortId="type" />
+                <SortHeader label="Task"        sortId="task" />
+                <SortHeader label="Trigger"     sortId="trigger" />
+                <SortHeader label="Due Date"    sortId="dueDate" />
+                <SortHeader label="Assigned To" sortId="assignedTo" />
+                <SortHeader label="Status"      sortId="status" />
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visible.map(task => {
+                const overdue = task.status === 'pending' && isOverdue(task.dueDate);
+                return (
+                  <TableRow key={task.id} className="border-b hover:bg-gray-50 transition-colors" style={{ borderColor: '#F3F4F6' }}>
+
+                    {/* Type */}
+                    <TableCell style={{ paddingTop: 14, paddingBottom: 14, whiteSpace: 'nowrap' }}>
+                      <span style={{
+                        display: 'inline-block', padding: '3px 10px', borderRadius: '20px',
+                        fontSize: '12px', fontWeight: 500, fontFamily: 'Inter, sans-serif',
+                        backgroundColor: task.type === 'Setup' ? '#F3F4F6' : '#005B94',
+                        color: task.type === 'Setup' ? '#374151' : '#fff',
+                      }}>
+                        {task.type}
+                      </span>
+                    </TableCell>
+
+                    {/* Task */}
+                    <TableCell style={{ paddingTop: 14, paddingBottom: 14, fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
+                      {task.task}
+                    </TableCell>
+
+                    {/* Trigger */}
+                    <TableCell style={{ paddingTop: 14, paddingBottom: 14, maxWidth: 220, width: 220 }}>
+                      <span style={{
+                        display: 'block', fontSize: '13px', color: '#6B7280',
+                        fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap',
+                        overflow: 'hidden', textOverflow: 'ellipsis',
+                      }} title={task.trigger}>
+                        {task.trigger}
+                      </span>
+                    </TableCell>
+
+                    {/* Due Date */}
+                    <TableCell style={{ paddingTop: 14, paddingBottom: 14, fontSize: '14px', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', color: overdue ? '#EF4444' : '#374151', fontWeight: overdue ? 500 : 400 }}>
+                      {task.dueDate ? formatDate(task.dueDate) : <span style={{ color: '#D1D5DB' }}>—</span>}
+                    </TableCell>
+
+                    {/* Assigned To */}
+                    <TableCell style={{ paddingTop: 14, paddingBottom: 14 }}>
+                      {assigningId === task.id ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            autoFocus
+                            value={assignInput}
+                            onChange={e => setAssignInput(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleAssign(task.id); if (e.key === 'Escape') setAssigningId(null); }}
+                            placeholder="Name"
+                            style={{ fontSize: '13px', fontFamily: 'Inter, sans-serif', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '4px 8px', width: '130px', outline: 'none' }}
+                          />
+                          <button onClick={() => handleAssign(task.id)} style={{ fontSize: '12px', color: '#005B94', background: 'none', border: 'none', cursor: 'pointer' }}>Save</button>
+                          <button onClick={() => setAssigningId(null)} style={{ fontSize: '12px', color: '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                        </div>
+                      ) : task.assignedTo ? (
+                        <span style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>{task.assignedTo.name}</span>
+                      ) : (
+                        <button
+                          onClick={() => { setAssigningId(task.id); setAssignInput(''); }}
+                          className="flex items-center gap-1 hover:bg-gray-100 rounded px-2 py-1 transition-colors"
+                          style={{ fontSize: '13px', color: '#6B7280', fontFamily: 'Inter, sans-serif', border: '1px solid #D1D5DB', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}
+                        >
+                          <UserPlus className="h-3.5 w-3.5" />
+                          Assign
+                        </button>
+                      )}
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell style={{ paddingTop: 14, paddingBottom: 14 }}>
+                      <span style={{
+                        display: 'inline-block', padding: '3px 12px', borderRadius: '20px',
+                        fontSize: '12px', fontWeight: 500, fontFamily: 'Inter, sans-serif',
+                        backgroundColor: task.status === 'completed' ? '#DCFCE7' : '#FEF3C7',
+                        color: task.status === 'completed' ? '#166534' : '#92400E',
+                      }}>
+                        {task.status === 'completed' ? 'Completed' : 'Pending'}
+                      </span>
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell style={{ paddingTop: 14, paddingBottom: 14, textAlign: 'right' }}>
+                      <RowMenu
+                        onEdit={() => handleOpenEdit(task)}
+                        onMarkComplete={() => handleMarkComplete(task.id)}
+                        onRemove={() => handleRemove(task.id)}
+                      />
+                    </TableCell>
+
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tasks.filter(task => task.status === 'pending').map((task) => (
-                    <TableRow 
-                      key={task.id}
-                      className="border-b hover:bg-gray-50 transition-colors"
-                      style={{ borderColor: '#E5E7EB' }}
-                    >
-                      <TableCell 
-                        className="py-4 px-4"
-                      >
-                        <Badge 
-                          className={`text-xs font-medium px-3 py-1 rounded-full ${getTypeBadgeStyle(task.type)}`}
-                          style={{ fontFamily: 'Inter, sans-serif' }}
-                        >
-                          {task.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell 
-                        className="py-4 px-4"
-                        style={{ fontSize: '16px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}
-                      >
-                        {task.task}
-                      </TableCell>
-                      <TableCell
-                        className="py-4 px-4"
-                        style={{ fontSize: '16px', fontWeight: 400, color: '#374151', fontFamily: 'Inter, sans-serif' }}
-                      >
-                        <div
-                          title={task.trigger}
-                          style={{ width: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                        >
-                          {task.trigger}
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-4 px-4">
-                        {task.dueDate ? (() => {
-                          const urgency = getDueDateUrgency(task.dueDate);
-                          return (
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                padding: '3px 10px',
-                                borderRadius: 99,
-                                fontSize: 13,
-                                fontWeight: 500,
-                                fontFamily: 'Inter, sans-serif',
-                                whiteSpace: 'nowrap',
-                                ...URGENCY_STYLE[urgency],
-                              }}
-                            >
-                              {urgency === 'overdue' && <AlertTriangle style={{ width: 12, height: 12, flexShrink: 0 }} />}
-                              {formatDueDate(task.dueDate)}
-                            </span>
-                          );
-                        })() : (
-                          <span style={{ color: '#9CA3AF', fontSize: 14 }}>—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-4 px-4">
-                        {task.assignedTo ? (
-                          <span 
-                            style={{ fontSize: '16px', fontWeight: 400, color: '#374151', fontFamily: 'Inter, sans-serif' }}
-                          >
-                            {task.assignedTo.name}
-                          </span>
-                        ) : (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleAssignClick(task.id)}
-                            className="text-gray-500 border-gray-300 hover:bg-gray-50"
-                            style={{ fontSize: '14px', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}
-                          >
-                            + Assign
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-4 px-4">
-                        <TaskActionDropdown
-                          taskId={task.id}
-                          onMarkComplete={handleMarkComplete}
-                          onReassignTask={handleReassignTask}
-                          onDismissTask={handleDismissTask}
-                          onGoToLicense={handleGoToLicense}
-                          onEditTask={handleEditTask}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                );
+              })}
+            </TableBody>
+          </Table>
 
-            {/* Empty State for No Tasks */}
-            {activeTasks.length === 0 && (
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">🎉</div>
-                <h3 
-                  className="mb-2"
-                  style={{ fontSize: '22px', fontWeight: 600, fontFamily: 'Inter, sans-serif', color: '#374151' }}
-                >
-                  You're all caught up!
-                </h3>
-                <p 
-                  style={{ fontSize: '16px', fontWeight: 400, fontFamily: 'Inter, sans-serif', color: '#6B7280' }}
-                >
-                  No pending tasks at this time.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          {visible.length === 0 && (
+            <div className="text-center py-14">
+              <p style={{ fontSize: '15px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif' }}>No tasks match the current filters.</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Edit Task Dialog */}
+      {/* ── Edit Task dialog ──────────────────────────────────────────────── */}
       <Dialog open={!!editingTask} onOpenChange={open => { if (!open) setEditingTask(null); }}>
         <DialogContent className="max-w-sm p-0 overflow-hidden" style={{ borderRadius: '12px' }}>
           {/* Blue header */}
@@ -599,7 +544,7 @@ export function Tasks({
           {/* Body */}
           <div style={{ padding: '20px' }} className="space-y-4">
 
-            {/* Status row */}
+            {/* Status */}
             <div className="flex items-center justify-between">
               <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>Status</span>
               <select
@@ -619,7 +564,7 @@ export function Tasks({
               </select>
             </div>
 
-            {/* Due Date row */}
+            {/* Due Date */}
             <div className="flex items-center justify-between">
               <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>Due Date</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -640,7 +585,7 @@ export function Tasks({
               </div>
             </div>
 
-            {/* Assigned To row */}
+            {/* Assigned To */}
             {editingTask?.assignedTo && (
               <div className="flex items-center justify-between">
                 <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>Assigned To</span>
@@ -673,7 +618,7 @@ export function Tasks({
               </div>
             )}
 
-            {/* Footer buttons */}
+            {/* Footer */}
             <div className="flex gap-2 pt-1">
               <button
                 onClick={handleSaveEdit}
@@ -693,18 +638,6 @@ export function Tasks({
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Assign Owner Modal */}
-      <AssignOwnerModal
-        isOpen={showAssignModal}
-        onClose={handleCloseAssignModal}
-        onAssign={handleAssignOwner}
-        taskName={
-          selectedTaskForAssignment 
-            ? tasks.find(t => t.id === selectedTaskForAssignment)?.task
-            : undefined
-        }
-      />
     </div>
   );
 }
