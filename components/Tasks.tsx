@@ -5,10 +5,8 @@ import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Bell, AlertTriangle, User, CheckCircle, MoreHorizontal, Clock, Users, ListTodo, Calendar, CalendarClock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { AlertTriangle, User, CheckCircle, MoreHorizontal, Clock, Users, ListTodo } from 'lucide-react';
 import { TaskActionDropdown } from './TaskActionDropdown';
 import { AssignOwnerModal } from './AssignOwnerModal';
 
@@ -585,183 +583,113 @@ export function Tasks({
 
       {/* Edit Task Dialog */}
       <Dialog open={!!editingTask} onOpenChange={open => { if (!open) setEditingTask(null); }}>
-        <DialogContent
-          style={{
-            maxWidth: 480,
-            borderRadius: 16,
-            padding: 0,
-            overflow: 'hidden',
-            fontFamily: 'Inter, sans-serif',
-          }}
-        >
-          {/* Header */}
-          <div style={{ padding: '24px 24px 0' }}>
+        <DialogContent className="max-w-sm p-0 overflow-hidden" style={{ borderRadius: '12px' }}>
+          {/* Blue header */}
+          <div style={{ backgroundColor: '#005B94', padding: '16px 20px' }}>
             <DialogHeader>
-              <DialogTitle style={{ fontSize: 18, fontWeight: 600, color: '#111827' }}>
+              <DialogTitle style={{ fontSize: '18px', fontWeight: 600, color: '#fff', fontFamily: 'Inter, sans-serif' }}>
                 Edit Task
               </DialogTitle>
-              {editingTask && (
-                <p style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
-                  {editingTask.task}
-                </p>
-              )}
+              <DialogDescription style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, sans-serif' }}>
+                {editingTask?.task}
+              </DialogDescription>
             </DialogHeader>
           </div>
 
           {/* Body */}
-          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ padding: '20px' }} className="space-y-4">
 
-            {/* Due Date — hero field */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <Label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <CalendarClock style={{ width: 14, height: 14, color: '#6B7280' }} />
-                Due Date
-              </Label>
-              <div style={{ position: 'relative' }}>
-                <Calendar
-                  style={{
-                    position: 'absolute',
-                    left: 12,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 16,
-                    height: 16,
-                    color: '#9CA3AF',
-                    pointerEvents: 'none',
-                  }}
-                />
+            {/* Status row */}
+            <div className="flex items-center justify-between">
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>Status</span>
+              <select
+                value={editStatus}
+                onChange={e => setEditStatus(e.target.value as 'pending' | 'completed')}
+                style={{
+                  fontSize: '12px', fontWeight: 500, fontFamily: 'Inter, sans-serif',
+                  padding: '3px 24px 3px 10px', borderRadius: '20px',
+                  border: '1px solid transparent', cursor: 'pointer',
+                  backgroundColor: editStatus === 'completed' ? '#DCFCE7' : '#FEF3C7',
+                  color: editStatus === 'completed' ? '#166534' : '#92400E',
+                  appearance: 'auto',
+                }}
+              >
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+
+            {/* Due Date row */}
+            <div className="flex items-center justify-between">
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>Due Date</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {editDueDate && getDueDateUrgency(editDueDate) === 'overdue' && (
+                  <AlertTriangle style={{ width: 14, height: 14, color: '#EF4444', flexShrink: 0 }} />
+                )}
                 <input
                   type="date"
                   value={editDueDate}
                   onChange={e => setEditDueDate(e.target.value)}
                   style={{
-                    width: '100%',
-                    paddingLeft: 36,
-                    paddingRight: 12,
-                    paddingTop: 9,
-                    paddingBottom: 9,
-                    border: '1px solid #D1D5DB',
-                    borderRadius: 8,
-                    fontSize: 14,
-                    color: '#111827',
-                    outline: 'none',
-                    fontFamily: 'Inter, sans-serif',
-                    boxSizing: 'border-box',
+                    fontSize: '14px', fontFamily: 'Inter, sans-serif',
+                    color: editDueDate && getDueDateUrgency(editDueDate) === 'overdue' ? '#EF4444' : '#374151',
+                    border: '1px solid #D1D5DB', borderRadius: '6px',
+                    padding: '3px 6px', outline: 'none', cursor: 'pointer',
                   }}
                 />
               </div>
-              {/* Live urgency indicator */}
-              {editDueDate && (() => {
-                const urgency = getDueDateUrgency(editDueDate);
-                const labels: Record<Urgency, string> = {
-                  overdue: 'Overdue',
-                  soon: 'Due soon',
-                  upcoming: 'Upcoming',
-                  none: '',
-                };
-                if (urgency === 'none') return null;
-                return (
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      alignSelf: 'flex-start',
-                      padding: '2px 10px',
-                      borderRadius: 99,
-                      fontSize: 12,
-                      fontWeight: 500,
-                      ...URGENCY_STYLE[urgency],
-                    }}
-                  >
-                    {urgency === 'overdue' && <AlertTriangle style={{ width: 11, height: 11 }} />}
-                    {labels[urgency]}
-                  </span>
-                );
-              })()}
-              {!editDueDate && (
-                <p style={{ fontSize: 12, color: '#9CA3AF' }}>No due date set</p>
-              )}
             </div>
 
-            {/* Status */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <Label style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                Status
-              </Label>
-              <Select
-                value={editStatus}
-                onValueChange={val => setEditStatus(val as 'pending' | 'completed')}
-              >
-                <SelectTrigger style={{ fontSize: 14, borderRadius: 8 }}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Read-only context */}
-            {editingTask && (
-              <div
-                style={{
-                  backgroundColor: '#F9FAFB',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: 8,
-                  padding: '12px 14px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Badge
-                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${getTypeBadgeStyle(editingTask.type)}`}
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    {editingTask.type}
-                  </Badge>
-                  {editingTask.assignedTo && (
-                    <span style={{ fontSize: 12, color: '#6B7280' }}>
-                      Assigned to {editingTask.assignedTo.name}
-                    </span>
-                  )}
-                </div>
-                <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.4, margin: 0 }}>
-                  {editingTask.trigger}
-                </p>
+            {/* Assigned To row */}
+            {editingTask?.assignedTo && (
+              <div className="flex items-center justify-between">
+                <span style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>Assigned To</span>
+                <span style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>{editingTask.assignedTo.name}</span>
               </div>
             )}
-          </div>
 
-          {/* Footer */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: 10,
-              padding: '16px 24px',
-              borderTop: '1px solid #E5E7EB',
-              backgroundColor: '#FAFAFA',
-            }}
-          >
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditingTask(null)}
-              style={{ fontSize: 14, fontWeight: 500 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSaveEdit}
-              style={{ fontSize: 14, fontWeight: 500, backgroundColor: '#185FA5', color: '#fff' }}
-            >
-              Save Changes
-            </Button>
+            {/* Action chip */}
+            {editingTask?.action && (
+              <div style={{ backgroundColor: '#EFF6FF', padding: '10px 14px', borderRadius: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 500, color: '#1D4ED8', fontFamily: 'Inter, sans-serif' }}>
+                  {editingTask.action}
+                </span>
+              </div>
+            )}
+
+            {/* Type */}
+            {editingTask?.type && (
+              <div>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', marginBottom: '2px' }}>Type</p>
+                <p style={{ fontSize: '14px', color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>{editingTask.type}</p>
+              </div>
+            )}
+
+            {/* Trigger */}
+            {editingTask?.trigger && (
+              <div>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', marginBottom: '2px' }}>Trigger</p>
+                <p style={{ fontSize: '14px', color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>{editingTask.trigger}</p>
+              </div>
+            )}
+
+            {/* Footer buttons */}
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={handleSaveEdit}
+                className="flex-1"
+                style={{ padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#005B94', color: '#fff', fontSize: '14px', fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={() => setEditingTask(null)}
+                className="flex-1"
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', backgroundColor: '#fff', color: '#374151', fontSize: '14px', fontWeight: 500, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
