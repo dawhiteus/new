@@ -1,7 +1,7 @@
 import React from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Button } from './ui/button';
-import { MoreHorizontal, CheckCircle, UserPlus, X, ExternalLink } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, UserPlus, X, ExternalLink, CalendarClock } from 'lucide-react';
 
 interface TaskActionDropdownProps {
   taskId: string;
@@ -9,14 +9,16 @@ interface TaskActionDropdownProps {
   onReassignTask?: (taskId: string) => void;
   onDismissTask?: (taskId: string) => void;
   onGoToLicense?: (taskId: string) => void;
+  onEditTask?: (taskId: string) => void;
 }
 
-export function TaskActionDropdown({ 
-  taskId, 
-  onMarkComplete, 
-  onReassignTask, 
-  onDismissTask, 
-  onGoToLicense 
+export function TaskActionDropdown({
+  taskId,
+  onMarkComplete,
+  onReassignTask,
+  onDismissTask,
+  onGoToLicense,
+  onEditTask,
 }: TaskActionDropdownProps) {
   return (
     <DropdownMenu>
@@ -33,6 +35,21 @@ export function TaskActionDropdown({
           boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
         }}
       >
+        {/* Edit Task */}
+        <DropdownMenuItem
+          onClick={() => onEditTask?.(taskId)}
+          className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg transition-colors hover:bg-blue-50 focus:bg-blue-100"
+          style={{
+            fontSize: '14px',
+            fontWeight: 500,
+            fontFamily: 'Inter, sans-serif',
+            color: '#1A1A1A'
+          }}
+        >
+          <CalendarClock className="h-4 w-4 text-blue-600" />
+          <span>Edit Task</span>
+        </DropdownMenuItem>
+
         {/* Mark as Complete */}
         <DropdownMenuItem
           onClick={() => onMarkComplete?.(taskId)}

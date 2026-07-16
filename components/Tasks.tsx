@@ -5,7 +5,10 @@ import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Bell, AlertTriangle, User, CheckCircle, MoreHorizontal, Clock, Users, ListTodo } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Bell, AlertTriangle, User, CheckCircle, MoreHorizontal, Clock, Users, ListTodo, Calendar, CalendarClock } from 'lucide-react';
 import { TaskActionDropdown } from './TaskActionDropdown';
 import { AssignOwnerModal } from './AssignOwnerModal';
 
@@ -20,6 +23,7 @@ interface Task {
   };
   action: string;
   status: 'pending' | 'completed';
+  dueDate?: string; // ISO date string e.g. '2026-09-30'
 }
 
 const mockTasks: Task[] = [
@@ -30,7 +34,8 @@ const mockTasks: Task[] = [
     trigger: 'Campus lease expires Mar 31, 2025 - $23.4M annual impact',
     assignedTo: { name: 'Sarah Chen', initials: 'SC' },
     action: 'Negotiate',
-    status: 'pending'
+    status: 'pending',
+    dueDate: '2026-03-31',
   },
   {
     id: '2',
@@ -39,7 +44,8 @@ const mockTasks: Task[] = [
     trigger: 'Due Sept 30 - 8 locations require certification',
     assignedTo: { name: 'Michael Torres', initials: 'MT' },
     action: 'Audit',
-    status: 'pending'
+    status: 'pending',
+    dueDate: '2026-09-30',
   },
   {
     id: '3',
@@ -47,7 +53,7 @@ const mockTasks: Task[] = [
     task: 'Cost Optimization Review',
     trigger: 'Market Rate Analysis - 12 locations above benchmark',
     action: 'Review',
-    status: 'pending'
+    status: 'pending',
   },
   {
     id: '4',
@@ -56,7 +62,8 @@ const mockTasks: Task[] = [
     trigger: 'Finance Center payment £2.1M overdue by 15 days',
     assignedTo: { name: 'David Kim', initials: 'DK' },
     action: 'Pay',
-    status: 'pending'
+    status: 'pending',
+    dueDate: '2026-07-01',
   },
   {
     id: '5',
@@ -65,7 +72,8 @@ const mockTasks: Task[] = [
     trigger: 'APAC expansion - Singapore office opening Q2',
     assignedTo: { name: 'Emma Rodriguez', initials: 'ER' },
     action: 'Setup',
-    status: 'pending'
+    status: 'pending',
+    dueDate: '2026-08-15',
   },
   {
     id: '6',
@@ -73,7 +81,7 @@ const mockTasks: Task[] = [
     task: 'Space Utilization Assessment',
     trigger: 'Hybrid work policy - 15% underutilization detected',
     action: 'Assess',
-    status: 'pending'
+    status: 'pending',
   },
   {
     id: '7',
@@ -82,7 +90,8 @@ const mockTasks: Task[] = [
     trigger: 'Tel Tech Regional Hub lease 12% above market rate',
     assignedTo: { name: 'Jennifer Walsh', initials: 'JW' },
     action: 'Negotiate',
-    status: 'pending'
+    status: 'pending',
+    dueDate: '2026-07-20',
   },
   {
     id: '8',
@@ -90,7 +99,8 @@ const mockTasks: Task[] = [
     task: 'Configure ESG Reporting',
     trigger: 'Sustainability metrics required for Q4 board report',
     action: 'Configure',
-    status: 'pending'
+    status: 'pending',
+    dueDate: '2026-12-31',
   },
   {
     id: '9',
@@ -99,7 +109,8 @@ const mockTasks: Task[] = [
     trigger: 'Global property insurance expires Dec 31',
     assignedTo: { name: 'Roberto Martinez', initials: 'RM' },
     action: 'Renew',
-    status: 'pending'
+    status: 'pending',
+    dueDate: '2026-12-31',
   },
   {
     id: '10',
@@ -108,7 +119,7 @@ const mockTasks: Task[] = [
     trigger: 'Occupancy tracking integration with Workday',
     assignedTo: { name: 'Lisa Wong', initials: 'LW' },
     action: 'Integrate',
-    status: 'completed'
+    status: 'completed',
   },
   {
     id: '11',
@@ -117,9 +128,37 @@ const mockTasks: Task[] = [
     trigger: 'Lease expiration notifications 90/60/30 days',
     assignedTo: { name: 'Marcus Johnson', initials: 'MJ' },
     action: 'Configure',
-    status: 'completed'
-  }
+    status: 'completed',
+  },
 ];
+
+// ── Due date helpers ──────────────────────────────────────────────────────────
+
+type Urgency = 'overdue' | 'soon' | 'upcoming' | 'none';
+
+function getDueDateUrgency(dueDate?: string): Urgency {
+  if (!dueDate) return 'none';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate + 'T00:00:00');
+  const diffDays = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+  if (diffDays < 0) return 'overdue';
+  if (diffDays <= 7) return 'soon';
+  return 'upcoming';
+}
+
+function formatDueDate(dueDate?: string): string {
+  if (!dueDate) return '—';
+  const d = new Date(dueDate + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+const URGENCY_STYLE: Record<Urgency, React.CSSProperties> = {
+  overdue:  { backgroundColor: '#FEE2E2', color: '#991B1B' },
+  soon:     { backgroundColor: '#FEF3C7', color: '#92400E' },
+  upcoming: { backgroundColor: '#EFF6FF', color: '#1D4ED8' },
+  none:     {},
+};
 
 interface TasksProps {
   onAIAssistantOpen?: () => void;
@@ -133,6 +172,9 @@ export function Tasks({
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedTaskForAssignment, setSelectedTaskForAssignment] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editDueDate, setEditDueDate] = useState('');
+  const [editStatus, setEditStatus] = useState<'pending' | 'completed'>('pending');
 
   // Calculate metrics
   const setupTasks = tasks.filter(task => task.type === 'Setup');
@@ -203,6 +245,25 @@ export function Tasks({
   const handleCloseAssignModal = () => {
     setShowAssignModal(false);
     setSelectedTaskForAssignment(null);
+  };
+
+  const handleEditTask = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setEditingTask(task);
+      setEditDueDate(task.dueDate ?? '');
+      setEditStatus(task.status);
+    }
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingTask) return;
+    setTasks(prev => prev.map(t =>
+      t.id === editingTask.id
+        ? { ...t, dueDate: editDueDate || undefined, status: editStatus }
+        : t
+    ));
+    setEditingTask(null);
   };
 
   return (
@@ -380,13 +441,19 @@ export function Tasks({
                     >
                       Task
                     </TableHead>
-                    <TableHead 
+                    <TableHead
                       className="text-left py-3 px-4"
                       style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                     >
                       Trigger
                     </TableHead>
-                    <TableHead 
+                    <TableHead
+                      className="text-left py-3 px-4"
+                      style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}
+                    >
+                      Due Date
+                    </TableHead>
+                    <TableHead
                       className="text-left py-3 px-4"
                       style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                     >
@@ -423,11 +490,42 @@ export function Tasks({
                       >
                         {task.task}
                       </TableCell>
-                      <TableCell 
+                      <TableCell
                         className="py-4 px-4"
                         style={{ fontSize: '16px', fontWeight: 400, color: '#374151', fontFamily: 'Inter, sans-serif' }}
                       >
-                        {task.trigger}
+                        <div
+                          title={task.trigger}
+                          style={{ width: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                        >
+                          {task.trigger}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4 px-4">
+                        {task.dueDate ? (() => {
+                          const urgency = getDueDateUrgency(task.dueDate);
+                          return (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '3px 10px',
+                                borderRadius: 99,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                fontFamily: 'Inter, sans-serif',
+                                whiteSpace: 'nowrap',
+                                ...URGENCY_STYLE[urgency],
+                              }}
+                            >
+                              {urgency === 'overdue' && <AlertTriangle style={{ width: 12, height: 12, flexShrink: 0 }} />}
+                              {formatDueDate(task.dueDate)}
+                            </span>
+                          );
+                        })() : (
+                          <span style={{ color: '#9CA3AF', fontSize: 14 }}>—</span>
+                        )}
                       </TableCell>
                       <TableCell className="py-4 px-4">
                         {task.assignedTo ? (
@@ -455,6 +553,7 @@ export function Tasks({
                           onReassignTask={handleReassignTask}
                           onDismissTask={handleDismissTask}
                           onGoToLicense={handleGoToLicense}
+                          onEditTask={handleEditTask}
                         />
                       </TableCell>
                     </TableRow>
@@ -483,6 +582,189 @@ export function Tasks({
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={!!editingTask} onOpenChange={open => { if (!open) setEditingTask(null); }}>
+        <DialogContent
+          style={{
+            maxWidth: 480,
+            borderRadius: 16,
+            padding: 0,
+            overflow: 'hidden',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          {/* Header */}
+          <div style={{ padding: '24px 24px 0' }}>
+            <DialogHeader>
+              <DialogTitle style={{ fontSize: 18, fontWeight: 600, color: '#111827' }}>
+                Edit Task
+              </DialogTitle>
+              {editingTask && (
+                <p style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+                  {editingTask.task}
+                </p>
+              )}
+            </DialogHeader>
+          </div>
+
+          {/* Body */}
+          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* Due Date — hero field */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <Label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <CalendarClock style={{ width: 14, height: 14, color: '#6B7280' }} />
+                Due Date
+              </Label>
+              <div style={{ position: 'relative' }}>
+                <Calendar
+                  style={{
+                    position: 'absolute',
+                    left: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 16,
+                    height: 16,
+                    color: '#9CA3AF',
+                    pointerEvents: 'none',
+                  }}
+                />
+                <input
+                  type="date"
+                  value={editDueDate}
+                  onChange={e => setEditDueDate(e.target.value)}
+                  style={{
+                    width: '100%',
+                    paddingLeft: 36,
+                    paddingRight: 12,
+                    paddingTop: 9,
+                    paddingBottom: 9,
+                    border: '1px solid #D1D5DB',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    color: '#111827',
+                    outline: 'none',
+                    fontFamily: 'Inter, sans-serif',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              {/* Live urgency indicator */}
+              {editDueDate && (() => {
+                const urgency = getDueDateUrgency(editDueDate);
+                const labels: Record<Urgency, string> = {
+                  overdue: 'Overdue',
+                  soon: 'Due soon',
+                  upcoming: 'Upcoming',
+                  none: '',
+                };
+                if (urgency === 'none') return null;
+                return (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      alignSelf: 'flex-start',
+                      padding: '2px 10px',
+                      borderRadius: 99,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      ...URGENCY_STYLE[urgency],
+                    }}
+                  >
+                    {urgency === 'overdue' && <AlertTriangle style={{ width: 11, height: 11 }} />}
+                    {labels[urgency]}
+                  </span>
+                );
+              })()}
+              {!editDueDate && (
+                <p style={{ fontSize: 12, color: '#9CA3AF' }}>No due date set</p>
+              )}
+            </div>
+
+            {/* Status */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <Label style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                Status
+              </Label>
+              <Select
+                value={editStatus}
+                onValueChange={val => setEditStatus(val as 'pending' | 'completed')}
+              >
+                <SelectTrigger style={{ fontSize: 14, borderRadius: 8 }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Read-only context */}
+            {editingTask && (
+              <div
+                style={{
+                  backgroundColor: '#F9FAFB',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: 8,
+                  padding: '12px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Badge
+                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${getTypeBadgeStyle(editingTask.type)}`}
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    {editingTask.type}
+                  </Badge>
+                  {editingTask.assignedTo && (
+                    <span style={{ fontSize: 12, color: '#6B7280' }}>
+                      Assigned to {editingTask.assignedTo.name}
+                    </span>
+                  )}
+                </div>
+                <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.4, margin: 0 }}>
+                  {editingTask.trigger}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 10,
+              padding: '16px 24px',
+              borderTop: '1px solid #E5E7EB',
+              backgroundColor: '#FAFAFA',
+            }}
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingTask(null)}
+              style={{ fontSize: 14, fontWeight: 500 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSaveEdit}
+              style={{ fontSize: 14, fontWeight: 500, backgroundColor: '#185FA5', color: '#fff' }}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Assign Owner Modal */}
       <AssignOwnerModal
