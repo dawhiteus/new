@@ -2,12 +2,11 @@
 // Both products stacked in one sidebar as collapsible pillar sections.
 // No product switcher — users see everything at once and collapse what they don't need.
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from './icons';
 import {
   IA,
   visibleGroups,
-  pageAccessible,
   type Profile,
   type NavGroup,
   type NavItemDef,
@@ -94,7 +93,21 @@ function PillarHeader({
 
 // ── Nav item ──────────────────────────────────────────────────────────
 
-function NavItemA({ item, active, onClick }: { item: NavItemDef; active: boolean; onClick: () => void }) {
+function NavItemA({
+  item,
+  active,
+  onClick,
+  hasChildren,
+  isExpanded,
+  indent = false,
+}: {
+  item: NavItemDef;
+  active: boolean;
+  onClick: () => void;
+  hasChildren?: boolean;
+  isExpanded?: boolean;
+  indent?: boolean;
+}) {
   const [hover, setHover] = useState(false);
   const locked = !!item.locked;
   const bg = active ? T.ls500 : hover && !locked ? T.page : 'transparent';
@@ -113,6 +126,7 @@ function NavItemA({ item, active, onClick }: { item: NavItemDef; active: boolean
         alignItems: 'center',
         gap: 10,
         padding: '6px 12px',
+        paddingLeft: indent ? 28 : 12,
         borderRadius: 12,
         background: bg,
         color,
@@ -153,6 +167,18 @@ function NavItemA({ item, active, onClick }: { item: NavItemDef; active: boolean
           </span>
         )
       )}
+      {hasChildren && !locked && (
+        <Icon
+          name="chevron-right"
+          size={11}
+          color={active ? 'rgba(255,255,255,0.7)' : T.textDisabled}
+          style={{
+            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 150ms ease',
+            flexShrink: 0,
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -174,6 +200,25 @@ function GroupSection({
   onSelectPage: (id: string) => void;
   hideHeader?: boolean;
 }) {
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    for (const item of group.items) {
+      if (item.children?.some(c => c.id === activeId)) {
+        init[item.id] = true;
+      }
+    }
+    return init;
+  });
+
+  useEffect(() => {
+    for (const item of group.items) {
+      if (item.children?.some(c => c.id === activeId)) {
+        setExpandedItems(prev => ({ ...prev, [item.id]: true }));
+        return;
+      }
+    }
+  }, [activeId]);
+
   return (
     <div style={{ marginBottom: 2 }}>
       {!hideHeader && <button
@@ -221,14 +266,37 @@ function GroupSection({
       </button>}
       {(hideHeader || expanded) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {group.items.map(it => (
-            <NavItemA
-              key={it.id}
-              item={it}
-              active={activeId === it.id}
-              onClick={() => onSelectPage(it.id)}
-            />
-          ))}
+          {group.items.map(it => {
+            const hasChildren = !!(it.children && it.children.length > 0);
+            const isParentActive = hasChildren && it.children!.some(c => c.id === activeId);
+            const itemExpanded = hasChildren && !!expandedItems[it.id];
+            return (
+              <React.Fragment key={it.id}>
+                <NavItemA
+                  item={it}
+                  active={(!hasChildren && activeId === it.id) || isParentActive}
+                  onClick={() => hasChildren
+                    ? setExpandedItems(prev => ({ ...prev, [it.id]: !prev[it.id] }))
+                    : onSelectPage(it.id)}
+                  hasChildren={hasChildren}
+                  isExpanded={itemExpanded}
+                />
+                {hasChildren && itemExpanded && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {it.children!.map(child => (
+                      <NavItemA
+                        key={child.id}
+                        item={child}
+                        active={activeId === child.id}
+                        onClick={() => onSelectPage(child.id)}
+                        indent
+                      />
+                    ))}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       )}
     </div>
@@ -249,7 +317,6 @@ export function SidebarA({ profile, productId, activeId, onSelectPage }: Sidebar
     () => Object.fromEntries(Object.keys(IA).map(id => [id, true]))
   );
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-
   const togglePillar = (id: string) =>
     setExpandedPillars(prev => ({ ...prev, [id]: !prev[id] }));
 

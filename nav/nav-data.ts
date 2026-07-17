@@ -8,6 +8,7 @@ export interface NavItemDef {
   url?: string;
   badge?: number | string;
   locked?: boolean;
+  children?: NavItemDef[];
 }
 
 export interface NavGroup {
@@ -76,12 +77,16 @@ export const IA: Record<string, Product> = {
         id: 'wm',
         label: 'Workplace Manager',
         items: [
-          { id: 'dashboard',       icon: 'home',         label: 'Dashboard', url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/dashboard' },
-          { id: 'teams',           icon: 'users',        label: 'Teams' },
-          { id: 'locations',       icon: 'map-pinned',   label: 'Locations' },
-          { id: 'activity',        icon: 'activity',     label: 'Activity' },
-          { id: 'setup',           icon: 'settings',     label: 'Setup' },
-          { id: 'branding',        icon: 'palette',      label: 'Branding' },
+          { id: 'dashboard',       icon: 'home',         label: 'Dashboard',  url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/dashboard' },
+          { id: 'teams',           icon: 'users',        label: 'Teams',      url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/teams' },
+          { id: 'locations',       icon: 'map-pinned',   label: 'Locations',  url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/locations' },
+          { id: 'activity',        icon: 'activity',     label: 'Activity',   children: [
+            { id: 'reservations', icon: 'calendar', label: 'Reservations', url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/activity/reservations' },
+            { id: 'searches',     icon: 'search',   label: 'Searches',     url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/activity/searches'     },
+            { id: 'reviews',      icon: 'star',     label: 'Reviews',      url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/activity/reviews'      },
+          ]},
+          { id: 'setup',           icon: 'settings',     label: 'Setup',      url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/setup' },
+          { id: 'branding',        icon: 'palette',      label: 'Branding',   url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/workplace/branding' },
         ],
       },
       {
@@ -118,7 +123,7 @@ export const IA: Record<string, Product> = {
         label: 'Workplace Strategist',
         items: [
           { id: 'portfolio-compiler', icon: 'layers',    label: 'Portfolio Compiler', url: 'https://workplacestrategist-internal.vercel.app/portfolio-compiler' },
-          { id: 'flex-modeler',       icon: 'sliders',   label: 'Flex Modeler' },
+          { id: 'scenario-modeler',   icon: 'sliders',   label: 'Scenario Modeler', url: 'https://workplacestrategist-internal.vercel.app/scenario-modeler' },
           { id: 'hub-locator',        icon: 'map',       label: 'Hub Locator',        url: 'https://workplacestrategist-internal.vercel.app/hub-locator' },
         ],
       },
@@ -209,6 +214,10 @@ export function visibleGroups(profile: Profile, productId: string): NavGroup[] {
     items: g.items.map(it => ({
       ...it,
       locked: !pageAccessible(profile, productId, it.id),
+      children: it.children?.map(child => ({
+        ...child,
+        locked: !pageAccessible(profile, productId, child.id),
+      })),
     })),
   }));
   return out;
@@ -244,7 +253,26 @@ export function findPageByUrlPath(pathname: string): { pageId: string; productId
             if (itemPath === pathname) return { pageId: item.id, productId };
           } catch {}
         }
+        for (const child of item.children ?? []) {
+          if (child.url) {
+            try {
+              const childPath = new URL(child.url).pathname;
+              if (childPath === pathname) return { pageId: child.id, productId };
+            } catch {}
+          }
+        }
       }
+    }
+  }
+  return null;
+}
+
+export function findItemById(productId: string, itemId: string): NavItemDef | null {
+  for (const g of IA[productId]?.groups ?? []) {
+    for (const item of g.items) {
+      if (item.id === itemId) return item;
+      const child = item.children?.find(c => c.id === itemId);
+      if (child) return child;
     }
   }
   return null;

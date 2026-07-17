@@ -6,8 +6,8 @@ import {
   PROFILES,
   firstAccessibleProduct,
   firstAccessiblePage,
-  productAccessible,
   pageAccessible,
+  findItemById,
   type Profile,
 } from './nav/nav-data';
 
@@ -32,10 +32,8 @@ export default function App() {
   const handleSelectPage = (pageId: string, overrideProductId?: string) => {
     const pid = overrideProductId ?? productId;
     if (!pageAccessible(profile, pid, pageId)) return;
-    for (const g of IA[pid]?.groups ?? []) {
-      const item = g.items.find(i => i.id === pageId);
-      if (item?.url) { window.open(item.url, '_blank'); break; }
-    }
+    const item = findItemById(pid, pageId);
+    if (item?.url) window.open(item.url, '_blank');
     if (overrideProductId && overrideProductId !== productId) setProductId(overrideProductId);
     setActiveId(pageId);
   };

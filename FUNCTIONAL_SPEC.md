@@ -17,26 +17,101 @@ Transaction Manager is a broker-facing deal management application embedded with
 
 ### 2.1 Layout
 - Fixed sidebar (left) + scrollable main content area (right)
+- Sidebar: 244px, always visible, no collapse
 - When the AI Drawer is open, the main content area shifts left by 424px (animated, `cubic-bezier(0.23, 1, 0.32, 1)`)
 
-### 2.2 Sidebar
-**Collapsed state:** 64px icon rail — shows hamburger toggle + active-view icons only
-**Expanded state:** 256px panel
+### 2.2 Universal Navigation Sidebar
 
-**Navigation sections:**
+The sidebar is a shared React component (`SidebarA`) used across all LiquidSpace SaaS apps. It is CSS-isolated from host apps via `all: initial` on the `<aside>` root and uses only inline styles — no CSS classes. This guarantees identical rendering regardless of the host app's Tailwind version or global stylesheet.
 
-| Section | Behavior | Items |
+#### Structure: Pillars → Groups → Items → Children
+
+```
+Pillar (product)
+  └── Group (functional area)
+        └── Item (nav destination)
+              └── Child item (sub-destination, optional)
+```
+
+**Pillars** are top-level product sections (Workplace Operations, Workplace Strategist). Each renders as a collapsible header row with a colored icon badge. Both start expanded by default.
+
+**Groups** are labeled sections within a pillar (Workplace Manager, License Administrator, Transaction Manager). Groups are collapsible; groups with only one group in their pillar hide the group header.
+
+**Items** are individual navigation destinations. Items with children show a rotating chevron and expand in place when clicked — the parent row shows active state when any child is active.
+
+**Child items** render indented (paddingLeft 28px) below their parent when the parent is expanded.
+
+#### IA Rule: When to use children vs. in-page tabs
+
+Nav children are **only** used for distinct data destinations — separate datasets, each with their own chart, table, and modals — where a user meaningfully "navigates to" a different data context.
+
+Settings-style facets (General / Admins / SSO / Integrations) belong to **in-page tab bars**, not nav children. The rule in practice:
+
+| Item | Pattern | Reason |
 |---|---|---|
-| License Administration | Static header (non-collapsible) | License Tracker ¹, Payments Dashboard, Funding Sources, Tasks |
-| Workplace Operations | Collapsible (default: collapsed) | Dashboard ², Teams, Locations, Activity, Liquid AI ³, Setup, Branding |
-| Workplace Strategy | Collapsible (default: collapsed) | Portfolio Manager, Hub Locator |
-| Transaction Manager | Collapsible (default: expanded) | Transactions ✓ |
+| Activity → Reservations / Searches / Reviews | Nav children | Separate datasets; distinct chart + table + modals per view |
+| Setup → General / Admins / SSO / Integrations | In-page tabs | Same settings page, different facets |
+| Branding → General / Onboarding / Portal / Email | In-page tabs | Same settings page, different facets |
+| Teams, Locations | Single nav items | Each is a single page with internal controls |
 
-¹ License Tracker opens `https://crayon-duo-80396629.figma.site/` in a new tab (placeholder)
-² Dashboard opens `https://same-wasp-78624830.figma.site/` in a new tab (placeholder)
-³ Liquid AI navigates to the in-app LiquidAI view
+#### Navigation behavior
 
-Active nav item: `#005B94` background, white text. Inactive: gray-600, hover gray-100 bg.
+Navigation is **hostname-based**:
+- If the destination URL's hostname matches `window.location.hostname` → client-side routing (React Router / Next.js router, no page reload)
+- Otherwise → `window.location.href = url` (full-page navigation, same tab)
+
+Users control new-tab behavior via standard browser conventions (⌘-click, right-click → Open in New Tab). The nav never forces a new tab.
+
+In the nav prototype (`App.tsx`), all links open in a new tab via `window.open` so the prototype itself stays visible during demos.
+
+#### Canonical app URLs
+
+| App | Canonical URL |
+|---|---|
+| Transaction Manager | `https://transaction-manager-git-main-david-4453s-projects.vercel.app` |
+| Workplace Strategist | `https://workplacestrategist-internal.vercel.app` |
+
+The TM git-main URL is stable across deploys. Never use deployment-hash URLs or `labs.liquidspace.app` in nav-data. The WS URL is its own Vercel project — TM deploys must never alias it.
+
+#### Current IA
+
+**Workplace Operations** (color `#005b94`)
+
+| Group | Item | Children | URL |
+|---|---|---|---|
+| Workplace Manager | Dashboard | — | `/workplace/dashboard` (TM app) |
+| | Teams | — | `/workplace/teams` |
+| | Locations | — | `/workplace/locations` |
+| | Activity | Reservations, Searches, Reviews | `/workplace/activity/{reservations,searches,reviews}` |
+| | Setup | — | `/workplace/setup` |
+| | Branding | — | `/workplace/branding` |
+| License Administrator | License Tracker | — | `/license/tracker` |
+| | Payments | — | `/license/payments` |
+| | Funding Sources | — | `/license/funding` |
+| | Tasks | — | `/license/tasks` |
+| Transaction Manager | Transactions | — | `/transactions/list` |
+| | Tasks | — | `/transactions/tasks` |
+
+**Workplace Strategist** (color `#00b8c4`)
+
+| Group | Item | URL |
+|---|---|---|
+| Workplace Strategist | Portfolio Compiler | `workplacestrategist-internal.vercel.app/portfolio-compiler` |
+| | Scenario Modeler | `workplacestrategist-internal.vercel.app/scenario-modeler` |
+| | Hub Locator | `workplacestrategist-internal.vercel.app/hub-locator` |
+
+#### Visual states
+
+| State | Background | Text/Icon |
+|---|---|---|
+| Active | `#005b94` | White |
+| Hover (inactive) | `#f8f9fa` | `#374151` / `#6b7280` |
+| Locked | Transparent | `#9ca3af`, lock icon |
+| Default | Transparent | `#374151` / `#6b7280` |
+
+#### Demo branding
+
+All Workplace Manager page content uses the fictitious company **Tel Tech**. Do not use real company names (Airbnb, Slalom, etc.) in page content or spec examples.
 
 ---
 
@@ -472,12 +547,8 @@ An embedded workspace search tool accessible from within a deal's workflow conte
 
 ## 12. Out of Scope (Prototype Placeholders)
 
-The following sidebar items navigate to external Figma prototypes and are **not implemented** in this codebase. They require separate implementation:
+The following items are linked in the nav but render stub pages or redirect to the other app. Full implementation is out of scope for this prototype.
 
-- **License Tracker** → external Figma site
-- **Payments Dashboard** → (no active route, component exists: `PaymentManagement.tsx`)
-- **Funding Sources** → (component exists: `FundingSources.tsx`)
-- **Tasks** → (component exists: `Tasks.tsx`)
-- **Workplace Operations: Dashboard** → external Figma site
-- **Workplace Operations: Teams, Locations, Activity, Setup, Branding** → no active routes
-- **Workplace Strategy: Portfolio Manager, Hub Locator** → no active routes
+**Transaction Manager app (implemented routes):** `/license/tracker`, `/license/payments`, `/license/funding`, `/license/tasks`, `/transactions/list`, `/transactions/tasks`, `/workplace/dashboard`, `/workplace/teams`, `/workplace/locations`, `/workplace/activity/reservations`, `/workplace/activity/searches`, `/workplace/activity/reviews`, `/workplace/setup`, `/workplace/branding`
+
+**Workplace Strategist app:** Portfolio Compiler, Scenario Modeler, Hub Locator — all implemented at `workplacestrategist-internal.vercel.app`. Navigating to these from TM performs a full-page load to the WS app (hostname differs).
