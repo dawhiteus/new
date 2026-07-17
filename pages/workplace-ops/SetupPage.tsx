@@ -1,6 +1,8 @@
 import React from 'react';
-import { PageShell } from '../../layout/PageShell';
+import { WorkplaceSetup } from '../../components/WorkplaceSetup';
+import { useAIDrawer } from '../../context/AIDrawerContext';
 
 export default function SetupPage() {
-  return <PageShell title="Setup" breadcrumb={['Workplace Operations', 'Setup']} />;
+  const { openGeneric, isOpen } = useAIDrawer();
+  return <WorkplaceSetup onAIAssistantOpen={openGeneric} isAIDrawerOpen={isOpen} />;
 }

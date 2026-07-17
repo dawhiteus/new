@@ -1,6 +1,8 @@
 import React from 'react';
-import { PageShell } from '../../layout/PageShell';
+import { WorkplaceBranding } from '../../components/WorkplaceBranding';
+import { useAIDrawer } from '../../context/AIDrawerContext';
 
 export default function BrandingPage() {
-  return <PageShell title="Branding" breadcrumb={['Workplace Operations', 'Branding']} />;
+  const { openGeneric, isOpen } = useAIDrawer();
+  return <WorkplaceBranding onAIAssistantOpen={openGeneric} isAIDrawerOpen={isOpen} />;
 }
