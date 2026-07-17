@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { SidebarA } from './nav/SidebarA';
+import { ChromeHeader } from './nav/ChromeHeader';
 import {
   IA,
   PROFILES,
@@ -43,20 +44,26 @@ export default function App() {
       width: '100%',
       height: '100vh',
       display: 'flex',
+      flexDirection: 'column',
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
       color: '#374151',
       background: '#fff',
       overflow: 'hidden',
     }}>
-      <SidebarA
-        profile={profile}
-        productId={productId}
-        activeId={activeId}
-        onSelectPage={handleSelectPage}
-      />
+      {/* Chrome header — customer logo first, "Powered by LiquidSpace" second */}
+      <ChromeHeader profile={profile} showCoBrand />
 
-      {/* Content area — destination apps own this space */}
-      <div style={{ flex: 1, background: '#f8f9fa', minWidth: 0 }} />
+      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        <SidebarA
+          profile={profile}
+          productId={productId}
+          activeId={activeId}
+          onSelectPage={handleSelectPage}
+        />
+
+        {/* Content area — destination apps own this space */}
+        <div style={{ flex: 1, background: '#f8f9fa', minWidth: 0 }} />
+      </div>
     </div>
   );
 }

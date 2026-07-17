@@ -64,6 +64,26 @@ export interface PageMeta extends NavItemDef {
 // ── Information architecture ──────────────────────────────────────────
 
 export const IA: Record<string, Product> = {
+  strategy: {
+    id: 'strategy',
+    label: 'Workplace Strategist',
+    icon: 'bar-chart',
+    color: '#00b8c4',
+    tagline: 'Plan the portfolio',
+    description: 'Portfolio analytics, spend modeling, hub planning.',
+    defaultPage: 'portfolio-compiler',
+    groups: [
+      {
+        id: 'tools',
+        label: 'Workplace Strategist',
+        items: [
+          { id: 'portfolio-compiler', icon: 'layers',    label: 'Portfolio Compiler', url: 'https://workplacestrategist-internal.vercel.app/portfolio-compiler' },
+          { id: 'scenario-modeler',   icon: 'sliders',   label: 'Scenario Modeler', url: 'https://workplacestrategist-internal.vercel.app/scenario-modeler' },
+          { id: 'hub-locator',        icon: 'map',       label: 'Hub Locator',        url: 'https://workplacestrategist-internal.vercel.app/hub-locator' },
+        ],
+      },
+    ],
+  },
   ops: {
     id: 'ops',
     label: 'Workplace Operations',
@@ -108,27 +128,7 @@ export const IA: Record<string, Product> = {
         ],
       },
     ],
-  },
-  strategy: {
-    id: 'strategy',
-    label: 'Workplace Strategist',
-    icon: 'bar-chart',
-    color: '#00b8c4',
-    tagline: 'Plan the portfolio',
-    description: 'Portfolio analytics, spend modeling, hub planning.',
-    defaultPage: 'portfolio-compiler',
-    groups: [
-      {
-        id: 'tools',
-        label: 'Workplace Strategist',
-        items: [
-          { id: 'portfolio-compiler', icon: 'layers',    label: 'Portfolio Compiler', url: 'https://workplacestrategist-internal.vercel.app/portfolio-compiler' },
-          { id: 'scenario-modeler',   icon: 'sliders',   label: 'Scenario Modeler', url: 'https://workplacestrategist-internal.vercel.app/scenario-modeler' },
-          { id: 'hub-locator',        icon: 'map',       label: 'Hub Locator',        url: 'https://workplacestrategist-internal.vercel.app/hub-locator' },
-        ],
-      },
-    ],
-  },
+  }
 };
 
 // Injected into Operations sidebar for LS admins only.

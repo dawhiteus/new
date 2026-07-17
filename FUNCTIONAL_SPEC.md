@@ -16,11 +16,25 @@ Transaction Manager is a broker-facing deal management application embedded with
 ## 2. Application Shell
 
 ### 2.1 Layout
-- Fixed sidebar (left) + scrollable main content area (right)
+- Chrome header (top, 64px, full width) above a fixed sidebar (left) + scrollable main content area (right)
 - Sidebar: 244px, always visible, no collapse
 - When the AI Drawer is open, the main content area shifts left by 424px (animated, `cubic-bezier(0.23, 1, 0.32, 1)`)
 
-### 2.2 Universal Navigation Sidebar
+### 2.2 Chrome Header & Co-branding
+
+The chrome header (`ChromeHeader`, 64px, white, 1px bottom border) spans the full viewport width above the sidebar and content area.
+
+**Left — co-brand lockup** (`CoBrand`). The customer brand leads; LiquidSpace is de-emphasized:
+
+1. **Customer logo/wordmark** — full color, rendered first. (The prototype renders the profile's org name as a wordmark in `#005b94`; production substitutes the customer's uploaded logo from Branding → Header Image.)
+2. Vertical 1px divider (28px tall, `#e5e7eb`)
+3. **LiquidSpace lockup, grayscale** (`#9ca3af`) — glyph + wordmark with a "POWERED BY" microlabel (7px, uppercase, 0.18em tracking) above the wordmark.
+
+When there is no customer co-brand (e.g., internal LiquidSpace profiles), the LiquidSpace lockup renders alone in primary brand blue with no "POWERED BY" label.
+
+**Right — utility cluster:** search (⌘K), notifications (with red count badge), settings, then the user pill (avatar initials + menu icon, `#005b94` outline).
+
+### 2.3 Universal Navigation Sidebar
 
 The sidebar is a shared React component (`SidebarA`) used across all LiquidSpace SaaS apps. It is CSS-isolated from host apps via `all: initial` on the `<aside>` root and uses only inline styles — no CSS classes. This guarantees identical rendering regardless of the host app's Tailwind version or global stylesheet.
 
@@ -33,7 +47,7 @@ Pillar (product)
               └── Child item (sub-destination, optional)
 ```
 
-**Pillars** are top-level product sections (Workplace Operations, Workplace Strategist). Each renders as a collapsible header row with a colored icon badge. Both start expanded by default.
+**Pillars** are top-level product sections, listed in order: **Workplace Strategist** first, then **Workplace Operations**. Each renders as a collapsible header row with a colored icon badge. Both start expanded by default.
 
 **Groups** are labeled sections within a pillar (Workplace Manager, License Administrator, Transaction Manager). Groups are collapsible; groups with only one group in their pillar hide the group header.
 
@@ -75,6 +89,16 @@ The TM git-main URL is stable across deploys. Never use deployment-hash URLs or 
 
 #### Current IA
 
+Pillars appear in this order: Workplace Strategist, then Workplace Operations.
+
+**Workplace Strategist** (color `#00b8c4`)
+
+| Group | Item | URL |
+|---|---|---|
+| Workplace Strategist | Portfolio Compiler | `workplacestrategist-internal.vercel.app/portfolio-compiler` |
+| | Scenario Modeler | `workplacestrategist-internal.vercel.app/scenario-modeler` |
+| | Hub Locator | `workplacestrategist-internal.vercel.app/hub-locator` |
+
 **Workplace Operations** (color `#005b94`)
 
 | Group | Item | Children | URL |
@@ -91,14 +115,6 @@ The TM git-main URL is stable across deploys. Never use deployment-hash URLs or 
 | | Tasks | — | `/license/tasks` |
 | Transaction Manager | Transactions | — | `/transactions/list` |
 | | Tasks | — | `/transactions/tasks` |
-
-**Workplace Strategist** (color `#00b8c4`)
-
-| Group | Item | URL |
-|---|---|---|
-| Workplace Strategist | Portfolio Compiler | `workplacestrategist-internal.vercel.app/portfolio-compiler` |
-| | Scenario Modeler | `workplacestrategist-internal.vercel.app/scenario-modeler` |
-| | Hub Locator | `workplacestrategist-internal.vercel.app/hub-locator` |
 
 #### Visual states
 

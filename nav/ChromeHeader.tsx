@@ -14,69 +14,65 @@ const T = {
   danger: '#dc3545',
 } as const;
 
-// ── AT&T placeholder mark ─────────────────────────────────────────────
+// ── LiquidSpace glyph ─────────────────────────────────────────────────
+// color: brand blue when LiquidSpace is the primary brand (no co-brand),
+// muted gray when rendered as the de-emphasized "Powered by" mark.
 
-function AttMark() {
+function LiquidSpaceMark({ muted = false, size = 28 }: { muted?: boolean; size?: number }) {
+  const fill = muted ? '#9ca3af' : T.ls500;
   return (
-    <svg width="30" height="30" viewBox="0 0 30 30" aria-label="AT&T">
-      <circle cx="15" cy="15" r="13" fill="none" stroke="#00a8e0" strokeWidth="1.4" />
-      <text
-        x="15" y="19"
-        textAnchor="middle"
-        fontFamily="Inter, sans-serif"
-        fontSize="9"
-        fontWeight="700"
-        fill={T.ls500}
-        letterSpacing="-0.04em"
-      >AT&amp;T</text>
-    </svg>
-  );
-}
-
-// ── LiquidSpace lockup ────────────────────────────────────────────────
-
-function LiquidSpaceMark() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" aria-label="LiquidSpace">
-      <rect x="4" y="6" width="20" height="16" rx="6" fill="none" stroke={T.ls500} strokeWidth="1.6" />
+    <svg width={size} height={size} viewBox="0 0 28 28" aria-label="LiquidSpace">
+      <rect x="1" y="1" width="26" height="26" rx="8" fill={fill} />
       <path
-        d="M9 14 Q14 10 19 14 T29 14"
+        d="M7 16 Q10.5 11 14 14.5 T21 13"
         fill="none"
-        stroke={T.ls500}
-        strokeWidth="1.6"
+        stroke="#fff"
+        strokeWidth="2.2"
         strokeLinecap="round"
-        transform="translate(-5 0)"
       />
     </svg>
   );
 }
 
-function CoBrand({ showCustomer }: { showCustomer: boolean }) {
+// ── Co-brand lockup ───────────────────────────────────────────────────
+// Customer brand leads (their logo/wordmark, full color); LiquidSpace
+// follows as a de-emphasized grayscale "POWERED BY" lockup. When there is
+// no customer co-brand, LiquidSpace renders alone in primary brand blue.
+
+function CoBrand({ showCustomer, orgName }: { showCustomer: boolean; orgName: string }) {
+  if (!showCustomer) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <LiquidSpaceMark />
+        <div style={{ fontSize: 18, fontWeight: 700, color: T.ls500, letterSpacing: '-0.01em', lineHeight: 1 }}>
+          Liquid<span style={{ fontWeight: 400 }}>Space</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-      {showCustomer && (
-        <>
-          <AttMark />
-          <div style={{ width: 1, height: 28, background: T.border }} />
-        </>
-      )}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-        <LiquidSpaceMark />
+      {/* Customer wordmark — stands in for the customer's uploaded logo */}
+      <div style={{ fontSize: 19, fontWeight: 600, color: T.ls500, letterSpacing: '-0.01em', lineHeight: 1 }}>
+        {orgName}
+      </div>
+      <div style={{ width: 1, height: 28, background: T.border }} />
+      {/* De-emphasized LiquidSpace lockup */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <LiquidSpaceMark muted />
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-          {showCustomer && (
-            <div style={{
-              fontSize: 7,
-              color: T.textMuted,
-              textTransform: 'uppercase',
-              letterSpacing: '0.18em',
-              fontWeight: 600,
-              lineHeight: 1,
-              marginBottom: 3,
-            }}>
-              Powered by
-            </div>
-          )}
-          <div style={{ fontSize: 18, fontWeight: 700, color: T.ls500, letterSpacing: '-0.01em', lineHeight: 1 }}>
+          <div style={{
+            fontSize: 7,
+            color: '#9ca3af',
+            textTransform: 'uppercase',
+            letterSpacing: '0.18em',
+            fontWeight: 600,
+            lineHeight: 1,
+            marginBottom: 3,
+          }}>
+            Powered by
+          </div>
+          <div style={{ fontSize: 17, fontWeight: 700, color: '#9ca3af', letterSpacing: '-0.01em', lineHeight: 1 }}>
             Liquid<span style={{ fontWeight: 400 }}>Space</span>
           </div>
         </div>
@@ -206,7 +202,7 @@ export function ChromeHeader({ profile, showCoBrand }: ChromeHeaderProps) {
       position: 'relative',
       zIndex: 20,
     }}>
-      <CoBrand showCustomer={showCoBrand && profile.orgLogo !== null} />
+      <CoBrand showCustomer={showCoBrand && profile.orgLogo !== null} orgName={profile.org} />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <ChromeIconBtn iconName="search" title="Search (⌘K)" />
