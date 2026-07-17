@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PageHeader } from './PageHeader';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Palette, Upload, Trash2, MoreHorizontal, Plus, Bold, Italic, Underline, Strikethrough, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify, Link2, Undo2, Redo2, Highlighter, Eraser } from 'lucide-react';
 import { toast } from './ui/toast';
 
@@ -87,6 +88,14 @@ const ONBOARDING_IMAGES = [
   'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=400&h=250&fit=crop',
   'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=250&fit=crop',
   'https://images.unsplash.com/photo-1600508774634-4e11d34730e2?w=400&h=250&fit=crop',
+];
+
+// Extra stock images handed out by the mock "upload" action.
+const UPLOAD_POOL = [
+  ...ONBOARDING_IMAGES,
+  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&h=250&fit=crop',
+  'https://images.unsplash.com/photo-1531973576160-7125cd663d86?w=400&h=250&fit=crop',
+  'https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=400&h=250&fit=crop',
 ];
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
@@ -339,17 +348,25 @@ function OnboardingTab() {
     'You’ve been granted access to book space in coworking office spaces to support your productivity. Search desks and conference rooms near your home, book with a click, and get to work — Tel Tech pays centrally, so you’ll never be charged.'
   );
   const [videoUrl, setVideoUrl] = useState('https://vimeo.com/liquidspace/getstarted');
+  const [images, setImages] = useState<string[]>(ONBOARDING_IMAGES);
   const uploadRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadImage = () => {
+    const next = UPLOAD_POOL.find(src => !images.includes(src));
+    if (!next) { toast.info('Image gallery is full.'); return; }
+    setImages(prev => [...prev, next]);
+    toast.success('Image uploaded.');
+  };
 
   return (
     <>
       <Card title="Onboarding Images">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-          {ONBOARDING_IMAGES.map((src, i) => (
-            <div key={i} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid #E5E7EB', aspectRatio: '16/10' }}>
+          {images.map((src, i) => (
+            <div key={src} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid #E5E7EB', aspectRatio: '16/10' }}>
               <img src={src} alt={`Onboarding ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               <button
-                onClick={() => toast.info('Image removed.')}
+                onClick={() => { setImages(prev => prev.filter(s => s !== src)); toast.info('Image removed.'); }}
                 style={{
                   position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: 14,
                   border: 'none', backgroundColor: 'rgba(255,255,255,0.92)', cursor: 'pointer',
@@ -374,7 +391,7 @@ function OnboardingTab() {
             <Upload className="h-5 w-5" style={{ color: '#9CA3AF' }} />
             Upload image
           </button>
-          <input ref={uploadRef} type="file" style={{ display: 'none' }} onChange={() => toast.success('Image uploaded.')} />
+          <input ref={uploadRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleUploadImage(); e.target.value = ''; }} />
         </div>
       </Card>
 
@@ -401,6 +418,49 @@ function OnboardingTab() {
 
 // ─── Tab: Portal ──────────────────────────────────────────────────────────────
 
+function FaqRowMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 6, borderRadius: 6, color: '#9CA3AF', display: 'inline-flex' }}
+        className="hover:bg-gray-100"
+        onClick={() => setOpen(o => !o)}
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 30,
+          backgroundColor: '#fff', border: '1px solid #E5E7EB', borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: 130, overflow: 'hidden', padding: 4,
+        }}>
+          <button
+            onClick={() => { setOpen(false); onEdit(); }}
+            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: 13, fontFamily: 'Inter, sans-serif', border: 'none', background: 'none', cursor: 'pointer', borderRadius: 6, color: '#374151' }}
+            className="hover:bg-gray-50"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => { setOpen(false); onDelete(); }}
+            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: 13, fontFamily: 'Inter, sans-serif', border: 'none', background: 'none', cursor: 'pointer', borderRadius: 6, color: '#DC2626' }}
+            className="hover:bg-gray-50"
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PortalTab() {
   const [portalEnabled, setPortalEnabled] = useState(true);
   const [portalUrl, setPortalUrl] = useState('https://www.liquidspace.com/teltech');
@@ -417,8 +477,41 @@ function PortalTab() {
   );
   const [forcePopup, setForcePopup] = useState(false);
 
+  // FAQ add/edit modal
+  const [faqModal, setFaqModal] = useState<'none' | 'add' | 'edit'>('none');
+  const [faqForm, setFaqForm] = useState({ id: '', subject: '', content: '', visible: true });
+
   const toggleVisible = (id: string) =>
     setFaqs(rows => rows.map(r => r.id === id ? { ...r, visible: !r.visible } : r));
+
+  const openAddFaq = () => {
+    setFaqForm({ id: '', subject: '', content: '', visible: true });
+    setFaqModal('add');
+  };
+
+  const openEditFaq = (row: FaqRow) => {
+    setFaqForm({ id: row.id, subject: row.subject, content: row.content, visible: row.visible });
+    setFaqModal('edit');
+  };
+
+  const handleSaveFaq = () => {
+    const subject = faqForm.subject.trim();
+    const content = faqForm.content.trim();
+    if (!subject || !content) return;
+    if (faqModal === 'add') {
+      setFaqs(rows => [...rows, { id: String(Date.now()), type: 'QuestionAnswer', subject, content, visible: faqForm.visible }]);
+      toast.success('Content added.');
+    } else {
+      setFaqs(rows => rows.map(r => r.id === faqForm.id ? { ...r, subject, content, visible: faqForm.visible } : r));
+      toast.success('Content updated.');
+    }
+    setFaqModal('none');
+  };
+
+  const handleDeleteFaq = (id: string) => {
+    setFaqs(rows => rows.filter(r => r.id !== id));
+    toast.info('Content deleted.');
+  };
 
   return (
     <>
@@ -442,7 +535,7 @@ function PortalTab() {
       <Card
         title="FAQ Editor"
         action={
-          <button style={S.btnPrimary} onClick={() => toast.info('Add Content coming soon.')}>
+          <button style={S.btnPrimary} onClick={openAddFaq}>
             <Plus className="h-3.5 w-3.5" /> Add Content
           </button>
         }
@@ -479,13 +572,10 @@ function PortalTab() {
                     {row.content}
                   </td>
                   <td style={{ padding: '12px 16px', borderBottom: '1px solid #F3F4F6', textAlign: 'right' }}>
-                    <button
-                      style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 6, borderRadius: 6, color: '#9CA3AF', display: 'inline-flex' }}
-                      className="hover:bg-gray-100"
-                      onClick={() => toast.info('Edit / Delete options coming soon.')}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
+                    <FaqRowMenu
+                      onEdit={() => openEditFaq(row)}
+                      onDelete={() => handleDeleteFaq(row.id)}
+                    />
                   </td>
                 </tr>
               ))}
@@ -513,6 +603,63 @@ function PortalTab() {
           <SaveBtn onClick={() => toast.success('Banner saved.')} />
         </div>
       </Card>
+
+      {/* ── Add / Edit Content modal ─────────────────────────────────────── */}
+      <Dialog open={faqModal !== 'none'} onOpenChange={open => { if (!open) setFaqModal('none'); }}>
+        <DialogContent className="max-w-lg p-0 overflow-hidden" style={{ borderRadius: 12 }}>
+          <div style={{ backgroundColor: '#005B94', padding: '16px 20px' }}>
+            <DialogHeader>
+              <DialogTitle style={{ fontSize: 18, fontWeight: 600, color: '#fff', fontFamily: 'Inter, sans-serif' }}>
+                {faqModal === 'add' ? 'Add Content' : 'Edit Content'}
+              </DialogTitle>
+              <DialogDescription style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, sans-serif' }}>
+                Question & answer shown on your member portal
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div style={{ padding: 20 }}>
+            <label style={S.label}>Type</label>
+            <input style={{ ...S.input, backgroundColor: '#F9FAFB', color: '#6B7280' }} value="QuestionAnswer" readOnly />
+            <label style={{ ...S.label, marginTop: 14 }}>Subject</label>
+            <input
+              style={S.input}
+              value={faqForm.subject}
+              onChange={e => setFaqForm(f => ({ ...f, subject: e.target.value }))}
+              placeholder="e.g. How do I cancel a reservation?"
+              autoFocus
+            />
+            <label style={{ ...S.label, marginTop: 14 }}>Content</label>
+            <textarea
+              style={{ ...S.input, minHeight: 140, resize: 'vertical' }}
+              value={faqForm.content}
+              onChange={e => setFaqForm(f => ({ ...f, content: e.target.value }))}
+              placeholder="Answer shown to members…"
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>
+              <input
+                type="checkbox"
+                id="faq-visible"
+                checked={faqForm.visible}
+                onChange={e => setFaqForm(f => ({ ...f, visible: e.target.checked }))}
+                style={{ width: 17, height: 17, accentColor: '#005B94', cursor: 'pointer' }}
+              />
+              <label htmlFor="faq-visible" style={{ fontSize: 14, fontFamily: 'Inter, sans-serif', color: '#374151', cursor: 'pointer' }}>
+                Visible on portal
+              </label>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
+              <button style={S.btnOutline} onClick={() => setFaqModal('none')}>Cancel</button>
+              <button
+                style={{ ...S.btnPrimary, opacity: faqForm.subject.trim() && faqForm.content.trim() ? 1 : 0.5 }}
+                disabled={!faqForm.subject.trim() || !faqForm.content.trim()}
+                onClick={handleSaveFaq}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

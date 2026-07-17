@@ -569,10 +569,61 @@ function EnrollmentSection() {
 
 // ─── Section: Integrations ────────────────────────────────────────────────────
 
+interface ApiClient {
+  id: string;
+  name: string;
+  grantTypes: string;
+  scopes: string;
+  impersonationScopes: string;
+}
+
+const INITIAL_API_CLIENTS: ApiClient[] = [
+  {
+    id: 'teltech-workplace-prod-4d92',
+    name: 'Tel Tech Workplace Integration',
+    grantTypes: 'client_credentials, authorization_code',
+    scopes: 'reservations:read, reservations:write, members:read, reporting:read',
+    impersonationScopes: 'members:impersonate',
+  },
+];
+
+const ASSIGNABLE_CLIENTS: Record<string, Omit<ApiClient, 'impersonationScopes'>> = {
+  'teltech-workplace-prod-4d92': INITIAL_API_CLIENTS[0],
+  'teltech-workplace-staging-77e1': {
+    id: 'teltech-workplace-staging-77e1',
+    name: 'Tel Tech Workplace Integration (Staging)',
+    grantTypes: 'client_credentials',
+    scopes: 'reservations:read, members:read',
+  },
+};
+
 function IntegrationsSection() {
+  const [clients, setClients] = useState<ApiClient[]>(INITIAL_API_CLIENTS);
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignClient, setAssignClient] = useState('');
   const [assignScopes, setAssignScopes] = useState('');
+
+  const handleAssign = () => {
+    if (!assignClient) return;
+    const base = ASSIGNABLE_CLIENTS[assignClient];
+    setClients(prev => {
+      const existing = prev.find(c => c.id === assignClient);
+      if (existing) {
+        toast.success('API client updated.');
+        return prev.map(c => c.id === assignClient ? { ...c, impersonationScopes: assignScopes || 'None' } : c);
+      }
+      toast.success('API client assigned.');
+      return [...prev, { ...base, impersonationScopes: assignScopes || 'None' }];
+    });
+    setAssignOpen(false);
+    setAssignClient('');
+    setAssignScopes('');
+  };
+
+  const handleRevoke = (id: string) => {
+    setClients(prev => prev.filter(c => c.id !== id));
+    toast.info('API client revoked.');
+  };
 
   const kvRow = (k: string, v: string) => (
     <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 16, padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
@@ -591,27 +642,35 @@ function IntegrationsSection() {
           </button>
         }
       >
-        <div style={{
-          border: '1px solid #E5E7EB', borderRadius: 12, padding: '16px 20px',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        }}>
-          <div style={{ flex: 1 }}>
-            {kvRow('ClientID', 'teltech-workplace-prod-4d92')}
-            {kvRow('Client Secret', '••••••••••••••••••••••••')}
-            {kvRow('Subscription Key', '••••••••••••••••')}
-            {kvRow('Name', 'Tel Tech Workplace Integration')}
-            {kvRow('Grant Types', 'client_credentials, authorization_code')}
-            {kvRow('Scopes', 'reservations:read, reservations:write, members:read, reporting:read')}
-            <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 16, padding: '8px 0' }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>Impersonation Scopes</span>
-              <span style={{ fontSize: 13, color: '#374151', fontFamily: 'Inter, sans-serif' }}>members:impersonate</span>
+        {clients.length === 0 && (
+          <p style={{ fontSize: 14, color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
+            No API clients assigned. Click Add to assign one.
+          </p>
+        )}
+        {clients.map((client, idx) => (
+          <div key={client.id} style={{
+            border: '1px solid #E5E7EB', borderRadius: 12, padding: '16px 20px',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+            marginTop: idx > 0 ? 14 : 0,
+          }}>
+            <div style={{ flex: 1 }}>
+              {kvRow('ClientID', client.id)}
+              {kvRow('Client Secret', '••••••••••••••••••••••••')}
+              {kvRow('Subscription Key', '••••••••••••••••')}
+              {kvRow('Name', client.name)}
+              {kvRow('Grant Types', client.grantTypes)}
+              {kvRow('Scopes', client.scopes)}
+              <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 16, padding: '8px 0' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>Impersonation Scopes</span>
+                <span style={{ fontSize: 13, color: '#374151', fontFamily: 'Inter, sans-serif' }}>{client.impersonationScopes}</span>
+              </div>
             </div>
+            <DotMenu items={[
+              { label: 'Edit Scopes', onClick: () => { setAssignClient(client.id); setAssignScopes(client.impersonationScopes === 'None' ? '' : client.impersonationScopes); setAssignOpen(true); } },
+              { label: 'Revoke', danger: true, onClick: () => handleRevoke(client.id) },
+            ]} />
           </div>
-          <DotMenu items={[
-            { label: 'Edit Scopes', onClick: () => setAssignOpen(true) },
-            { label: 'Revoke', danger: true, onClick: () => toast.info('API client revoked.') },
-          ]} />
-        </div>
+        ))}
         <p style={{ fontSize: 13, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: 14 }}>
           Contact your LiquidSpace SysAdmin to create new API clients.
         </p>
@@ -667,7 +726,13 @@ function IntegrationsSection() {
             </select>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
               <button style={S.btnOutline} onClick={() => setAssignOpen(false)}>Cancel</button>
-              <button style={S.btnPrimary} onClick={() => { setAssignOpen(false); toast.success('API client assigned.'); }}>Save</button>
+              <button
+                style={{ ...S.btnPrimary, opacity: assignClient ? 1 : 0.5 }}
+                disabled={!assignClient}
+                onClick={handleAssign}
+              >
+                Save
+              </button>
             </div>
           </div>
         </DialogContent>

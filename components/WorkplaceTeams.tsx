@@ -30,7 +30,7 @@ interface Team {
 
 type TabId = 'members' | 'general' | 'permissions' | 'communications' | 'reports';
 type LocationPerm = 'Open' | 'Limited' | 'None';
-type ModalState = 'none' | 'invite' | 'payment-choose' | 'credit-card' | 'bank-account';
+type ModalState = 'none' | 'invite' | 'payment-choose' | 'credit-card' | 'bank-account' | 'new-team';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
@@ -257,6 +257,8 @@ export function WorkplaceTeams({ onAIAssistantOpen = () => {}, isAIDrawerOpen = 
   const [genOwner, setGenOwner] = useState(MOCK_TEAMS[0].owner);
   const [genAdminInput, setGenAdminInput] = useState('');
   const [genNotifInput, setGenNotifInput] = useState('');
+  const [genAdmins, setGenAdmins] = useState<string[]>([]);
+  const [genNotifEmails, setGenNotifEmails] = useState<string[]>([]);
 
   // Permissions tab
   const [locationPerm, setLocationPerm] = useState<LocationPerm>('Open');
@@ -279,6 +281,8 @@ export function WorkplaceTeams({ onAIAssistantOpen = () => {}, isAIDrawerOpen = 
   const [inviteForm, setInviteForm] = useState({ name: '', email: '', title: '', company: '', geoCity: '', geoCountry: '', phone: '', accountId: '', costCenter: '', notes: '' });
   const [ccForm, setCcForm] = useState({ cardholder: '', address: '', city: '', country: 'United States', state: '', zip: '', cardNumber: '', expDate: '', cvv: '', captcha: false });
   const [bankSearch, setBankSearch] = useState('');
+  const [newTeamForm, setNewTeamForm] = useState({ name: '', owner: '' });
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   const selectedTeam = teams.find(t => t.id === selectedId) ?? teams[0];
 
@@ -323,6 +327,37 @@ export function WorkplaceTeams({ onAIAssistantOpen = () => {}, isAIDrawerOpen = 
   const handleRemoveMember = (memberId: string) => {
     setTeams(prev => prev.map(t => t.id === selectedId ? { ...t, members: t.members.filter(m => m.id !== memberId) } : t));
     toast.info('Member removed.');
+  };
+
+  const handleCreateTeam = () => {
+    const name = newTeamForm.name.trim();
+    if (!name) return;
+    const team: Team = { id: String(Date.now()), name, owner: newTeamForm.owner.trim(), members: [] };
+    setTeams(prev => [...prev, team]);
+    setNewTeamForm({ name: '', owner: '' });
+    setModal('none');
+    setSelectedId(team.id);
+    setGenName(team.name);
+    setGenOwner(team.owner);
+    setActiveTab('members');
+    toast.success(`Team "${team.name}" created.`);
+  };
+
+  const IMPORT_SAMPLES: Omit<TeamMember, 'id' | 'created'>[] = [
+    { name: 'Ravi Patel',    email: 'ravi.patel@teltech.com',    notes: '', homeBase: 'Austin, TX',   status: 'Active' },
+    { name: 'Anna Lindqvist', email: 'anna.lindqvist@teltech.com', notes: '', homeBase: 'Stockholm, SE', status: 'Active' },
+    { name: 'Tom Okafor',    email: 'tom.okafor@teltech.com',    notes: '', homeBase: 'Denver, CO',   status: 'Active' },
+  ];
+
+  const handleImportFile = (file: File) => {
+    const created = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    const existing = new Set(selectedTeam.members.map(m => m.email));
+    const imported = IMPORT_SAMPLES
+      .filter(s => !existing.has(s.email))
+      .map((s, i) => ({ ...s, id: `${Date.now()}-${i}`, created }));
+    if (!imported.length) { toast.info('All members in the file already exist on this team.'); return; }
+    setTeams(prev => prev.map(t => t.id === selectedId ? { ...t, members: [...t.members, ...imported] } : t));
+    toast.success(`${imported.length} members imported from ${file.name}.`);
   };
 
   const handleAddCreditCard = () => {
@@ -398,7 +433,7 @@ export function WorkplaceTeams({ onAIAssistantOpen = () => {}, isAIDrawerOpen = 
           </div>
 
           <div style={{ padding: '10px 14px 14px', borderTop: '1px solid #F3F4F6' }}>
-            <button style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'Inter, sans-serif', color: '#005B94', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <button onClick={() => setModal('new-team')} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'Inter, sans-serif', color: '#005B94', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               <Plus className="h-3.5 w-3.5" />
               New Team
             </button>
@@ -441,7 +476,14 @@ export function WorkplaceTeams({ onAIAssistantOpen = () => {}, isAIDrawerOpen = 
                       <input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="Search members..." style={{ ...S.input, paddingLeft: 32, fontSize: 13 }} />
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button style={S.btnOutline} onClick={() => toast.info('Import via CSV coming soon.')}>
+                      <input
+                        ref={importFileRef}
+                        type="file"
+                        accept=".csv"
+                        style={{ display: 'none' }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleImportFile(f); e.target.value = ''; }}
+                      />
+                      <button style={S.btnOutline} onClick={() => importFileRef.current?.click()}>
                         <Upload className="h-3.5 w-3.5" /> Import
                       </button>
                       <button style={S.btnPrimary} onClick={() => setModal('invite')}>
@@ -515,15 +557,39 @@ export function WorkplaceTeams({ onAIAssistantOpen = () => {}, isAIDrawerOpen = 
                       <input value={genOwner} onChange={e => setGenOwner(e.target.value)} placeholder="owner@company.com" style={S.input} />
                     </FormRow>
                     <FormRow label="Admins">
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <input value={genAdminInput} onChange={e => setGenAdminInput(e.target.value)} placeholder="email@company.com" style={{ ...S.input }} />
-                        <button onClick={() => { if (genAdminInput.trim()) { setGenAdminInput(''); toast.success('Admin added.'); } }} style={{ ...S.btnPrimary, flexShrink: 0 }}>Add</button>
+                      <div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <input value={genAdminInput} onChange={e => setGenAdminInput(e.target.value)} placeholder="email@company.com" style={{ ...S.input }} />
+                          <button onClick={() => { const v = genAdminInput.trim(); if (v && !genAdmins.includes(v)) { setGenAdmins(a => [...a, v]); setGenAdminInput(''); toast.success('Admin added.'); } }} style={{ ...S.btnPrimary, flexShrink: 0 }}>Add</button>
+                        </div>
+                        {genAdmins.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                            {genAdmins.map(email => (
+                              <span key={email} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'Inter, sans-serif', color: '#005B94', backgroundColor: '#EFF6FF', padding: '3px 10px', borderRadius: 20 }}>
+                                {email}
+                                <button onClick={() => setGenAdmins(a => a.filter(x => x !== email))} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6B7280', padding: 0, fontSize: 13, lineHeight: 1 }}>×</button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </FormRow>
                     <FormRow label="Notification Emails">
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <input value={genNotifInput} onChange={e => setGenNotifInput(e.target.value)} placeholder="email@company.com" style={{ ...S.input }} />
-                        <button onClick={() => { if (genNotifInput.trim()) { setGenNotifInput(''); toast.success('Email added.'); } }} style={{ ...S.btnPrimary, flexShrink: 0 }}>Add</button>
+                      <div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <input value={genNotifInput} onChange={e => setGenNotifInput(e.target.value)} placeholder="email@company.com" style={{ ...S.input }} />
+                          <button onClick={() => { const v = genNotifInput.trim(); if (v && !genNotifEmails.includes(v)) { setGenNotifEmails(a => [...a, v]); setGenNotifInput(''); toast.success('Email added.'); } }} style={{ ...S.btnPrimary, flexShrink: 0 }}>Add</button>
+                        </div>
+                        {genNotifEmails.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                            {genNotifEmails.map(email => (
+                              <span key={email} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'Inter, sans-serif', color: '#005B94', backgroundColor: '#EFF6FF', padding: '3px 10px', borderRadius: 20 }}>
+                                {email}
+                                <button onClick={() => setGenNotifEmails(a => a.filter(x => x !== email))} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6B7280', padding: 0, fontSize: 13, lineHeight: 1 }}>×</button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </FormRow>
                     <SaveBtn onClick={handleSaveGeneral} />
@@ -712,6 +778,55 @@ export function WorkplaceTeams({ onAIAssistantOpen = () => {}, isAIDrawerOpen = 
           </div>
         </div>
       </div>
+
+      {/* ── New Team modal ───────────────────────────────────────────────── */}
+      <Dialog open={modal === 'new-team'} onOpenChange={open => { if (!open) setModal('none'); }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden" style={{ borderRadius: 12 }}>
+          <div style={{ backgroundColor: '#005B94', padding: '16px 20px' }}>
+            <DialogHeader>
+              <DialogTitle style={{ fontSize: 18, fontWeight: 600, color: '#fff', fontFamily: 'Inter, sans-serif' }}>
+                New Team
+              </DialogTitle>
+              <DialogDescription style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, sans-serif' }}>
+                Create a team to group members, permissions, and budgets
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div style={{ padding: 20 }} className="space-y-4">
+            <div>
+              <label style={S.label}>Team Name</label>
+              <input
+                value={newTeamForm.name}
+                onChange={e => setNewTeamForm(f => ({ ...f, name: e.target.value }))}
+                onKeyDown={e => { if (e.key === 'Enter') handleCreateTeam(); }}
+                placeholder="e.g. West Coast Sales"
+                style={S.input}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label style={S.label}>Owner</label>
+              <input
+                value={newTeamForm.owner}
+                onChange={e => setNewTeamForm(f => ({ ...f, owner: e.target.value }))}
+                onKeyDown={e => { if (e.key === 'Enter') handleCreateTeam(); }}
+                placeholder="owner@company.com"
+                style={S.input}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 4 }}>
+              <button style={S.btnOutline} onClick={() => setModal('none')}>Cancel</button>
+              <button
+                style={{ ...S.btnPrimary, opacity: newTeamForm.name.trim() ? 1 : 0.5 }}
+                disabled={!newTeamForm.name.trim()}
+                onClick={handleCreateTeam}
+              >
+                Create Team
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Invite Members modal ─────────────────────────────────────────── */}
       <Dialog open={modal === 'invite'} onOpenChange={open => { if (!open) setModal('none'); }}>
