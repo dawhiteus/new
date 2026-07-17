@@ -156,7 +156,7 @@ function SearchDetailsModal({ row, onClose }: { row: typeof SEARCHES[0]; onClose
               <tbody>
                 {[
                   ['Date',         `Wed, ${row.date === '07/01/2026' ? 'Jul 1, 2026' : row.date} 5:49 PM`],
-                  ['Member Email', `${row.member.toLowerCase().replace(' ','.')}.ext@airbnb.com`],
+                  ['Member Email', `${row.member.toLowerCase().replace(' ','.')}.ext@teltech.com`],
                   ['Member Name',  row.member],
                   ['Team',         row.team],
                 ].map(([label, value]) => (

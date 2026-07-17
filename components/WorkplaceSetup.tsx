@@ -25,22 +25,22 @@ interface Admin {
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
 const MOCK_ADMINS: Admin[] = [
-  { id: '1',  name: 'Amanda Foley',      email: 'amanda.foley@airbnb.com',      created: '03/12/2022', role: 'Admin', status: 'Active' },
-  { id: '2',  name: 'Brian Chesky',      email: 'brian.c@airbnb.com',           created: '01/04/2021', role: 'Admin', status: 'Active' },
-  { id: '3',  name: 'Carmen Diaz',       email: 'carmen.diaz@airbnb.com',       created: '06/18/2022', role: 'Admin', status: 'Active' },
-  { id: '4',  name: 'Derek Lam',         email: 'derek.lam@airbnb.com',         created: '09/02/2022', role: 'Admin', status: 'Active' },
-  { id: '5',  name: 'Elena Petrova',     email: 'elena.petrova@airbnb.com',     created: '11/29/2022', role: 'Admin', status: 'Active' },
-  { id: '6',  name: 'Frank Osei',        email: 'frank.osei@airbnb.com',        created: '02/14/2023', role: 'Admin', status: 'Active' },
-  { id: '7',  name: 'Grace Kim',         email: 'grace.kim@airbnb.com',         created: '04/07/2023', role: 'Admin', status: 'Active' },
-  { id: '8',  name: 'Hannah Berg',       email: 'hannah.berg@airbnb.com',       created: '07/21/2023', role: 'Admin', status: 'Active' },
-  { id: '9',  name: 'Ivan Sokolov',      email: 'ivan.sokolov@airbnb.com',      created: '10/03/2023', role: 'Admin', status: 'Active' },
-  { id: '10', name: 'Julia Mendes',      email: 'julia.mendes@airbnb.com',      created: '01/16/2024', role: 'Admin', status: 'Active' },
-  { id: '11', name: 'Kevin Wright',      email: 'kevin.wright@airbnb.com',      created: '03/28/2024', role: 'Admin', status: 'Active' },
-  { id: '12', name: 'Laura Chen',        email: 'laura.chen@airbnb.com',        created: '06/09/2024', role: 'Admin', status: 'Active' },
-  { id: '13', name: 'Marcus Hill',       email: 'marcus.hill@airbnb.com',       created: '09/22/2024', role: 'Admin', status: 'Active' },
-  { id: '14', name: 'Nina Rossi',        email: 'nina.rossi@airbnb.com',        created: '12/05/2024', role: 'Admin', status: 'Active' },
-  { id: '15', name: 'Oscar Vega',        email: 'oscar.vega@airbnb.com',        created: '02/18/2025', role: 'Admin', status: 'Active' },
-  { id: '16', name: 'Priya Nair',        email: 'priya.nair@airbnb.com',        created: '05/30/2025', role: 'Admin', status: 'Invited' },
+  { id: '1',  name: 'Amanda Foley',      email: 'amanda.foley@teltech.com',      created: '03/12/2022', role: 'Admin', status: 'Active' },
+  { id: '2',  name: 'Brian Calloway',      email: 'brian.c@teltech.com',           created: '01/04/2021', role: 'Admin', status: 'Active' },
+  { id: '3',  name: 'Carmen Diaz',       email: 'carmen.diaz@teltech.com',       created: '06/18/2022', role: 'Admin', status: 'Active' },
+  { id: '4',  name: 'Derek Lam',         email: 'derek.lam@teltech.com',         created: '09/02/2022', role: 'Admin', status: 'Active' },
+  { id: '5',  name: 'Elena Petrova',     email: 'elena.petrova@teltech.com',     created: '11/29/2022', role: 'Admin', status: 'Active' },
+  { id: '6',  name: 'Frank Osei',        email: 'frank.osei@teltech.com',        created: '02/14/2023', role: 'Admin', status: 'Active' },
+  { id: '7',  name: 'Grace Kim',         email: 'grace.kim@teltech.com',         created: '04/07/2023', role: 'Admin', status: 'Active' },
+  { id: '8',  name: 'Hannah Berg',       email: 'hannah.berg@teltech.com',       created: '07/21/2023', role: 'Admin', status: 'Active' },
+  { id: '9',  name: 'Ivan Sokolov',      email: 'ivan.sokolov@teltech.com',      created: '10/03/2023', role: 'Admin', status: 'Active' },
+  { id: '10', name: 'Julia Mendes',      email: 'julia.mendes@teltech.com',      created: '01/16/2024', role: 'Admin', status: 'Active' },
+  { id: '11', name: 'Kevin Wright',      email: 'kevin.wright@teltech.com',      created: '03/28/2024', role: 'Admin', status: 'Active' },
+  { id: '12', name: 'Laura Chen',        email: 'laura.chen@teltech.com',        created: '06/09/2024', role: 'Admin', status: 'Active' },
+  { id: '13', name: 'Marcus Hill',       email: 'marcus.hill@teltech.com',       created: '09/22/2024', role: 'Admin', status: 'Active' },
+  { id: '14', name: 'Nina Rossi',        email: 'nina.rossi@teltech.com',        created: '12/05/2024', role: 'Admin', status: 'Active' },
+  { id: '15', name: 'Oscar Vega',        email: 'oscar.vega@teltech.com',        created: '02/18/2025', role: 'Admin', status: 'Active' },
+  { id: '16', name: 'Priya Nair',        email: 'priya.nair@teltech.com',        created: '05/30/2025', role: 'Admin', status: 'Invited' },
 ];
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
@@ -202,11 +202,11 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
 
 function GeneralSection() {
   const [form, setForm] = useState({
-    name: 'Airbnb',
-    description: 'Airbnb coworking support program. Provides employees who live far from an Airbnb office with access to on-demand workspace near their home.',
+    name: 'Tel Tech',
+    description: 'Tel Tech coworking support program. Provides employees who live far from a Tel Tech office with access to on-demand workspace near their home.',
     contactName: 'Amanda Foley',
-    contactEmail: 'coworkingspace@airbnb.com',
-    address1: '888 Brannan St',
+    contactEmail: 'coworkingspace@teltech.com',
+    address1: '525 Market St',
     address2: '',
     city: 'San Francisco',
     state: 'CA',
@@ -399,7 +399,7 @@ function AdminsSection() {
             <label style={S.label}>Email</label>
             <input
               style={S.input}
-              placeholder="name@airbnb.com"
+              placeholder="name@teltech.com"
               value={newEmail}
               onChange={e => setNewEmail(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
@@ -421,9 +421,9 @@ function AdminsSection() {
 function EnrollmentSection() {
   const [autoEnroll, setAutoEnroll] = useState(true);
   const [ssoEnabled, setSsoEnabled] = useState(true);
-  const [emailDomains, setEmailDomains] = useState('airbnb.com');
-  const [idpTarget, setIdpTarget] = useState('https://airbnb.okta.com/app/liquidspace/exk8colwbmiQPU3BY357/sso/saml');
-  const [idpLogout, setIdpLogout] = useState('https://airbnb.okta.com/login/signout');
+  const [emailDomains, setEmailDomains] = useState('teltech.com');
+  const [idpTarget, setIdpTarget] = useState('https://teltech.okta.com/app/liquidspace/exk8colwbmiQPU3BY357/sso/saml');
+  const [idpLogout, setIdpLogout] = useState('https://teltech.okta.com/login/signout');
   const [sessionExp, setSessionExp] = useState('480');
   const [authContext, setAuthContext] = useState('PasswordProtectedTransport');
   const [authComparison, setAuthComparison] = useState('exact');
@@ -454,10 +454,10 @@ function EnrollmentSection() {
           </FieldRow>
           <FieldRow label="Assertion Consumer Endpoint">
             <div style={{ display: 'flex', gap: 8 }}>
-              <input style={S.inputReadonly} readOnly value="https://liquidspace.com/auth/saml/callback?org=airbnb" />
+              <input style={S.inputReadonly} readOnly value="https://liquidspace.com/auth/saml/callback?org=teltech" />
               <button
                 style={{ ...S.btnOutline, flexShrink: 0 }}
-                onClick={() => { navigator.clipboard?.writeText('https://liquidspace.com/auth/saml/callback?org=airbnb'); toast.success('Copied to clipboard.'); }}
+                onClick={() => { navigator.clipboard?.writeText('https://liquidspace.com/auth/saml/callback?org=teltech'); toast.success('Copied to clipboard.'); }}
               >
                 <Copy className="h-3.5 w-3.5" />
               </button>
@@ -494,7 +494,7 @@ function EnrollmentSection() {
                 Drag and drop your certificate here, or <span style={{ color: '#005B94', fontWeight: 500 }}>browse</span>
               </p>
               <p style={{ fontSize: 12, color: '#9CA3AF', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>
-                Current: airbnb-okta-2026.pem (expires 03/2027)
+                Current: teltech-okta-2026.pem (expires 03/2027)
               </p>
               <input ref={certFileRef} type="file" style={{ display: 'none' }} onChange={() => toast.success('Certificate uploaded.')} />
             </div>
@@ -528,7 +528,7 @@ function EnrollmentSection() {
       <Card title="SCIM Provisioning">
         <div style={{ maxWidth: 720 }}>
           <FieldRow label="Client Id">
-            <input style={S.inputReadonly} readOnly value="scim-airbnb-8f4c21b0" />
+            <input style={S.inputReadonly} readOnly value="scim-teltech-8f4c21b0" />
           </FieldRow>
           <FieldRow label="Client Secret">
             <div style={{ display: 'flex', gap: 8 }}>
@@ -596,10 +596,10 @@ function IntegrationsSection() {
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
         }}>
           <div style={{ flex: 1 }}>
-            {kvRow('ClientID', 'airbnb-workplace-prod-4d92')}
+            {kvRow('ClientID', 'teltech-workplace-prod-4d92')}
             {kvRow('Client Secret', '••••••••••••••••••••••••')}
             {kvRow('Subscription Key', '••••••••••••••••')}
-            {kvRow('Name', 'Airbnb Workplace Integration')}
+            {kvRow('Name', 'Tel Tech Workplace Integration')}
             {kvRow('Grant Types', 'client_credentials, authorization_code')}
             {kvRow('Scopes', 'reservations:read, reservations:write, members:read, reporting:read')}
             <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 16, padding: '8px 0' }}>
@@ -656,8 +656,8 @@ function IntegrationsSection() {
             <label style={S.label}>API Client</label>
             <select style={S.select} value={assignClient} onChange={e => setAssignClient(e.target.value)}>
               <option value="">Select an API client…</option>
-              <option value="airbnb-workplace-prod-4d92">airbnb-workplace-prod-4d92</option>
-              <option value="airbnb-workplace-staging-77e1">airbnb-workplace-staging-77e1</option>
+              <option value="teltech-workplace-prod-4d92">teltech-workplace-prod-4d92</option>
+              <option value="teltech-workplace-staging-77e1">teltech-workplace-staging-77e1</option>
             </select>
             <label style={{ ...S.label, marginTop: 16 }}>Impersonation Scopes</label>
             <select style={S.select} value={assignScopes} onChange={e => setAssignScopes(e.target.value)}>

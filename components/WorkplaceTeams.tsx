@@ -40,8 +40,8 @@ const MOCK_TEAMS: Team[] = [
     name: 'License Tracker – Admins',
     owner: 'matt@liquidspace.com',
     members: [
-      { id: '1', name: 'Darren Toshi', email: 'darren.toshi@slalom.com', created: '01/15/2018', notes: '', homeBase: 'Chicago, IL', status: 'Active' },
-      { id: '2', name: 'Drew Maclean', email: 'drew.maclean@slalom.com', created: '11/20/2025', notes: '', homeBase: 'New York, NY', status: 'Active' },
+      { id: '1', name: 'Darren Toshi', email: 'darren.toshi@teltech.com', created: '01/15/2018', notes: '', homeBase: 'Chicago, IL', status: 'Active' },
+      { id: '2', name: 'Drew Maclean', email: 'drew.maclean@teltech.com', created: '11/20/2025', notes: '', homeBase: 'New York, NY', status: 'Active' },
     ],
   },
   {
@@ -49,10 +49,10 @@ const MOCK_TEAMS: Team[] = [
     name: 'EMEA',
     owner: 'sarah@liquidspace.com',
     members: [
-      { id: '3', name: 'James Whitfield', email: 'james.w@slalom.com', created: '03/10/2023', notes: '', homeBase: 'London, UK', status: 'Active' },
-      { id: '4', name: 'Sophie Müller', email: 'sophie.m@slalom.com', created: '05/22/2023', notes: '', homeBase: 'Berlin, DE', status: 'Active' },
-      { id: '5', name: 'Luca Ferrari', email: 'luca.f@slalom.com', created: '07/01/2024', notes: '', homeBase: 'Milan, IT', status: 'Active' },
-      { id: '6', name: 'Elena Rossi', email: 'elena.r@slalom.com', created: '09/15/2024', notes: '', homeBase: 'Rome, IT', status: 'Inactive' },
+      { id: '3', name: 'James Whitfield', email: 'james.w@teltech.com', created: '03/10/2023', notes: '', homeBase: 'London, UK', status: 'Active' },
+      { id: '4', name: 'Sophie Müller', email: 'sophie.m@teltech.com', created: '05/22/2023', notes: '', homeBase: 'Berlin, DE', status: 'Active' },
+      { id: '5', name: 'Luca Ferrari', email: 'luca.f@teltech.com', created: '07/01/2024', notes: '', homeBase: 'Milan, IT', status: 'Active' },
+      { id: '6', name: 'Elena Rossi', email: 'elena.r@teltech.com', created: '09/15/2024', notes: '', homeBase: 'Rome, IT', status: 'Inactive' },
     ],
   },
   {

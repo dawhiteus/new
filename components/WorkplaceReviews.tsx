@@ -27,31 +27,31 @@ const CHART_DATA = [
 
 const REVIEWS = [
   {
-    id:'1', date:'07/02/2026', member:'Maite Cirauqui Diaz', memberEmail:'maite.cirauquidiaz@airbnb.com', team:'50+ Mile Members (Global)',
+    id:'1', date:'07/02/2026', member:'Maite Cirauqui Diaz', memberEmail:'maite.cirauquidiaz@teltech.com', team:'50+ Mile Members (Global)',
     venue:'Regus | Madrid Jose Abascal 41 – Day Desk', venueAddress:'Madrid, MD, ES', rating:5,
     comment:'Good space and very quick to confirm',
     reservationDate:'Tue, Jun 23, 2026 from 10:00 AM – 3:00 PM RDT', createdDate:'Thu, Jul 2, 2026 2:19 AM', source:'SYS',
   },
   {
-    id:'2', date:'07/02/2026', member:'Monica May', memberEmail:'monica.may@airbnb.com', team:'50+ Mile Members (Global)',
+    id:'2', date:'07/02/2026', member:'Monica May', memberEmail:'monica.may@teltech.com', team:'50+ Mile Members (Global)',
     venue:'Trick Hat Workway – Day Pass: Open Desk', venueAddress:'Austin, TX, US', rating:5,
     comment:"Really enjoyed this space! The amenities and snacks available were great; since this place is right next to the town lake trail, a wonderful perk is that they have a shower; you can get some exercise, rinse off and have a full work day undisrupted.",
     reservationDate:'Mon, Jun 30, 2026 from 8:00 AM – 5:00 PM CDT', createdDate:'Thu, Jul 2, 2026 9:14 AM', source:'SYS',
   },
   {
-    id:'3', date:'07/01/2026', member:'Jordan Meeker', memberEmail:'jordan.meeker@airbnb.com', team:'Los Angeles Metro Area',
+    id:'3', date:'07/01/2026', member:'Jordan Meeker', memberEmail:'jordan.meeker@teltech.com', team:'Los Angeles Metro Area',
     venue:'BLANKSPACES Venice – WorkCafé Desk', venueAddress:'Los Angeles, CA, US', rating:5,
     comment:'Great spot, easy to book and very comfortable.',
     reservationDate:'Fri, Jun 27, 2026 from 9:00 AM – 5:00 PM PDT', createdDate:'Wed, Jul 1, 2026 8:00 AM', source:'SYS',
   },
   {
-    id:'4', date:'06/30/2026', member:'Tyler Brooks', memberEmail:'tyler.brooks@airbnb.com', team:'New York Metro Area',
+    id:'4', date:'06/30/2026', member:'Tyler Brooks', memberEmail:'tyler.brooks@teltech.com', team:'New York Metro Area',
     venue:'Industrious | Bryant Park – Private Office', venueAddress:'New York, NY, US', rating:4,
     comment:'Nice office with a great view. Could use more natural light but overall solid.',
     reservationDate:'Mon, Jun 23, 2026 from 9:00 AM – 6:00 PM EDT', createdDate:'Mon, Jun 30, 2026 10:30 AM', source:'SYS',
   },
   {
-    id:'5', date:'06/28/2026', member:'Maria Chen', memberEmail:'maria.chen@airbnb.com', team:'Chicago Metro Area',
+    id:'5', date:'06/28/2026', member:'Maria Chen', memberEmail:'maria.chen@teltech.com', team:'Chicago Metro Area',
     venue:'WeWork | 1 N Dearborn – Hot Desk', venueAddress:'Chicago, IL, US', rating:4,
     comment:'Good location downtown. The space was clean and well organized.',
     reservationDate:'Thu, Jun 26, 2026 from 8:00 AM – 4:00 PM CDT', createdDate:'Sat, Jun 28, 2026 7:45 AM', source:'SYS',

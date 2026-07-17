@@ -248,7 +248,7 @@ function MemberProfileModal({ name, onClose }: { name: string; onClose: () => vo
   ];
 
   const infoRows = [
-    ['Name', 'Jordan Meeker'], ['Title', ''], ['Email', 'jordan.meeker@airbnb.com'],
+    ['Name', 'Jordan Meeker'], ['Title', ''], ['Email', 'jordan.meeker@teltech.com'],
     ['Phone', '+1 301-529-3269'], ['Location', ''], ['Account ID', ''], ['Cost Center', ''], ['Notes', ''],
   ];
 

@@ -45,11 +45,11 @@ const FAQ_ROWS: FaqRow[] = [
   },
   {
     id: '6', type: 'QuestionAnswer', subject: 'How do I book a desk or conference room on Liquidspace?', visible: true,
-    content: 'Booking is as easy as a few clicks. First– start by going to www.liquidspace.com/airbnb and search for the space type, duration, and location where you’d like to book. Once you find something that looks good, click on the listing and it will bring you to a page with a description and (for most listings) an interactive calendar. Then, select the times that you need the space and click the “Book It” button. Many listings are ‘instant book’ and will send you instructions on how to check in right away, but others may require the host to confirm availability before they confirm and send instructions. Feel familiar?',
+    content: 'Booking is as easy as a few clicks. First– start by going to www.liquidspace.com/teltech and search for the space type, duration, and location where you’d like to book. Once you find something that looks good, click on the listing and it will bring you to a page with a description and (for most listings) an interactive calendar. Then, select the times that you need the space and click the “Book It” button. Many listings are ‘instant book’ and will send you instructions on how to check in right away, but others may require the host to confirm availability before they confirm and send instructions. Feel familiar?',
   },
   {
     id: '7', type: 'QuestionAnswer', subject: 'What happens when I book a desk or conference room? How do I get into the building and know where to go?', visible: true,
-    content: 'Just like Airbnb, each coworking space listing will have its own set of instructions for how to access a desk or conference room. Liquidspace works with each individual provider to make sure that they are prepared to receive folks who book through the platform, so your visit will not be a surprise to your host. Most reservations will involve you checking it at some kind of reception desk, where you can be shown to your booked space.',
+    content: 'Each coworking space listing will have its own set of instructions for how to access a desk or conference room. Liquidspace works with each individual provider to make sure that they are prepared to receive folks who book through the platform, so your visit will not be a surprise to your host. Most reservations will involve you checking in at some kind of reception desk, where you can be shown to your booked space.',
   },
   {
     id: '8', type: 'QuestionAnswer', subject: 'Cancellation policy', visible: true,
@@ -57,15 +57,15 @@ const FAQ_ROWS: FaqRow[] = [
   },
   {
     id: '9', type: 'QuestionAnswer', subject: 'I’m trying to book a Liquidspace in a certain city, but there’s a red bubble around the city and it’s not showing anything there. What’s going on?', visible: true,
-    content: 'Any listings within 50 miles of an existing Airbnb office have automatically been restricted. The purpose of this program is to support employees who don’t live near an Airbnb office and who have an unsustainable working situation. Anyone living in general proximity to an Airbnb office is expected to utilize that office space (e.g. Bay Area employees should visit our SF office).',
+    content: 'Any listings within 50 miles of an existing Tel Tech office have automatically been restricted. The purpose of this program is to support employees who don’t live near a Tel Tech office and who have an unsustainable working situation. Anyone living in general proximity to a Tel Tech office is expected to utilize that office space (e.g. Bay Area employees should visit our SF office).',
   },
   {
     id: '10', type: 'QuestionAnswer', subject: 'Is there a limit to what I can book?', visible: true,
-    content: 'An individual budget limit of $150/USD per day and $800/USD per month has been set. If you need to make a booking that exceeds this limit for a business-approved reason, please contact coworkingspace@airbnb.com.',
+    content: 'An individual budget limit of $150/USD per day and $800/USD per month has been set. If you need to make a booking that exceeds this limit for a business-approved reason, please contact coworkingspace@teltech.com.',
   },
   {
     id: '11', type: 'QuestionAnswer', subject: 'I can’t find any locations on Liquidspace that are conveniently located for me. Am I out of luck?', visible: true,
-    content: 'Liquidspace is constantly bringing new providers and locations online. If you can’t find an existing office location on the platform that works for you, please reach out to coworkingspace@airbnb.com and we will see if there is an office space near you that can be onboarded to the platform. If you are already aware of a provider that is close by, please let us know.',
+    content: 'Liquidspace is constantly bringing new providers and locations online. If you can’t find an existing office location on the platform that works for you, please reach out to coworkingspace@teltech.com and we will see if there is an office space near you that can be onboarded to the platform. If you are already aware of a provider that is close by, please let us know.',
   },
   {
     id: '12', type: 'QuestionAnswer', subject: 'Need help?', visible: true,
@@ -187,13 +187,17 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
-function AirbnbLogo({ height = 30 }: { height?: number }) {
+function TelTechLogo({ height = 30 }: { height?: number }) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-      <svg height={height} viewBox="0 0 24 24" fill="#FF5A5F" aria-hidden>
-        <path d="M12 2.4c1 0 1.9.5 2.4 1.4.2.3.5.9 1 1.9l.3.6c1.3 2.6 2.8 5.8 3.8 8 .5 1.1.7 1.7.7 2.4a4.4 4.4 0 0 1-4.4 4.4c-1.4 0-2.7-.7-3.8-1.9-1.1 1.2-2.4 1.9-3.8 1.9A4.4 4.4 0 0 1 3.8 16.7c0-.7.2-1.3.7-2.4 1-2.2 2.5-5.4 3.8-8l.3-.6c.5-1 .8-1.6 1-1.9.5-.9 1.4-1.4 2.4-1.4zm0 1.7c-.4 0-.7.2-1 .6l-.9 1.8-.4.7a170 170 0 0 0-3.7 7.9c-.4.9-.5 1.3-.5 1.7 0 1.4 1.2 2.6 2.7 2.6 1 0 2-.6 2.9-1.8a17.5 17.5 0 0 1-2-4.6c-.2-.9-.2-1.7 0-2.3.4-1 1.4-1.7 2.6-1.7s2.2.7 2.6 1.7c.2.6.2 1.4 0 2.3a17.5 17.5 0 0 1-2 4.6c1 1.2 2 1.8 3 1.8 1.4 0 2.6-1.2 2.6-2.6 0-.4-.1-.8-.5-1.7a170 170 0 0 0-4.1-8.6l-.9-1.8c-.3-.4-.6-.6-1-.6zm0 6.6c-.5 0-.9.2-1 .7-.1.3-.1.8 0 1.3.3 1 .8 2.2 1.5 3.4.7-1.2 1.2-2.4 1.5-3.4.1-.5.1-1 0-1.3-.1-.5-.5-.7-1-.7z"/>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+      <svg height={height} viewBox="0 0 24 24" fill="none" aria-hidden>
+        <rect x="1" y="1" width="22" height="22" rx="6" fill="#1D4ED8" />
+        <path d="M6 8.2h12M12 8.2v8" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
+        <circle cx="18.4" cy="16.6" r="1.7" fill="#38BDF8" />
       </svg>
-      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: height * 0.66, color: '#FF5A5F', letterSpacing: '-0.02em' }}>airbnb</span>
+      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: height * 0.62, color: '#1E3A8A', letterSpacing: '-0.02em' }}>
+        Tel<span style={{ color: '#1D4ED8' }}>Tech</span>
+      </span>
     </span>
   );
 }
@@ -203,7 +207,7 @@ function UploadCard({ hint = 'JPG or PNG no larger than 5 MB' }: { hint?: string
   return (
     <div style={{ textAlign: 'center' }}>
       <div style={{ display: 'inline-block', border: '1px solid #E5E7EB', borderRadius: 10, padding: '18px 34px', marginBottom: 12 }}>
-        <AirbnbLogo />
+        <TelTechLogo />
       </div>
       <div>
         <button style={S.btnPrimary} onClick={() => ref.current?.click()}>
@@ -249,9 +253,9 @@ function RichTextArea({ value, onChange, minHeight = 90 }: { value: string; onCh
 // ─── Tab: General ─────────────────────────────────────────────────────────────
 
 function GeneralTab() {
-  const [hqLabel, setHqLabel] = useState('Airbnb Office');
-  const [hqColor, setHqColor] = useState('#FF5A5F');
-  const [hqColorHover, setHqColorHover] = useState('#E00007');
+  const [hqLabel, setHqLabel] = useState('Tel Tech Office');
+  const [hqColor, setHqColor] = useState('#1D4ED8');
+  const [hqColorHover, setHqColorHover] = useState('#1E3A8A');
 
   return (
     <>
@@ -260,7 +264,7 @@ function GeneralTab() {
           border: '1px solid #E5E7EB', borderRadius: 10, padding: '14px 22px',
           display: 'flex', alignItems: 'center', gap: 14, backgroundColor: '#fff',
         }}>
-          <AirbnbLogo height={26} />
+          <TelTechLogo height={26} />
           <span style={{ width: 1, height: 26, backgroundColor: '#E5E7EB' }} />
           <span style={{ fontSize: 13, color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
             Powered by <span style={{ fontWeight: 600, color: '#005B94' }}>LiquidSpace</span>
@@ -309,7 +313,7 @@ function GeneralTab() {
           <FieldRow label="Logo">
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <div style={{ border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 14px' }}>
-                <AirbnbLogo height={20} />
+                <TelTechLogo height={20} />
               </div>
               <button style={S.btnOutline} onClick={() => toast.success('Logo uploaded.')}>
                 <Upload className="h-3.5 w-3.5" /> Upload
@@ -329,10 +333,10 @@ function GeneralTab() {
 // ─── Tab: Onboarding ──────────────────────────────────────────────────────────
 
 function OnboardingTab() {
-  const [welcomeMsg, setWelcomeMsg] = useState('Welcome to LiquidSpace for Airbnb');
+  const [welcomeMsg, setWelcomeMsg] = useState('Welcome to LiquidSpace for Tel Tech');
   const [welcomeTitle, setWelcomeTitle] = useState('Book coworking space near you');
   const [welcomeContent, setWelcomeContent] = useState(
-    'You’ve been granted access to book space in coworking office spaces to support your productivity. Search desks and conference rooms near your home, book with a click, and get to work — Airbnb pays centrally, so you’ll never be charged.'
+    'You’ve been granted access to book space in coworking office spaces to support your productivity. Search desks and conference rooms near your home, book with a click, and get to work — Tel Tech pays centrally, so you’ll never be charged.'
   );
   const [videoUrl, setVideoUrl] = useState('https://vimeo.com/liquidspace/getstarted');
   const uploadRef = useRef<HTMLInputElement>(null);
@@ -399,17 +403,17 @@ function OnboardingTab() {
 
 function PortalTab() {
   const [portalEnabled, setPortalEnabled] = useState(true);
-  const [portalUrl, setPortalUrl] = useState('https://www.liquidspace.com/airbnb');
+  const [portalUrl, setPortalUrl] = useState('https://www.liquidspace.com/teltech');
   const [portalType, setPortalType] = useState('Marketplace');
   const [faqs, setFaqs] = useState<FaqRow[]>(FAQ_ROWS);
   const [bannerEnabled, setBannerEnabled] = useState(true);
-  const [bannerTitle, setBannerTitle] = useState('Airbnb + Liquidspace');
+  const [bannerTitle, setBannerTitle] = useState('Tel Tech + Liquidspace');
   const [bannerSubtitle, setBannerSubtitle] = useState(
     'You’ve been granted access to book space in coworking office spaces to support your productivity. Click to learn more about the rules and guidelines of this program.'
   );
-  const [popupTitle, setPopupTitle] = useState('Airbnb + Liquidspace');
+  const [popupTitle, setPopupTitle] = useState('Tel Tech + Liquidspace');
   const [popupContent, setPopupContent] = useState(
-    'Welcome to Liquidspace! We encourage you to use this platform to book desks and conference rooms in coworking spaces near your home to enable your day-to-day work.\n\nPlease note: bookings are not allowed and have been restricted within 50 miles of most existing Airbnb offices (with the exception of NYC, Los Angeles, and Washington DC). If you are traveling to an area where we have an Airbnb office, you can access our office by registering at air.bb/register.\n\nBookings are paid for centrally by Airbnb, and you/your team will not be charged. However, we ask that you please book responsibly and only use space that is the right size and for only the amount of time that you need it. All members are subject to a $150/day and $800/month booking limit.\n\nAdditional program information for our coworking support program can be found at air.bb/coworkingspace'
+    'Welcome to Liquidspace! We encourage you to use this platform to book desks and conference rooms in coworking spaces near your home to enable your day-to-day work.\n\nPlease note: bookings are not allowed and have been restricted within 50 miles of most existing Tel Tech offices (with the exception of NYC, Los Angeles, and Washington DC). If you are traveling to an area where we have a Tel Tech office, you can access our office by registering at tel.tech/register.\n\nBookings are paid for centrally by Tel Tech, and you/your team will not be charged. However, we ask that you please book responsibly and only use space that is the right size and for only the amount of time that you need it. All members are subject to a $150/day and $800/month booking limit.\n\nAdditional program information for our coworking support program can be found at tel.tech/coworkingspace'
   );
   const [forcePopup, setForcePopup] = useState(false);
 
@@ -518,9 +522,9 @@ function PortalTab() {
 function EmailTab() {
   const [brandedEmail, setBrandedEmail] = useState(true);
   const [from, setFrom] = useState('Liquidspace');
-  const [programName, setProgramName] = useState('Liquidspace for Airbnb');
+  const [programName, setProgramName] = useState('Liquidspace for Tel Tech');
   const [inviteMsg, setInviteMsg] = useState(
-    'Hi there,\n\nYou’ve been granted access to LiquidSpace and can now book desks and conference rooms in nearby coworking spaces.\n\nPlease note: Liquidspace is integrated with Airbnb’s Okta platform, so it can take up to 48 hours for your access to be granted after you receive this email. If after 48 hours you get an "access denied" email when trying to log in, please contact us at coworkingspace@airbnb.com.'
+    'Hi there,\n\nYou’ve been granted access to LiquidSpace and can now book desks and conference rooms in nearby coworking spaces.\n\nPlease note: Liquidspace is integrated with Tel Tech’s Okta platform, so it can take up to 48 hours for your access to be granted after you receive this email. If after 48 hours you get an "access denied" email when trying to log in, please contact us at coworkingspace@teltech.com.'
   );
   const [venueGroupId, setVenueGroupId] = useState('');
   const [customCss, setCustomCss] = useState('');
