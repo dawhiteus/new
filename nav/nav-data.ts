@@ -123,7 +123,7 @@ export const IA: Record<string, Product> = {
         label: 'Workplace Strategist',
         items: [
           { id: 'portfolio-compiler', icon: 'layers',    label: 'Portfolio Compiler', url: 'https://workplacestrategist-internal.vercel.app/portfolio-compiler' },
-          { id: 'flex-modeler',       icon: 'sliders',   label: 'Flex Modeler' },
+          { id: 'scenario-modeler',   icon: 'sliders',   label: 'Scenario Modeler', url: 'https://workplacestrategist-internal.vercel.app/scenario-modeler' },
           { id: 'hub-locator',        icon: 'map',       label: 'Hub Locator',        url: 'https://workplacestrategist-internal.vercel.app/hub-locator' },
         ],
       },
