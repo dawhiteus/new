@@ -25,8 +25,11 @@ export function UniversalNav() {
   const handleSelectPage = (pageId: string, pid: string) => {
     const item = findItemById(pid, pageId);
     if (item?.url) {
-      if (pid === 'ops') {
-        navigate(new URL(item.url).pathname);
+      const itemUrl = new URL(item.url);
+      const isDev = window.location.hostname === 'localhost';
+      const sameHost = isDev || itemUrl.hostname === window.location.hostname;
+      if (sameHost) {
+        navigate(itemUrl.pathname);
       } else {
         window.location.href = item.url;
       }
