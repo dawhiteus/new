@@ -76,7 +76,7 @@ Navigation is **hostname-based**:
 
 Users control new-tab behavior via standard browser conventions (⌘-click, right-click → Open in New Tab). The nav never forces a new tab.
 
-In the nav prototype (`App.tsx`), all links open in a new tab via `window.open` so the prototype itself stays visible during demos.
+In the nav prototype (`App.tsx`), selecting a nav item resolves **in place** to a stub page that renders the correct page-header tier for that destination (see §2.4), with an "Open live page ↗" link to the deployed app. This lets the prototype demonstrate the full shell — chrome header, sidebar, and both page-header tiers — without leaving the demo.
 
 #### Canonical app URLs
 
@@ -139,18 +139,41 @@ There are exactly **two sanctioned tiers**, chosen by page type. No other varian
 
 For pages whose content is forms, tables, and workflows: Transactions, Tasks, Teams, Locations, Activity, Setup, Branding, License Tracker, Payments, Funding Sources.
 
-- Blue gradient banner: `#004A7C → #005B94 → #0071B8` (135°), ~28px vertical padding
-- Icon + title (28px/700, white) + subtitle (14px, white/75%)
-- Optional page-level primary action, top right (e.g. "+ New Requirement"), white/15% background
-- Rationale: these pages are scannable lists/forms — the band's height costs nothing and gives identity, orientation, and a stable home for the page action.
+Reference implementation: `PageHeaderBand` in the nav prototype; `components/PageHeader.tsx` in the TM app.
+
+**Anatomy**
+
+| Element | Spec |
+|---|---|
+| Container | Full-bleed gradient `linear-gradient(135deg, #004A7C 0%, #005B94 60%, #0071B8 100%)`; padding `28px 32px 32px` |
+| Content wrapper | `max-width: 1280px`, centered; flex row, space-between |
+| Icon | 24px, white, 12px gap to title |
+| Title | 28px / 700, white, letter-spacing −0.3px |
+| Subtitle | 14px / 400, `rgba(255,255,255,0.75)`, 4px below title row |
+| Action slot (optional) | Top right. Primary page action (e.g. "+ New Requirement"): `rgba(255,255,255,0.15)` background, `rgba(255,255,255,0.25)` 1px border, white 14px/500 text, 10px radius. Filter dropdowns (e.g. Dashboard's Region/Team/Period) use the same pill treatment. |
+
+**Content rules:** title is the nav item's label, title-case; subtitle is one sentence, sentence-case, ending with a period; at most one primary action.
+
+Rationale: these pages are scannable lists/forms — the band's height costs nothing and gives identity, orientation, and a stable home for the page action.
 
 #### Tier 2 — Slim context toolbar (analytical workbench pages)
 
 For dense, data-first canvases with their own side panels and in-canvas section structure: Portfolio Compiler, Scenario Modeler, Hub Locator.
 
-- Single white toolbar, fixed height (~48px), 1px bottom border — no gradient band
-- Must still carry, left to right: page identity (small label or breadcrumb), any global context switcher (e.g. client/org selector, centered or left), and the data-as-of timestamp (right)
-- Rationale: identity is already established by the sidebar's active state; on a workbench every vertical pixel is working space, and a banner would push KPI content below the fold.
+Reference implementation: `ContextToolbar` in the nav prototype.
+
+**Anatomy**
+
+| Element | Spec |
+|---|---|
+| Container | White, fixed height 48px, `1px solid #e5e7eb` bottom border, padding `0 24px`; spans the canvas width (between sidebar and any right-side analysis panel) |
+| Page identity (left) | 11px / 600, uppercase, letter-spacing 0.08em, `#6b7280` — the nav item's label (not a generic word like "Context") |
+| Context switcher (center) | Pill dropdown: `1px solid #d1d5db` border, 9999px radius, 13px `#374151` text, leading 7px status dot `#005b94`, trailing chevron |
+| Data-as-of timestamp (right) | 12px, `#6b7280`, e.g. "Data as of Jul 17, 2026 · 12:05 PM" |
+
+**Content rules:** all three slots are required. No gradient, no large title, no page actions — actions belong in the canvas or side panel.
+
+Rationale: identity is already established by the sidebar's active state; on a workbench every vertical pixel is working space, and a banner would push KPI content below the fold.
 
 **The rule:** if the user *manages things* on the page, use Tier 1. If the user *analyzes a canvas* on the page, use Tier 2. This is a deliberate two-tier system, not a per-page styling choice — new pages must pick a tier by this rule.
 
