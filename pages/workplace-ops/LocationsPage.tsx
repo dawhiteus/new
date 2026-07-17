@@ -1,6 +1,8 @@
 import React from 'react';
-import { PageShell } from '../../layout/PageShell';
+import { WorkplaceLocations } from '../../components/WorkplaceLocations';
+import { useAIDrawer } from '../../context/AIDrawerContext';
 
 export default function LocationsPage() {
-  return <PageShell title="Locations" breadcrumb={['Workplace Operations', 'Locations']} />;
+  const { openGeneric, isOpen } = useAIDrawer();
+  return <WorkplaceLocations onAIAssistantOpen={openGeneric} isAIDrawerOpen={isOpen} />;
 }
