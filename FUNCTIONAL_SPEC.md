@@ -183,10 +183,9 @@ Reference implementation: `ContextToolbar` in the nav prototype.
 |---|---|
 | Container | White, fixed height 48px, `1px solid #e5e7eb` bottom border, padding `0 24px`; spans the canvas width (between sidebar and any right-side analysis panel) |
 | Page identity (left) | 11px / 600, uppercase, letter-spacing 0.08em, `#6b7280` — the nav item's label (not a generic word like "Context") |
-| Center slot | Empty in production. **Demo environments only:** a customer/org picker pill (`1px solid #d1d5db` border, 9999px radius, 13px `#374151` text, leading 7px status dot `#005b94`, trailing chevron) for switching between demo datasets. This picker is an artifact of the demo environment and must not ship to production. |
 | Data-as-of timestamp (right) | 12px, `#6b7280`, e.g. "Data as of Jul 17, 2026 · 12:05 PM" |
 
-**Content rules:** identity and timestamp are required; the center slot is reserved (demo picker only). No gradient, no large title, no page actions — actions belong in the canvas or side panel.
+**Content rules:** identity and timestamp are both required. No gradient, no large title, no page actions — actions belong in the canvas or side panel.
 
 Rationale: identity is already established by the sidebar's active state; on a workbench every vertical pixel is working space, and a banner would push KPI content below the fold.
 

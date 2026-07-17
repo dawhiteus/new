@@ -60,13 +60,10 @@ export function BandAction({ label }: { label: string }) {
 // ── Tier 2: Slim context toolbar ──────────────────────────────────────
 // For analytical workbench pages (Portfolio Compiler, Scenario Modeler,
 // Hub Locator). Fixed-height white toolbar: page identity (left),
-// data-as-of timestamp (right). The centered customer/org picker is a
-// DEMO-ENVIRONMENT artifact for switching datasets — production has no
-// customer picker; the center slot ships empty.
+// data-as-of timestamp (right).
 
-export function ContextToolbar({ pageLabel, contextName, dataAsOf }: {
+export function ContextToolbar({ pageLabel, dataAsOf }: {
   pageLabel: string;
-  contextName: string;
   dataAsOf: string;
 }) {
   return (
@@ -77,8 +74,8 @@ export function ContextToolbar({ pageLabel, contextName, dataAsOf }: {
       borderBottom: '1px solid #e5e7eb',
       display: 'flex',
       alignItems: 'center',
+      justifyContent: 'space-between',
       padding: '0 24px',
-      position: 'relative',
     }}>
       <span style={{
         fontSize: 11,
@@ -86,32 +83,12 @@ export function ContextToolbar({ pageLabel, contextName, dataAsOf }: {
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
         color: '#6b7280',
+        flexShrink: 0,
       }}>
         {pageLabel}
       </span>
 
-      {/* Context switcher — centered */}
-      <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
-        <button style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 7,
-          padding: '5px 14px',
-          borderRadius: 9999,
-          border: '1px solid #d1d5db',
-          background: '#fff',
-          fontSize: 13,
-          color: '#374151',
-          fontFamily: 'inherit',
-          cursor: 'pointer',
-        }}>
-          <span style={{ width: 7, height: 7, borderRadius: 9999, background: '#005b94', flexShrink: 0 }} />
-          {contextName}
-          <Icon name="chevron-down" size={11} color="#6b7280" />
-        </button>
-      </div>
-
-      <span style={{ marginLeft: 'auto', fontSize: 12, color: '#6b7280' }}>
+      <span style={{ fontSize: 12, color: '#6b7280', flexShrink: 0, whiteSpace: 'nowrap' }}>
         {dataAsOf}
       </span>
     </div>

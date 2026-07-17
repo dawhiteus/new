@@ -69,7 +69,6 @@ function StubPage({ productId, pageId }: { productId: string; pageId: string }) 
       {isWorkbench ? (
         <ContextToolbar
           pageLabel={meta.item.label}
-          contextName="Tel Tech Enterprise"
           dataAsOf="Data as of Jul 17, 2026 · 12:05 PM"
         />
       ) : (
