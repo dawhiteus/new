@@ -129,6 +129,31 @@ Pillars appear in this order: Workplace Strategist, then Workplace Operations.
 
 All Workplace Manager page content uses the fictitious company **Tel Tech**. Do not use real company names (Airbnb, Slalom, etc.) in page content or spec examples.
 
+### 2.4 Page Headers (in-content)
+
+Page headers live **inside the content area**, below the chrome header and to the right of the sidebar. They are owned by the destination app, scroll with the page (not sticky), and must never duplicate what the chrome header owns — no brand marks, no user/utility controls.
+
+There are exactly **two sanctioned tiers**, chosen by page type. No other variants.
+
+#### Tier 1 — Blue Page Header band (operational / management pages)
+
+For pages whose content is forms, tables, and workflows: Transactions, Tasks, Teams, Locations, Activity, Setup, Branding, License Tracker, Payments, Funding Sources.
+
+- Blue gradient banner: `#004A7C → #005B94 → #0071B8` (135°), ~28px vertical padding
+- Icon + title (28px/700, white) + subtitle (14px, white/75%)
+- Optional page-level primary action, top right (e.g. "+ New Requirement"), white/15% background
+- Rationale: these pages are scannable lists/forms — the band's height costs nothing and gives identity, orientation, and a stable home for the page action.
+
+#### Tier 2 — Slim context toolbar (analytical workbench pages)
+
+For dense, data-first canvases with their own side panels and in-canvas section structure: Portfolio Compiler, Scenario Modeler, Hub Locator.
+
+- Single white toolbar, fixed height (~48px), 1px bottom border — no gradient band
+- Must still carry, left to right: page identity (small label or breadcrumb), any global context switcher (e.g. client/org selector, centered or left), and the data-as-of timestamp (right)
+- Rationale: identity is already established by the sidebar's active state; on a workbench every vertical pixel is working space, and a banner would push KPI content below the fold.
+
+**The rule:** if the user *manages things* on the page, use Tier 1. If the user *analyzes a canvas* on the page, use Tier 2. This is a deliberate two-tier system, not a per-page styling choice — new pages must pick a tier by this rule.
+
 ---
 
 ## 3. Transactions View (Main View)
@@ -136,7 +161,7 @@ All Workplace Manager page content uses the fictitious company **Tel Tech**. Do 
 Route/state: `broker-flow`
 
 ### 3.1 Page Header
-- Blue gradient banner: `#004A7C → #005B94 → #0071B8` (135°)
+Tier 1 Blue Page Header band (see §2.4):
 - Title: **"Transactions"** — 28px/700 weight, white
 - Subtitle: "Manage your workspace requirements and track opportunities." — 14px, white/75%
 - **"+ New Requirement"** button (top right) — white/15% background, triggers Create Modal (§4)
