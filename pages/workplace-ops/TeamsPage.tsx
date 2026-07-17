@@ -1,6 +1,8 @@
 import React from 'react';
-import { PageShell } from '../../layout/PageShell';
+import { WorkplaceTeams } from '../../components/WorkplaceTeams';
+import { useAIDrawer } from '../../context/AIDrawerContext';
 
 export default function TeamsPage() {
-  return <PageShell title="Teams" breadcrumb={['Workplace Operations', 'Teams']} />;
+  const { openGeneric, isOpen } = useAIDrawer();
+  return <WorkplaceTeams onAIAssistantOpen={openGeneric} isAIDrawerOpen={isOpen} />;
 }
