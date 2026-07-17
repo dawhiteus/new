@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { SidebarA } from './SidebarA';
-import { PROFILES, IA, findPageByUrlPath } from './nav-data';
+import { PROFILES, IA, findPageByUrlPath, findItemById } from './nav-data';
 
 const PROFILE = PROFILES.enterprise_admin;
 
@@ -23,20 +23,16 @@ export function UniversalNav() {
   }, [location.pathname]);
 
   const handleSelectPage = (pageId: string, pid: string) => {
-    for (const g of IA[pid]?.groups ?? []) {
-      const item = g.items.find(i => i.id === pageId);
-      if (item?.url) {
-        if (pid === 'ops') {
-          // Same app — use React Router (no page reload)
-          navigate(new URL(item.url).pathname);
-        } else {
-          // Cross-app — same tab full navigation
-          window.location.href = item.url;
-        }
-        return;
+    const item = findItemById(pid, pageId);
+    if (item?.url) {
+      if (pid === 'ops') {
+        navigate(new URL(item.url).pathname);
+      } else {
+        window.location.href = item.url;
       }
+      return;
     }
-    // No URL yet — track active state locally
+    // Parent item with children or no URL — track active state locally
     setActiveId(pageId);
     if (pid !== productId) setProductId(pid);
   };
