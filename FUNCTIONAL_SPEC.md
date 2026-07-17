@@ -150,9 +150,24 @@ Reference implementation: `PageHeaderBand` in the nav prototype; `components/Pag
 | Icon | 24px, white, 12px gap to title |
 | Title | 28px / 700, white, letter-spacing −0.3px |
 | Subtitle | 14px / 400, `rgba(255,255,255,0.75)`, 4px below title row |
-| Action slot (optional) | Top right. Primary page action (e.g. "+ New Requirement"): `rgba(255,255,255,0.15)` background, `rgba(255,255,255,0.25)` 1px border, white 14px/500 text, 10px radius. Filter dropdowns (e.g. Dashboard's Region/Team/Period) use the same pill treatment. |
+| Action slot (optional) | Top right; holds header buttons (see below) |
 
-**Content rules:** title is the nav item's label, title-case; subtitle is one sentence, sentence-case, ending with a period; at most one primary action.
+**Header buttons — explicitly allowed.** The band's top-right slot may contain buttons and filter controls. All header controls use one treatment — translucent white on the gradient, never solid brand colors:
+
+| Property | Spec |
+|---|---|
+| Background | `rgba(255,255,255,0.15)`; hover `rgba(255,255,255,0.25)` |
+| Border | 1px `rgba(255,255,255,0.25)` |
+| Radius | 10px |
+| Text | White, 14px / 500, Inter |
+| Padding | 10px 18px |
+| Icon / glyph | Optional leading glyph (e.g. "+"), same white, 6–8px gap |
+| Filter dropdowns | Same treatment plus label prefix and trailing chevron (e.g. "Region: **US** ⌄", "Period: **This Month** ⌄") |
+| Multiple controls | 12px gap, right-aligned; actions after filters |
+
+Disabled state: 50% opacity, no hover. Destructive actions never live in the band — they belong next to the content they affect.
+
+**Content rules:** title is the nav item's label, title-case; subtitle is one sentence, sentence-case, ending with a period.
 
 Rationale: these pages are scannable lists/forms — the band's height costs nothing and gives identity, orientation, and a stable home for the page action.
 
@@ -168,10 +183,10 @@ Reference implementation: `ContextToolbar` in the nav prototype.
 |---|---|
 | Container | White, fixed height 48px, `1px solid #e5e7eb` bottom border, padding `0 24px`; spans the canvas width (between sidebar and any right-side analysis panel) |
 | Page identity (left) | 11px / 600, uppercase, letter-spacing 0.08em, `#6b7280` — the nav item's label (not a generic word like "Context") |
-| Context switcher (center) | Pill dropdown: `1px solid #d1d5db` border, 9999px radius, 13px `#374151` text, leading 7px status dot `#005b94`, trailing chevron |
+| Center slot | Empty in production. **Demo environments only:** a customer/org picker pill (`1px solid #d1d5db` border, 9999px radius, 13px `#374151` text, leading 7px status dot `#005b94`, trailing chevron) for switching between demo datasets. This picker is an artifact of the demo environment and must not ship to production. |
 | Data-as-of timestamp (right) | 12px, `#6b7280`, e.g. "Data as of Jul 17, 2026 · 12:05 PM" |
 
-**Content rules:** all three slots are required. No gradient, no large title, no page actions — actions belong in the canvas or side panel.
+**Content rules:** identity and timestamp are required; the center slot is reserved (demo picker only). No gradient, no large title, no page actions — actions belong in the canvas or side panel.
 
 Rationale: identity is already established by the sidebar's active state; on a workbench every vertical pixel is working space, and a banner would push KPI content below the fold.
 

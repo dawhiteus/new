@@ -60,7 +60,9 @@ export function BandAction({ label }: { label: string }) {
 // ── Tier 2: Slim context toolbar ──────────────────────────────────────
 // For analytical workbench pages (Portfolio Compiler, Scenario Modeler,
 // Hub Locator). Fixed-height white toolbar: page identity (left),
-// context switcher (center), data-as-of timestamp (right).
+// data-as-of timestamp (right). The centered customer/org picker is a
+// DEMO-ENVIRONMENT artifact for switching datasets — production has no
+// customer picker; the center slot ships empty.
 
 export function ContextToolbar({ pageLabel, contextName, dataAsOf }: {
   pageLabel: string;
