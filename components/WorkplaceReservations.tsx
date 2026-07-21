@@ -320,14 +320,17 @@ function MemberProfileModal({ name, onClose }: { name: string; onClose: () => vo
                 <p style={{ fontSize:14, fontWeight:600, color:'#374151', fontFamily:'Inter,sans-serif', marginBottom:2 }}>Spend this month</p>
                 <p style={{ fontSize:13, color:'#6B7280', fontFamily:'Inter,sans-serif', marginBottom:12 }}>13% of budget</p>
                 <a href="#" style={{ fontSize:13, color:'#005B94', fontFamily:'Inter,sans-serif', display:'block', marginBottom:8 }}>Manage</a>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <PieChart width={130} height={75}>
-                    <Pie data={[{v:13},{v:87}]} cx={65} cy={70} startAngle={180} endAngle={0} innerRadius={48} outerRadius={62} dataKey="v" strokeWidth={0}>
-                      <Cell fill="#22C55E" /><Cell fill="#E5E7EB" />
-                    </Pie>
-                  </PieChart>
-                  <div style={{ textAlign:'center', marginLeft:-30, marginTop:20 }}>
-                    <div style={{ fontSize:22, fontWeight:700, color:'#111827', fontFamily:'Inter,sans-serif' }}>$105</div>
+                <div style={{ display:'flex', justifyContent:'center' }}>
+                  <div style={{ position:'relative', width:150, height:82 }}>
+                    <PieChart width={150} height={82}>
+                      <Pie data={[{v:13},{v:87}]} cx={75} cy={75} startAngle={180} endAngle={0} innerRadius={52} outerRadius={68} dataKey="v" strokeWidth={0} isAnimationActive={false}>
+                        <Cell fill="#22C55E" /><Cell fill="#E5E7EB" />
+                      </Pie>
+                    </PieChart>
+                    <div style={{ position:'absolute', left:0, right:0, bottom:0, textAlign:'center' }}>
+                      <div style={{ fontSize:22, fontWeight:700, color:'#111827', fontFamily:'Inter,sans-serif', lineHeight:1 }}>$105</div>
+                      <div style={{ fontSize:11, color:'#6B7280', fontFamily:'Inter,sans-serif', marginTop:2 }}>of $800</div>
+                    </div>
                   </div>
                 </div>
               </div>
