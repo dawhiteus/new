@@ -131,6 +131,25 @@ export const IA: Record<string, Product> = {
   },
 };
 
+// Standalone links rendered at the bottom of the sidebar, outside the pillar
+// structure. Single external destinations (e.g. the customer marketplace) that
+// open in a new tab. Not part of any product pillar or access profile.
+export interface StandaloneLink {
+  id: string;
+  icon: string;
+  label: string;
+  url: string;
+}
+
+export const STANDALONE_LINKS: StandaloneLink[] = [
+  {
+    id: 'marketplace',
+    icon: 'store',
+    label: 'Marketplace',
+    url: 'https://liquidspace.com/search?Address=Palo%20Alto%2C%20CA%2C%20USA&Latitude=37.4418834&Longitude=-122.1430195&IsCurrentLocationSearch=true&ReservationMethod=0&ReservationLengthMinutes=60&Zoom=15&SortOrder=0&OverrideDefaultMemberGroups=true&LastModifiedUtc=0001-01-01T00%3A00%3A00',
+  },
+];
+
 // Injected into Operations sidebar for LS admins only.
 export const INTERNAL_OPS_GROUP: NavGroup = {
   id: 'internal-ops',

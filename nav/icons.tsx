@@ -36,6 +36,8 @@ import {
   Users,
   X,
   Zap,
+  Store,
+  ArrowUpRight,
 } from 'lucide-react';
 
 type IconComponent = React.FC<LucideProps>;
@@ -75,6 +77,8 @@ const ICON_MAP: Record<string, IconComponent> = {
   'users':            Users,
   'x':                X,
   'zap':              Zap,
+  'store':            Store,
+  'arrow-up-right':   ArrowUpRight,
 };
 
 interface IconProps {

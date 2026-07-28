@@ -11,6 +11,8 @@ import {
   type NavGroup,
   type NavItemDef,
   type Product,
+  STANDALONE_LINKS,
+  type StandaloneLink,
 } from './nav-data';
 
 const T = {
@@ -305,6 +307,38 @@ function GroupSection({
 
 // ── Sidebar A ─────────────────────────────────────────────────────────
 
+// ── Standalone link (bottom-of-nav, external, opens new tab) ──────────
+
+function StandaloneLinkRow({ link }: { link: StandaloneLink }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div
+      onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '6px 12px',
+        borderRadius: 12,
+        background: hover ? T.page : 'transparent',
+        color: T.text,
+        fontSize: 13,
+        cursor: 'pointer',
+        userSelect: 'none',
+        transition: 'background 100ms ease',
+      }}
+    >
+      <Icon name={link.icon} size={15} color={T.textMuted} />
+      <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {link.label}
+      </span>
+      <Icon name="arrow-up-right" size={13} color={T.textDisabled} />
+    </div>
+  );
+}
+
 export interface SidebarAProps {
   profile: Profile;
   productId: string;
@@ -387,6 +421,14 @@ export function SidebarA({ profile, productId, activeId, onSelectPage }: Sidebar
           </div>
         );
       })}
+
+      {STANDALONE_LINKS.length > 0 && (
+        <div style={{ marginTop: 'auto', borderTop: `1px solid ${T.border}`, padding: 8 }}>
+          {STANDALONE_LINKS.map(link => (
+            <StandaloneLinkRow key={link.id} link={link} />
+          ))}
+        </div>
+      )}
     </aside>
   );
 }
