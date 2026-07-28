@@ -129,26 +129,25 @@ export const IA: Record<string, Product> = {
       },
     ],
   },
-};
-
-// Standalone links rendered at the bottom of the sidebar, outside the pillar
-// structure. Single external destinations (e.g. the customer marketplace) that
-// open in a new tab. Not part of any product pillar or access profile.
-export interface StandaloneLink {
-  id: string;
-  icon: string;
-  label: string;
-  url: string;
-}
-
-export const STANDALONE_LINKS: StandaloneLink[] = [
-  {
+  marketplace: {
     id: 'marketplace',
-    icon: 'store',
     label: 'Marketplace',
-    url: 'https://liquidspace.com/search?Address=Palo%20Alto%2C%20CA%2C%20USA&Latitude=37.4418834&Longitude=-122.1430195&IsCurrentLocationSearch=true&ReservationMethod=0&ReservationLengthMinutes=60&Zoom=15&SortOrder=0&OverrideDefaultMemberGroups=true&LastModifiedUtc=0001-01-01T00%3A00%3A00',
+    icon: 'store',
+    color: '#005b94',
+    tagline: 'Book space on demand',
+    description: 'Search and book workspace across the LiquidSpace marketplace.',
+    defaultPage: 'search-browse',
+    groups: [
+      {
+        id: 'marketplace-group',
+        label: 'Marketplace',
+        items: [
+          { id: 'search-browse', icon: 'search', label: 'Search & Browse', url: 'https://liquidspace.com/search?Address=Palo%20Alto%2C%20CA%2C%20USA&Latitude=37.4418834&Longitude=-122.1430195&IsCurrentLocationSearch=true&ReservationMethod=0&ReservationLengthMinutes=60&Zoom=15&SortOrder=0&OverrideDefaultMemberGroups=true&LastModifiedUtc=0001-01-01T00%3A00%3A00' },
+        ],
+      },
+    ],
   },
-];
+};
 
 // Injected into Operations sidebar for LS admins only.
 export const INTERNAL_OPS_GROUP: NavGroup = {
@@ -175,8 +174,9 @@ export const PROFILES: Record<string, Profile> = {
     org: 'LiquidSpace HQ',
     orgLogo: null,
     products: {
-      ops:      { unlocked: true, items: '*' },
-      strategy: { unlocked: true, items: '*' },
+      ops:         { unlocked: true, items: '*' },
+      strategy:    { unlocked: true, items: '*' },
+      marketplace: { unlocked: true, items: '*' },
     },
     showInternal: true,
     notificationCount: 7,
@@ -191,8 +191,9 @@ export const PROFILES: Record<string, Profile> = {
     org: 'AT&T',
     orgLogo: 'att',
     products: {
-      ops:      { unlocked: true, items: '*' },
-      strategy: { unlocked: true, items: '*' },
+      ops:         { unlocked: true, items: '*' },
+      strategy:    { unlocked: true, items: '*' },
+      marketplace: { unlocked: true, items: '*' },
     },
     showInternal: false,
     notificationCount: 2,
@@ -207,8 +208,9 @@ export const PROFILES: Record<string, Profile> = {
     org: 'AT&T',
     orgLogo: 'att',
     products: {
-      ops:      { unlocked: true, items: ['dashboard', 'license-tracker', 'tasks', 'requirements'] },
-      strategy: { unlocked: false, reason: 'Available to Workplace Admins' },
+      ops:         { unlocked: true, items: ['dashboard', 'license-tracker', 'tasks', 'requirements'] },
+      strategy:    { unlocked: false, reason: 'Available to Workplace Admins' },
+      marketplace: { unlocked: true, items: '*' },
     },
     showInternal: false,
     notificationCount: 2,
