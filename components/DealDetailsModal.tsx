@@ -35,6 +35,7 @@ import {
   Users,
   Search,
   Eye,
+  Check,
   CheckCircle2,
   Circle,
   AlertCircle,
@@ -86,6 +87,8 @@ interface DealDetailsModalProps {
   onClose: () => void;
   defaultTab?: string;
 }
+
+const WORKSPACE_TYPES = ['Office Suite', 'Team Office', 'Private Office', 'Coworking', 'Meeting Space', 'Headquarters'];
 
 interface Task {
   id: string;
@@ -1239,7 +1242,7 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
   const [editedDeal, setEditedDeal] = useState({
     dealName: deal.dealName,
     clientName: deal.clientName,
-    workspaceType: deal.workspaceType,
+    workspaceType: (deal.workspaceType ? [deal.workspaceType] : []) as string[],
     location: deal.city,
     size: deal.size.toString(),
     estValue: deal.estValue.toString(),
@@ -1253,7 +1256,20 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
     primaryContactName: leadBroker?.name ?? '',
     primaryContactEmail: leadBroker?.email ?? '',
     dealId: '#TL-NYC-98321',
+    programNeeds: 'Open workstations, 3 meeting rooms, 2 team rooms, and a kitchen/pantry.',
+    amenityNeeds: 'On-site staffed reception, secure badge access, and bookable phone booths.',
+    configuration: 'single',
+    otherFunctional: '',
+    otherCommercial: '',
   });
+
+  const toggleSummaryWorkspaceType = (t: string) =>
+    setEditedDeal(prev => ({
+      ...prev,
+      workspaceType: prev.workspaceType.includes(t)
+        ? prev.workspaceType.filter(x => x !== t)
+        : [...prev.workspaceType, t],
+    }));
 
   // Collection tab becomes visible once a Market Sourcing Agent task is complete,
   // or when the modal is opened directly to the collection tab
@@ -1406,229 +1422,149 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
               
               <Card className="bg-white border" style={{ borderColor: '#E5E7EB' }}>
                 <CardContent className="p-6">
-                  {/* Editable Form - 3 Column Grid */}
-                  <div className="grid grid-cols-3 gap-x-6 gap-y-4">
-                    {/* Row 1 */}
-                    <div>
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Requirement Name
-                      </Label>
-                      <Input
-                        value={editedDeal.dealName}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, dealName: e.target.value })}
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-
-                    <div>
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Company
-                      </Label>
-                      <Input
-                        value={editedDeal.clientName}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, clientName: e.target.value })}
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-
-                    <div className="relative">
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Deal ID
-                      </Label>
-                      <Input
-                        value={editedDeal.dealId}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, dealId: e.target.value })}
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-
-                    {/* Row 2 */}
-                    <div className="relative">
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Workspace Type
-                      </Label>
-                      <Select
-                        value={editedDeal.workspaceType}
-                        onValueChange={(value) => setEditedDeal({ ...editedDeal, workspaceType: value })}
-                      >
-                        <SelectTrigger className="border-gray-300" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Private Office">Private Office</SelectItem>
-                          <SelectItem value="Office Suite">Office Suite</SelectItem>
-                          <SelectItem value="Headquarters">Headquarters</SelectItem>
-                          <SelectItem value="Coworking">Coworking</SelectItem>
-                          <SelectItem value="Meeting Space">Meeting Space</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Location
-                      </Label>
-                      <Select
-                        value={editedDeal.location}
-                        onValueChange={(value) => setEditedDeal({ ...editedDeal, location: value })}
-                      >
-                        <SelectTrigger className="border-gray-300" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="New York">New York</SelectItem>
-                          <SelectItem value="San Francisco">San Francisco</SelectItem>
-                          <SelectItem value="Boston">Boston</SelectItem>
-                          <SelectItem value="Austin">Austin</SelectItem>
-                          <SelectItem value="Chicago">Chicago</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="relative">
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Size Requirement (sq ft)
-                      </Label>
-                      <Input
-                        type="number"
-                        value={editedDeal.size}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, size: e.target.value })}
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-
-                    {/* Row 3 — cost, capacity, stage */}
-                    <div className="relative">
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Estimated Cost
-                      </Label>
-                      <Input
-                        type="number"
-                        value={editedDeal.estValue}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, estValue: e.target.value })}
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-
-                    <div>
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Capacity
-                      </Label>
-                      <Input
-                        type="number"
-                        value={editedDeal.capacity}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, capacity: e.target.value })}
-                        placeholder="e.g. 50"
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-
-                    <div className="relative">
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Current Stage
-                      </Label>
-                      <div
-                        className="flex items-center h-10 px-3 rounded-md border border-gray-200 bg-gray-50"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', color: '#374151' }}
-                      >
-                        {editedDeal.dealStage}
+                  {(() => {
+                    const secHeader = { fontSize: '12px', fontWeight: 700, color: '#005B94', textTransform: 'uppercase' as const, letterSpacing: '0.04em', fontFamily: 'Inter, sans-serif', paddingBottom: '6px', borderBottom: '1px solid #E5E7EB' } as React.CSSProperties;
+                    const lbl = { fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' } as React.CSSProperties;
+                    const inp = { fontSize: '14px', fontFamily: 'Inter, sans-serif' } as React.CSSProperties;
+                    return (
+                  <>
+                    {/* ── Deal Details ── */}
+                    <div style={{ ...secHeader, marginBottom: '16px' }}>Deal Details</div>
+                    <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                      <div>
+                        <Label style={lbl}>Company</Label>
+                        <Input value={editedDeal.clientName} onChange={(e) => setEditedDeal({ ...editedDeal, clientName: e.target.value })} className="border-gray-300" style={inp} />
+                      </div>
+                      <div>
+                        <Label style={lbl}>Deal ID</Label>
+                        <Input value={editedDeal.dealId} onChange={(e) => setEditedDeal({ ...editedDeal, dealId: e.target.value })} className="border-gray-300" style={inp} />
+                      </div>
+                      <div>
+                        <Label style={lbl}>Status</Label>
+                        <Select value={editedDeal.status} onValueChange={(value) => setEditedDeal({ ...editedDeal, status: value })}>
+                          <SelectTrigger className="border-gray-300" style={inp}><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Draft">Draft</SelectItem>
+                            <SelectItem value="Active">Active</SelectItem>
+                            <SelectItem value="Executed">Executed</SelectItem>
+                            <SelectItem value="Archived">Archived</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label style={lbl}>Current Stage</Label>
+                        <div className="flex items-center h-10 px-3 rounded-md border border-gray-200 bg-gray-50" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', color: '#374151' }}>
+                          {editedDeal.dealStage}
+                        </div>
+                      </div>
+                      <div>
+                        <Label style={lbl}>Created Date</Label>
+                        <Input type="date" value={editedDeal.createdDate} onChange={(e) => setEditedDeal({ ...editedDeal, createdDate: e.target.value })} className="border-gray-300" style={inp} />
+                      </div>
+                      <div>
+                        <Label style={lbl}>Lead</Label>
+                        <Input value={editedDeal.primaryContactName} onChange={(e) => setEditedDeal({ ...editedDeal, primaryContactName: e.target.value })} className="border-gray-300" style={inp} />
+                      </div>
+                      <div>
+                        <Label style={lbl}>LiquidSpace TM</Label>
+                        <Input type="email" value={editedDeal.primaryContactEmail} onChange={(e) => setEditedDeal({ ...editedDeal, primaryContactEmail: e.target.value })} className="border-gray-300" style={inp} />
                       </div>
                     </div>
 
-                    {/* Row 4 — status, start date, term */}
-                    <div>
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Status
-                      </Label>
-                      <Select
-                        value={editedDeal.status}
-                        onValueChange={(value) => setEditedDeal({ ...editedDeal, status: value })}
-                      >
-                        <SelectTrigger className="border-gray-300" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Draft">Draft</SelectItem>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Executed">Executed</SelectItem>
-                          <SelectItem value="Archived">Archived</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    {/* ── Business Requirements ── */}
+                    <div style={{ ...secHeader, margin: '24px 0 16px' }}>Business Requirements</div>
+                    <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                      <div className="col-span-3">
+                        <Label style={lbl}>Requirement Name</Label>
+                        <Input value={editedDeal.dealName} onChange={(e) => setEditedDeal({ ...editedDeal, dealName: e.target.value })} className="border-gray-300" style={inp} />
+                      </div>
+                      <div>
+                        <Label style={lbl}>Location</Label>
+                        <Select value={editedDeal.location} onValueChange={(value) => setEditedDeal({ ...editedDeal, location: value })}>
+                          <SelectTrigger className="border-gray-300" style={inp}><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="New York">New York</SelectItem>
+                            <SelectItem value="San Francisco">San Francisco</SelectItem>
+                            <SelectItem value="Boston">Boston</SelectItem>
+                            <SelectItem value="Austin">Austin</SelectItem>
+                            <SelectItem value="Chicago">Chicago</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label style={lbl}>Capacity / Headcount</Label>
+                        <Input type="number" value={editedDeal.capacity} onChange={(e) => setEditedDeal({ ...editedDeal, capacity: e.target.value })} placeholder="e.g. 50" className="border-gray-300" style={inp} />
+                      </div>
+                      <div>
+                        <Label style={lbl}>Size (sq ft)</Label>
+                        <Input type="number" value={editedDeal.size} onChange={(e) => setEditedDeal({ ...editedDeal, size: e.target.value })} placeholder="Optional" className="border-gray-300" style={inp} />
+                      </div>
+                      <div className="col-span-3">
+                        <Label style={lbl}>Workspace Type</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {WORKSPACE_TYPES.map((t) => {
+                            const on = editedDeal.workspaceType.includes(t);
+                            return (
+                              <button key={t} type="button" onClick={() => toggleSummaryWorkspaceType(t)}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 9999, border: `1px solid ${on ? '#005B94' : '#D1D5DB'}`, backgroundColor: on ? '#EFF6FF' : '#FFFFFF', color: on ? '#005B94' : '#374151', fontSize: '13px', fontWeight: on ? 600 : 400, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
+                                {on && <Check className="h-3.5 w-3.5" />}
+                                {t}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="col-span-3">
+                        <Label style={lbl}>Configuration</Label>
+                        <div className="flex gap-2">
+                          {[{ v: 'single', l: 'Single space' }, { v: 'collection', l: 'Collection of spaces' }].map((opt) => {
+                            const on = editedDeal.configuration === opt.v;
+                            return (
+                              <button key={opt.v} type="button" onClick={() => setEditedDeal({ ...editedDeal, configuration: opt.v })}
+                                style={{ flex: 1, padding: '9px 12px', borderRadius: 8, border: `1.5px solid ${on ? '#2563EB' : '#D1D5DB'}`, backgroundColor: on ? '#EFF6FF' : '#FFFFFF', color: on ? '#2563EB' : '#374151', fontSize: '13px', fontWeight: on ? 600 : 500, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
+                                {opt.l}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="col-span-3">
+                        <Label style={lbl}>Program Needs</Label>
+                        <Textarea value={editedDeal.programNeeds} onChange={(e) => setEditedDeal({ ...editedDeal, programNeeds: e.target.value })} className="border-gray-300 min-h-20" style={inp} />
+                      </div>
+                      <div className="col-span-3">
+                        <Label style={lbl}>Amenity Needs</Label>
+                        <Textarea value={editedDeal.amenityNeeds} onChange={(e) => setEditedDeal({ ...editedDeal, amenityNeeds: e.target.value })} className="border-gray-300 min-h-20" style={inp} />
+                      </div>
+                      <div className="col-span-3">
+                        <Label style={lbl}>Other Functional Requirements</Label>
+                        <Textarea value={editedDeal.otherFunctional} onChange={(e) => setEditedDeal({ ...editedDeal, otherFunctional: e.target.value })} placeholder="Any other functional needs" className="border-gray-300 min-h-20" style={inp} />
+                      </div>
                     </div>
 
-                    <div className="relative">
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Start Date
-                      </Label>
-                      <Input
-                        type="date"
-                        value={editedDeal.startDate}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, startDate: e.target.value })}
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
+                    {/* ── Commercial Terms ── */}
+                    <div style={{ ...secHeader, margin: '24px 0 16px' }}>Commercial Terms</div>
+                    <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                      <div>
+                        <Label style={lbl}>Start Date</Label>
+                        <Input type="date" value={editedDeal.startDate} onChange={(e) => setEditedDeal({ ...editedDeal, startDate: e.target.value })} className="border-gray-300" style={inp} />
+                      </div>
+                      <div>
+                        <Label style={lbl}>Term (months)</Label>
+                        <Input type="number" value={editedDeal.termMonths} onChange={(e) => setEditedDeal({ ...editedDeal, termMonths: e.target.value })} placeholder="e.g. 12" className="border-gray-300" style={inp} />
+                      </div>
+                      <div>
+                        <Label style={lbl}>Budget ($/mo)</Label>
+                        <Input type="number" value={editedDeal.estValue} onChange={(e) => setEditedDeal({ ...editedDeal, estValue: e.target.value })} className="border-gray-300" style={inp} />
+                      </div>
+                      <div className="col-span-3">
+                        <Label style={lbl}>Other Commercial Requirements</Label>
+                        <Textarea value={editedDeal.otherCommercial} onChange={(e) => setEditedDeal({ ...editedDeal, otherCommercial: e.target.value })} placeholder="Any other commercial terms" className="border-gray-300 min-h-20" style={inp} />
+                      </div>
                     </div>
-
-                    <div>
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Term (months)
-                      </Label>
-                      <Input
-                        type="number"
-                        value={editedDeal.termMonths}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, termMonths: e.target.value })}
-                        placeholder="e.g. 12"
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-
-                    {/* Row 5 — dates + contact */}
-                    <div>
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Created Date
-                      </Label>
-                      <Input
-                        type="date"
-                        value={editedDeal.createdDate}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, createdDate: e.target.value })}
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-
-                    <div>
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        Lead
-                      </Label>
-                      <Input
-                        value={editedDeal.primaryContactName}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, primaryContactName: e.target.value })}
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-
-                    <div>
-                      <Label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', marginBottom: '6px', display: 'block' }}>
-                        LiquidSpace TM
-                      </Label>
-                      <Input
-                        type="email"
-                        value={editedDeal.primaryContactEmail}
-                        onChange={(e) => setEditedDeal({ ...editedDeal, primaryContactEmail: e.target.value })}
-                        className="border-gray-300"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}
-                      />
-                    </div>
-                  </div>
+                  </>
+                    );
+                  })()}
 
                   {/* Save Button */}
                   <div className="mt-6 pt-4 border-t flex justify-end" style={{ borderColor: '#E5E7EB' }}>
