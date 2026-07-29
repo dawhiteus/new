@@ -90,6 +90,7 @@ interface DealDetailsModalProps {
 interface Task {
   id: string;
   name: string;
+  headline?: string;
   dueDate: string;
   status: string;
   assignedTo: string;
@@ -102,7 +103,6 @@ interface Task {
   executionTimestamp?: string;
   agentInstruction?: string;
   expectedOutput?: string;
-  agentTaskType?: string;
   generatedReason?: string;
   dependency?: string;
   collectionUrl?: string;
@@ -146,255 +146,135 @@ const sampleTasks: Task[] = [
 const stageTasksData: Record<string, Task[]> = {
   'Requirement Identified': [
     {
-      id: 'p1',
-      name: 'Initial client outreach',
-      dueDate: '2025-10-14',
-      status: 'Completed',
-      assignedTo: 'Sarah Chen',
-    },
-    {
-      id: 'p2',
-      name: 'Qualify client needs',
-      dueDate: '2025-10-17',
-      status: 'Completed',
-      assignedTo: 'Sarah Chen',
-    },
-    {
-      id: 'p3',
-      name: 'Draft requirement from brief',
-      dueDate: '2025-10-18',
+      id: 'intake-1',
+      name: 'Requirement intake',
+      headline: 'Define business and commercial requirements',
+      dueDate: '2025-10-16',
       status: 'Completed',
       assignedTo: 'Requirements Intake Agent',
       taskType: 'agent',
       agentState: 'completed',
-      agentTaskType: 'Draft requirement',
-      executionTimestamp: 'Oct 19, 2:14 PM',
-      agentOutput: 'Requirement draft created with 3 missing details flagged for AT&T Downtown Office Space.',
+      executionTimestamp: 'Oct 16, 11:20 AM',
+      agentInstruction: 'Convert the client brief into structured requirement fields and a summarized requirement description.',
+      expectedOutput: 'Requirement summary',
+      agentOutput: 'Structured requirement created: 5,000 sq ft office suite, New York, capacity 50, 12-month term, $48K/mo budget. Requirement summary written to notes.',
     },
   ],
   'Site Tours Scheduled': [
     {
-      id: 't1',
-      name: 'Schedule initial tour',
+      id: 'eval-create',
+      name: 'Create Collection',
+      headline: 'Build Compliant Collection and Confirm Availability',
       dueDate: '2025-10-24',
-      status: 'Completed',
-      assignedTo: 'Sarah Chen',
-    },
-    {
-      id: 't-agent-1',
-      name: 'Build collection for requirement',
-      dueDate: '2025-10-25',
       status: 'Completed',
       assignedTo: 'Market Sourcing Agent',
       taskType: 'agent',
       agentState: 'completed',
-      agentTaskType: 'Build collection',
-      executionTimestamp: 'Oct 26, 3:42 PM',
-      agentOutput: 'Collection created for this requirement. 12 candidate spaces identified. Chicago Private Offices 12 spaces Open Collection.',
+      executionTimestamp: 'Oct 24, 3:42 PM',
+      agentInstruction: 'Build a LiquidSpace collection of spaces that match the requirement and confirm availability.',
+      expectedOutput: 'LiquidSpace collection',
+      agentOutput: 'Collection created with 12 candidate spaces matching the requirement. Collection URL written to notes.',
       collectionUrl: 'https://liquidspace.com/collections/manhattan-private-offices-abc123',
+      dependency: 'Requirement intake',
     },
     {
-      id: 't-agent-2',
-      name: 'Assess collection fit',
+      id: 'eval-assess',
+      name: 'Assess Collection',
+      headline: 'Evaluate Collection Against Requirement Criteria',
       dueDate: '2025-10-26',
       status: 'Completed',
       assignedTo: 'Collection Assessment Agent',
       taskType: 'agent',
       agentState: 'completed',
-      agentTaskType: 'Assess collection',
-      executionTimestamp: 'Oct 27, 10:18 AM',
-      agentOutput: 'Collection assessed against requirement. Strong matches: 2 Partial matches: 4 Weak matches: 6 Top recommendation: Hudson Yards Tower, 4,800 sq ft (96% match).',
+      executionTimestamp: 'Oct 26, 10:18 AM',
+      agentInstruction: 'Evaluate how well the sourced collection fits the requirement across location, workspace type, size and capacity, budget, and term.',
+      expectedOutput: 'Collection fit assessment',
+      agentOutput: 'Collection assessed against requirement. Strong matches: 2, Partial: 4, Weak: 6. Top recommendation: Hudson Yards Tower, 4,800 sq ft (96% match).',
       collectionUrl: 'https://liquidspace.com/collections/manhattan-private-offices-abc123',
+      dependency: 'Create Collection',
     },
     {
-      id: 't2',
-      name: 'Conduct site walkthrough',
-      dueDate: '2025-10-27',
-      status: 'Completed',
+      id: 'eval-shortlist',
+      name: 'Shortlist',
+      headline: 'Evaluate Alternatives and Recommend Shortlist',
+      dueDate: '2025-10-29',
+      status: 'In Progress',
+      assignedTo: 'Sarah Chen',
+    },
+    {
+      id: 'eval-tour',
+      name: 'Tour',
+      headline: 'Coordinate and Document Tour Evaluations',
+      dueDate: '2025-11-03',
+      status: 'Not Started',
       assignedTo: 'Michael Torres',
     },
   ],
   'Proposal Sent': [
     {
-      id: 'pr1',
-      name: 'Prepare proposal document',
-      dueDate: '2025-11-02',
-      status: 'Completed',
-      assignedTo: 'Sarah Chen',
-    },
-    {
-      id: 'pr2',
-      name: 'Review pricing with finance',
-      dueDate: '2025-11-05',
-      status: 'Completed',
-      assignedTo: 'Jennifer Lee',
-    },
-    {
-      id: 'pr3',
-      name: 'Send proposal to client',
+      id: 'prop-review',
+      name: 'Review proposal(s)',
+      headline: 'Compare Proposals and Identify Negotiation Targets',
       dueDate: '2025-11-08',
-      status: 'Completed',
-      assignedTo: 'Sarah Chen',
-    },
-  ],
-  'Lease Negotiation': [
-    {
-      id: 'n1',
-      name: 'Send proposal document',
-      dueDate: '2025-11-14',
-      status: 'In Progress',
-      assignedTo: 'Sarah Chen',
-    },
-    {
-      id: 'n2',
-      name: 'Schedule site visit',
-      dueDate: '2025-11-17',
-      status: 'Not Started',
-      assignedTo: 'Michael Torres',
-    },
-    {
-      id: 'n3',
-      name: 'Follow up with client',
-      dueDate: '2025-11-19',
       status: 'Not Started',
       assignedTo: 'Sarah Chen',
     },
     {
-      id: 'n4-agent-running',
-      name: 'Draft competitive analysis of Manhattan flex office pricing',
-      dueDate: '2025-11-16',
-      status: 'In Progress',
-      assignedTo: 'Agent',
-      taskType: 'agent',
-      agentState: 'running',
-      executionTimestamp: '',
-      agentInstruction: 'Analyze Midtown Manhattan flex office pricing for 5,000 sq ft and identify negotiation leverage points based on current market conditions.',
-      expectedOutput: 'Comparison Table',
-      agentTaskType: 'Assess Collection'
+      id: 'prop-negotiate',
+      name: 'Negotiate',
+      headline: 'Finalize Business Terms and Negotiations',
+      dueDate: '2025-11-12',
+      status: 'Not Started',
+      assignedTo: 'Sarah Chen',
+      dependency: 'Review proposal(s)',
     },
     {
-      id: 'n5-agent-completed',
-      name: 'Analyze client responsiveness patterns',
+      id: 'prop-site',
+      name: 'Site selection',
+      headline: 'Select Final Space Option and Notify Stakeholders',
       dueDate: '2025-11-15',
-      status: 'Completed',
-      assignedTo: 'Agent',
-      taskType: 'agent',
-      agentState: 'completed',
-      executionTimestamp: 'Nov 11, 2:34 PM',
-      agentOutput: 'Client responds within 6-8 hours on weekdays, typically late afternoon. Email engagement rate: 87%. Recommendation: Schedule follow-ups between 2-4 PM EST.',
-      agentInstruction: 'Review all client communication timestamps and identify optimal engagement windows.',
-      expectedOutput: 'Brief / Summary',
-      agentTaskType: 'Create Collection'
-    },
-    {
-      id: 'n6-agent-review',
-      name: 'Prepare negotiation summary with pricing benchmarks',
-      dueDate: '2025-11-16',
-      status: 'Completed',
-      assignedTo: 'Agent',
-      taskType: 'agent',
-      agentState: 'needs_review',
-      executionTimestamp: 'Nov 12, 9:15 AM',
-      agentOutput: 'Compiled 3-page brief: market comparables, concession opportunities, risk flags. Ready for review.',
-      agentInstruction: 'Compile market pricing benchmarks and identify concession opportunities for 5,000 sq ft flex office in Midtown.',
-      expectedOutput: 'Draft Document',
-      agentTaskType: 'Negotiate terms'
-    },
-    {
-      id: 'n7-agent-queued',
-      name: 'Generate risk assessment for 18-month lease term',
-      dueDate: '2025-11-18',
-      status: 'Not Started',
-      assignedTo: 'Agent',
-      taskType: 'agent',
-      agentState: 'queued',
-      executionTimestamp: '',
-      agentInstruction: 'Evaluate market volatility, client financial stability, and lease term risks for an 18-month commitment.',
-      expectedOutput: 'Risk Flags',
-      agentTaskType: 'Structured evaluation + decisioning'
-    },
-    {
-      id: 'n4-agent',
-      name: 'Verify insurance requirements for Hudson Yards location',
-      dueDate: '2025-11-16',
       status: 'Not Started',
       assignedTo: 'Sarah Chen',
-      createdBy: 'agent',
-      reviewState: 'pending',
-      humanName: 'Sarah Chen',
-      generatedReason: 'Insurance verification is required for this venue before finalizing terms'
-    },
-    {
-      id: 'n8-agent-generated',
-      name: 'Schedule follow-up call with Tel Tech',
-      dueDate: '2025-11-17',
-      status: 'Not Started',
-      assignedTo: 'Sarah Chen',
-      createdBy: 'agent',
-      reviewState: 'pending',
-      humanName: 'Sarah Chen',
-      generatedReason: 'Client hasn\'t responded in 4 days — proactive check-ins increase close rate by 23%'
-    },
-    {
-      id: 'n9-agent-generated',
-      name: 'Draft negotiation prep summary',
-      dueDate: '2025-11-18',
-      status: 'Not Started',
-      assignedTo: 'Agent',
-      taskType: 'agent',
-      agentState: 'queued',
-      createdBy: 'agent',
-      reviewState: 'pending',
-      agentInstruction: 'Compile negotiation talking points based on market analysis and client preferences.',
-      expectedOutput: 'Draft Document',
-      agentTaskType: 'Negotiate terms',
-      generatedReason: 'Stage duration above average (18 vs 12 days) — prep docs close 31% faster'
     },
   ],
   'Lease Finalization': [
     {
-      id: 'c1',
-      name: 'Draft contract terms',
-      dueDate: '2025-11-25',
-      status: 'Not Started',
-      assignedTo: 'Jennifer Lee',
-    },
-    {
-      id: 'c2',
+      id: 'contract-legal',
       name: 'Legal review',
-      dueDate: '2025-11-28',
+      headline: 'Manage Agreement Routing and Legal Risk Resolution',
+      dueDate: '2025-11-20',
       status: 'Not Started',
       assignedTo: 'Legal Team',
-    },
-    {
-      id: 'c3',
-      name: 'Send contract to client',
-      dueDate: '2025-12-01',
-      status: 'Not Started',
-      assignedTo: 'Sarah Chen',
+      dependency: 'Site selection',
     },
   ],
   'Lease Executed': [
     {
-      id: 'w1',
-      name: 'Finalize signatures',
-      dueDate: '2025-12-05',
+      id: 'exec-contract',
+      name: 'Contract execution',
+      headline: 'Complete Document Finalization and Approval Process',
+      dueDate: '2025-11-26',
       status: 'Not Started',
       assignedTo: 'Sarah Chen',
+      dependency: 'Legal review',
     },
     {
-      id: 'w2',
-      name: 'Onboard client',
-      dueDate: '2025-12-08',
+      id: 'exec-onboard',
+      name: 'Onboarding',
+      headline: 'Prepare and Distribute Venue Onboarding Manual',
+      dueDate: '2025-12-01',
       status: 'Not Started',
       assignedTo: 'Operations Team',
+      dependency: 'Contract execution',
     },
     {
-      id: 'w3',
-      name: 'Schedule move-in',
-      dueDate: '2025-12-10',
+      id: 'exec-la',
+      name: 'License Administration',
+      headline: 'Validate Closure Documents and Confirm Operational Handoff',
+      dueDate: '2025-12-04',
       status: 'Not Started',
-      assignedTo: 'Michael Torres',
+      assignedTo: 'Operations Team',
+      dependency: 'Contract execution',
     },
   ],
 };
@@ -1164,8 +1044,6 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
     dependency: '',
     agentInstruction: '',
     expectedOutput: 'Brief / Summary',
-    agentTaskType: '',
-    taskType: '',
   });
 
   // Agent work review handlers
@@ -1207,8 +1085,6 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
       dependency: task.dependency || '',
       agentInstruction: task.agentInstruction || '',
       expectedOutput: task.expectedOutput || 'Brief / Summary',
-      agentTaskType: task.agentTaskType || '',
-      taskType: task.humanTaskType || '',
     });
     setShowAddTaskModal(true);
   };
@@ -1226,12 +1102,6 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
               assignedTo: newTaskData.assignedTo,
               dependency: newTaskData.dependency,
               status: editTaskStatus,
-              ...(newTaskData.assignedTo === 'Agent' && editTaskStatus === 'Not Started' && {
-                agentTaskType: newTaskData.agentTaskType,
-              }),
-              ...(newTaskData.assignedTo !== 'Agent' && {
-                humanTaskType: newTaskData.taskType,
-              }),
             }
           : t
       ),
@@ -1259,7 +1129,6 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
         agentState: 'queued',
         agentInstruction: newTaskData.agentInstruction,
         expectedOutput: newTaskData.expectedOutput,
-        agentTaskType: newTaskData.agentTaskType
       })
     };
     
@@ -1276,8 +1145,6 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
       dependency: '',
       agentInstruction: '',
       expectedOutput: 'Brief / Summary',
-      agentTaskType: '',
-      taskType: '',
     });
     setShowAddTaskModal(false);
     toast.success(`Task "${newTaskData.name}" added.`);
@@ -1351,18 +1218,17 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
     { name: 'Intake',      stage: 'Requirement Identified' },
     { name: 'Evaluation',  stage: 'Site Tours Scheduled'   },
     { name: 'Proposal',    stage: 'Proposal Sent'          },
-    { name: 'Negotiation', stage: 'Lease Negotiation'      },
     { name: 'Contracting', stage: 'Lease Finalization'     },
     { name: 'Execution',   stage: 'Lease Executed'         },
   ];
   const getStageIdx = (s: string): number => {
     if (s === 'Intake' || s === 'Requirement' || s === 'Requirement Identified') return 0;
     if (s === 'Evaluation' || s === 'Evaluate' || s === 'Site Tours Scheduled') return 1;
-    if (s === 'Proposal' || s === 'Terms' || s === 'Proposal Sent') return 2;
-    if (s === 'Negotiation' || s === 'Lease Negotiation') return 3;
-    if (s === 'Contracting' || s === 'Lease Finalization') return 4;
-    if (s === 'Execution' || s === 'Executed' || s === 'Lease Executed') return 5;
-    return 3;
+    // Negotiation was merged into Proposal — map any legacy value to Proposal
+    if (s === 'Proposal' || s === 'Terms' || s === 'Proposal Sent' || s === 'Negotiation' || s === 'Lease Negotiation') return 2;
+    if (s === 'Contracting' || s === 'Lease Finalization') return 3;
+    if (s === 'Execution' || s === 'Executed' || s === 'Lease Executed') return 4;
+    return 0;
   };
 
   // Editable form state
@@ -1394,7 +1260,7 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
   const collectionTabVisible = defaultTab === 'collection' || Object.values(stageTasks).some((tasks) =>
     tasks.some(
       (t) =>
-        (t.agentTaskType === 'Build collection' || t.agentTaskType === 'Create Collection') &&
+        t.name === 'Create Collection' &&
         (t.status === 'Completed' || t.agentState === 'completed')
     )
   );
@@ -1873,11 +1739,10 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
                     <div className="relative">
                       <div className="flex items-center justify-between mb-2">
                         {[
-                          { name: 'Intake',       stage: 'Requirement Identified', count: 4 },
-                          { name: 'Evaluation',   stage: 'Site Tours Scheduled',   count: 3 },
-                          { name: 'Proposal',     stage: 'Proposal Sent',          count: 4 },
-                          { name: 'Negotiation',  stage: 'Lease Negotiation',      count: 4 },
-                          { name: 'Contracting',  stage: 'Lease Finalization',     count: 3 },
+                          { name: 'Intake',       stage: 'Requirement Identified', count: 1 },
+                          { name: 'Evaluation',   stage: 'Site Tours Scheduled',   count: 4 },
+                          { name: 'Proposal',     stage: 'Proposal Sent',          count: 3 },
+                          { name: 'Contracting',  stage: 'Lease Finalization',     count: 1 },
                           { name: 'Execution',    stage: 'Lease Executed',         count: 3 }
                         ].map((stageItem, index, array) => {
                           const currentStageIndex = getStageIdx(currentDealStage);
@@ -1973,17 +1838,16 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
 
                 {/* All Stage Tasks Sections */}
                 {[
-                  { name: 'Intake',      stage: 'Requirement Identified', count: 3 },
-                  { name: 'Evaluation',  stage: 'Site Tours Scheduled',   count: 3 },
+                  { name: 'Intake',      stage: 'Requirement Identified', count: 1 },
+                  { name: 'Evaluation',  stage: 'Site Tours Scheduled',   count: 4 },
                   { name: 'Proposal',    stage: 'Proposal Sent',          count: 3 },
-                  { name: 'Negotiation', stage: 'Lease Negotiation',      count: 7 },
-                  { name: 'Contracting', stage: 'Lease Finalization',     count: 3 },
+                  { name: 'Contracting', stage: 'Lease Finalization',     count: 1 },
                   { name: 'Execution',   stage: 'Lease Executed',         count: 3 }
                 ].map((stageItem) => {
                   const stageTasksList = stageTasks[stageItem.stage] || [];
                   const currentStageIndex = getStageIdx(currentDealStage);
-                  
-                  const stageIndex = ['Requirement Identified', 'Site Tours Scheduled', 'Proposal Sent', 'Lease Negotiation', 'Lease Finalization', 'Lease Executed'].indexOf(stageItem.stage);
+
+                  const stageIndex = ['Requirement Identified', 'Site Tours Scheduled', 'Proposal Sent', 'Lease Finalization', 'Lease Executed'].indexOf(stageItem.stage);
                   const isCompleted = stageIndex < currentStageIndex;
                   const isCurrent = stageIndex === currentStageIndex;
                   
@@ -2059,8 +1923,9 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
                                 onClick={() => handleOpenTaskDetail(task, stageItem.stage)}
                               >
                                 <div className="flex items-center gap-2">
-                                  <div 
-                                    style={{ 
+                                  <div
+                                    title={task.headline}
+                                    style={{
                                       fontSize: '14px',
                                       fontWeight: 500,
                                       color: task.status === 'Completed' ? '#9CA3AF' : '#374151',
@@ -2070,11 +1935,6 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
                                   >
                                     {task.name}
                                   </div>
-                                  {task.agentTaskType && (
-                                    <Badge className="bg-blue-100 text-blue-700 border-0" style={{ fontSize: '9px', fontWeight: 500, padding: '2px 6px' }}>
-                                      {task.agentTaskType}
-                                    </Badge>
-                                  )}
                                   {task.createdBy === 'agent' && !task.taskType && (
                                     <Badge className="bg-gray-100 text-gray-600 border-0" style={{ fontSize: '9px', fontWeight: 500, padding: '2px 6px' }}>
                                       Generated by Agent
@@ -2776,7 +2636,7 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
             </Label>
             <Select 
               value={newTaskData.assignedTo} 
-              onValueChange={(value) => setNewTaskData({ ...newTaskData, assignedTo: value, agentTaskType: '', taskType: '' })}
+              onValueChange={(value) => setNewTaskData({ ...newTaskData, assignedTo: value })}
             >
               <SelectTrigger className="mt-1" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                 <SelectValue />
@@ -2812,46 +2672,6 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
             />
           </div>
 
-          {/* Task Type */}
-          <div>
-            <Label style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-              Task Type
-            </Label>
-              <Select
-                value={newTaskData.taskType}
-                disabled={isEditMode && editTaskStatus !== 'Not Started'}
-                onValueChange={(value) => setNewTaskData({ ...newTaskData, taskType: value })}
-              >
-                <SelectTrigger className="mt-1" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                  <SelectValue placeholder="Select task type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <div style={{ padding: '4px 8px 2px', fontSize: '10px', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', pointerEvents: 'none' }}>
-                    Evaluation
-                  </div>
-                  <SelectItem value="Structured evaluation + decisioning">Structured evaluation + decisioning</SelectItem>
-                  <SelectItem value="Define shortlist">Define shortlist</SelectItem>
-                  <SelectItem value="Schedule tour(s)">Schedule tour(s)</SelectItem>
-                  <div style={{ padding: '6px 8px 2px', fontSize: '10px', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', pointerEvents: 'none', borderTop: '1px solid #F3F4F6', marginTop: '4px' }}>
-                    Proposal &amp; negotiation
-                  </div>
-                  <SelectItem value="Request/review proposal">Request/review proposal</SelectItem>
-                  <SelectItem value="Negotiate terms">Negotiate terms</SelectItem>
-                  <div style={{ padding: '6px 8px 2px', fontSize: '10px', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', pointerEvents: 'none', borderTop: '1px solid #F3F4F6', marginTop: '4px' }}>
-                    Legal &amp; contracting
-                  </div>
-                  <SelectItem value="Coordinate legal review">Coordinate legal review</SelectItem>
-                  <SelectItem value="Contract renegotiation">Contract renegotiation</SelectItem>
-                  <SelectItem value="Coordinate execution and signatures">Coordinate execution and signatures</SelectItem>
-                  <div style={{ padding: '6px 8px 2px', fontSize: '10px', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', pointerEvents: 'none', borderTop: '1px solid #F3F4F6', marginTop: '4px' }}>
-                    Closeout
-                  </div>
-                  <SelectItem value="Closeout readiness">Closeout readiness (bridge into License Admin)</SelectItem>
-                  <SelectItem value="Exit / replacement execution">Exit / replacement execution</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          
           {/* Agent output — edit mode only */}
           {isEditMode && editingTask?.agentOutput && (
             <div>
