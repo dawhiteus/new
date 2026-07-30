@@ -9,9 +9,11 @@ import { Upload, Search, Filter, Plus, MoreHorizontal, MapPin, Calendar, FileTex
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { UploadLicenseModal } from './UploadLicenseModal';
 import { LicenseDetailModal } from './LicenseDetailModal';
+import { AddLicenseModal } from './AddLicenseModal';
 import { LicenseActionsDropdown } from './LicenseActionsDropdown';
 import { AlternativeSpacesModal } from './AlternativeSpacesModal';
 import { PageHeader } from './PageHeader';
+import { toast } from './ui/toast';
 
 interface LicenseTrackerProps {
   onAIAssistantOpen?: () => void;
@@ -370,6 +372,7 @@ export function LicenseTracker({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showAddLicenseModal, setShowAddLicenseModal] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState<any>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [generatedCollections, setGeneratedCollections] = useState<Set<number>>(new Set());
@@ -460,6 +463,44 @@ export function LicenseTracker({
         : l
     ));
     handleCloseDetailModal();
+  };
+
+  const handleAddLicense = (newLicense: any) => {
+    const nextId = Math.max(0, ...licenses.map(l => l.id)) + 1;
+    const daysUntilExpiration = newLicense.termEnd
+      ? Math.round((new Date(newLicense.termEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : 365;
+    const monthlyCost = Number(String(newLicense.monthlyCost).replace(/,/g, '')) || 0;
+
+    setLicenses(prev => [
+      {
+        id: nextId,
+        city: newLicense.city || '—',
+        type: newLicense.workspaceType || 'Dedicated (External)',
+        address: [newLicense.address1, newLicense.address2].filter(Boolean).join(', ') || '—',
+        size: newLicense.size || '—',
+        cost: monthlyCost,
+        marketRateComparison: '0%',
+        startDate: newLicense.termStart || '',
+        endDate: newLicense.termEnd || '',
+        operator: newLicense.operator || '—',
+        status: newLicense.status || 'Active',
+        paymentInfo: newLicense.paidBy || '—',
+        daysUntilExpiration,
+        hasContract: false,
+        isActive: (newLicense.status || 'Active') === 'Active',
+        isRenewable: newLicense.renewalMechanism === 'Auto-Renewal',
+        name: newLicense.licenseId || `License ${nextId}`,
+        property: newLicense.operator || '',
+        location: [newLicense.city, newLicense.state].filter(Boolean).join(', '),
+        licenseId: newLicense.licenseId,
+        renewalMechanism: newLicense.renewalMechanism,
+        contractType: newLicense.contractType,
+        notificationPeriod: newLicense.notificationPeriod,
+      },
+      ...licenses,
+    ]);
+    toast.success(`License "${newLicense.licenseId || 'New license'}" added.`);
   };
 
   const handleEditLicense = (license: any) => {
@@ -938,12 +979,20 @@ export function LicenseTracker({
                 </SelectContent>
               </Select>
 
-              <Button 
+              <Button
                 onClick={() => setShowUploadModal(true)}
+                variant="outline"
+                className="px-4 py-2 rounded-md h-9 border-gray-300"
+                style={{ fontSize: '14px', fontWeight: 500, fontFamily: 'Inter, sans-serif', color: '#374151' }}
+              >
+                Upload Licenses
+              </Button>
+              <Button
+                onClick={() => setShowAddLicenseModal(true)}
                 className="text-white px-4 py-2 rounded-md h-9"
                 style={{ backgroundColor: '#005B94', fontSize: '14px', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}
               >
-                Upload Licenses
+                Add License
               </Button>
             </div>
           </div>
@@ -1068,12 +1117,19 @@ export function LicenseTracker({
       </div>
 
       {/* Modals */}
-      <UploadLicenseModal 
+      <UploadLicenseModal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
+        onSave={(fileName) => toast.success(`Importing licenses from ${fileName}…`)}
       />
 
-      <LicenseDetailModal 
+      <AddLicenseModal
+        isOpen={showAddLicenseModal}
+        onClose={() => setShowAddLicenseModal(false)}
+        onSave={handleAddLicense}
+      />
+
+      <LicenseDetailModal
         isOpen={isDetailModalOpen}
         license={selectedLicense}
         onClose={handleCloseDetailModal}

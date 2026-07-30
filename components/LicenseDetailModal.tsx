@@ -9,6 +9,17 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { X, Calendar, Clock, CheckCircle, FileText } from 'lucide-react';
+import {
+  WORKSPACE_TYPES,
+  LICENSE_STATUS_OPTIONS,
+  CONTRACT_TYPES,
+  RENEWAL_MECHANISMS,
+  NOTIFICATION_PERIODS,
+  CURRENCIES,
+  COUNTRIES,
+  PAID_BY_OPTIONS,
+  FUNDING_SOURCES,
+} from './licenseFieldOptions';
 
 interface LicenseDetailModalProps {
   isOpen: boolean;
@@ -19,22 +30,32 @@ interface LicenseDetailModalProps {
 
 export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: LicenseDetailModalProps) {
   const [formData, setFormData] = useState({
-    licenseName: licenseData?.licenseName || 'Hays Office Park - Suite 420',
-    vendor: licenseData?.vendor || 'Hays Office Properties',
+    licenseId: licenseData?.licenseId || 'SLA-2024-014',
+    operator: licenseData?.operator || 'Hays Office Properties',
+    address1: licenseData?.address1 || '100 Hays Office Park',
+    address2: licenseData?.address2 || 'Suite 420',
     city: licenseData?.city || 'Minneapolis',
-    workplaceType: licenseData?.workplaceType || 'Dedicated License',
+    state: licenseData?.state || 'MN',
+    zip: licenseData?.zip || '55401',
+    country: licenseData?.country || 'UNITED STATES',
+    workspaceType: licenseData?.workspaceType || 'Dedicated (External)',
+    status: licenseData?.status || 'Active',
+    size: licenseData?.size || '4,200 RSF',
+    owner: licenseData?.owner || 'Jennifer Li',
+    seats: licenseData?.seats || '28',
     monthlyCost: licenseData?.monthlyCost || '7,200',
     annualizedCost: licenseData?.annualizedCost || '86,400',
-    contractType: licenseData?.contractType || 'Fixed Term License',
+    securityDeposit: licenseData?.securityDeposit || '14,400',
+    currency: licenseData?.currency || 'USD - US Dollar',
+    paidBy: licenseData?.paidBy || 'Customer',
+    fundingSource: licenseData?.fundingSource || '',
+    contractType: licenseData?.contractType || 'Fixed-Term',
+    renewalMechanism: licenseData?.renewalMechanism || 'Auto-Renewal',
     termStart: licenseData?.termStart || '2024-01-31',
     termEnd: licenseData?.termEnd || '2025-02-01',
-    renewalOption: licenseData?.renewalOption || 'Auto-Renewal with 30-day notice',
-    terminationRights: licenseData?.terminationRights || 'Either party with 90-day notice',
-    securityDeposit: licenseData?.securityDeposit || '14,400',
+    notificationPeriod: licenseData?.notificationPeriod || '30 Days',
     primaryContact: licenseData?.primaryContact || 'Sarah Johnson',
     contactEmail: licenseData?.contactEmail || 'sarah@haysoffice.com',
-    status: licenseData?.status || 'Active',
-    owner: licenseData?.owner || 'Jennifer Li',
     notes: licenseData?.notes || ''
   });
 
@@ -130,22 +151,44 @@ export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: Lic
                     <div className="grid grid-cols-2 gap-8">
                       <div className="space-y-2">
                         <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
-                          License Name
+                          License Id
                         </Label>
                         <Input
-                          value={formData.licenseName}
-                          onChange={(e) => handleInputChange('licenseName', e.target.value)}
+                          value={formData.licenseId}
+                          onChange={(e) => handleInputChange('licenseId', e.target.value)}
                           className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body"
                           style={{ fontFamily: 'Inter, sans-serif' }}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
-                          Vendor/Provider
+                          Operator
                         </Label>
                         <Input
-                          value={formData.vendor}
-                          onChange={(e) => handleInputChange('vendor', e.target.value)}
+                          value={formData.operator}
+                          onChange={(e) => handleInputChange('operator', e.target.value)}
+                          className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        />
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                        <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Address 1
+                        </Label>
+                        <Input
+                          value={formData.address1}
+                          onChange={(e) => handleInputChange('address1', e.target.value)}
+                          className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        />
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                        <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Address 2
+                        </Label>
+                        <Input
+                          value={formData.address2}
+                          onChange={(e) => handleInputChange('address2', e.target.value)}
                           className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body"
                           style={{ fontFamily: 'Inter, sans-serif' }}
                         />
@@ -163,17 +206,53 @@ export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: Lic
                       </div>
                       <div className="space-y-2">
                         <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
-                          Workplace Type
+                          State
                         </Label>
-                        <Select value={formData.workplaceType} onValueChange={(value) => handleInputChange('workplaceType', value)}>
+                        <Input
+                          value={formData.state}
+                          onChange={(e) => handleInputChange('state', e.target.value)}
+                          className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Zip
+                        </Label>
+                        <Input
+                          value={formData.zip}
+                          onChange={(e) => handleInputChange('zip', e.target.value)}
+                          className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Country
+                        </Label>
+                        <Select value={formData.country} onValueChange={(value) => handleInputChange('country', value)}>
                           <SelectTrigger className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body h-10" style={{ fontFamily: 'Inter, sans-serif' }}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Dedicated License" style={{ fontFamily: 'Inter, sans-serif' }}>Dedicated License</SelectItem>
-                            <SelectItem value="Flexible License" style={{ fontFamily: 'Inter, sans-serif' }}>Flexible License</SelectItem>
-                            <SelectItem value="Hot Desk License" style={{ fontFamily: 'Inter, sans-serif' }}>Hot Desk License</SelectItem>
-                            <SelectItem value="Meeting Room License" style={{ fontFamily: 'Inter, sans-serif' }}>Meeting Room License</SelectItem>
+                            {COUNTRIES.map((c) => (
+                              <SelectItem key={c} value={c} style={{ fontFamily: 'Inter, sans-serif' }}>{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Workspace Type
+                        </Label>
+                        <Select value={formData.workspaceType} onValueChange={(value) => handleInputChange('workspaceType', value)}>
+                          <SelectTrigger className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body h-10" style={{ fontFamily: 'Inter, sans-serif' }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {WORKSPACE_TYPES.map((t) => (
+                              <SelectItem key={t} value={t} style={{ fontFamily: 'Inter, sans-serif' }}>{t}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -186,12 +265,34 @@ export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: Lic
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Active" style={{ fontFamily: 'Inter, sans-serif' }}>Active</SelectItem>
-                            <SelectItem value="Pending" style={{ fontFamily: 'Inter, sans-serif' }}>Pending</SelectItem>
-                            <SelectItem value="Expired" style={{ fontFamily: 'Inter, sans-serif' }}>Expired</SelectItem>
-                            <SelectItem value="Cancelled" style={{ fontFamily: 'Inter, sans-serif' }}>Cancelled</SelectItem>
+                            {LICENSE_STATUS_OPTIONS.map((s) => (
+                              <SelectItem key={s} value={s} style={{ fontFamily: 'Inter, sans-serif' }}>{s}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Size
+                        </Label>
+                        <Input
+                          value={formData.size}
+                          onChange={(e) => handleInputChange('size', e.target.value)}
+                          className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Seats
+                        </Label>
+                        <Input
+                          type="number"
+                          value={formData.seats}
+                          onChange={(e) => handleInputChange('seats', e.target.value)}
+                          className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -251,6 +352,51 @@ export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: Lic
                           placeholder="0.00"
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Currency
+                        </Label>
+                        <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
+                          <SelectTrigger className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body h-10" style={{ fontFamily: 'Inter, sans-serif' }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CURRENCIES.map((c) => (
+                              <SelectItem key={c} value={c} style={{ fontFamily: 'Inter, sans-serif' }}>{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Paid By
+                        </Label>
+                        <Select value={formData.paidBy} onValueChange={(value) => handleInputChange('paidBy', value)}>
+                          <SelectTrigger className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body h-10" style={{ fontFamily: 'Inter, sans-serif' }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PAID_BY_OPTIONS.map((p) => (
+                              <SelectItem key={p} value={p} style={{ fontFamily: 'Inter, sans-serif' }}>{p}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Funding Source
+                        </Label>
+                        <Select value={formData.fundingSource} onValueChange={(value) => handleInputChange('fundingSource', value)}>
+                          <SelectTrigger className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body h-10" style={{ fontFamily: 'Inter, sans-serif' }}>
+                            <SelectValue placeholder="Select Funding Source (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FUNDING_SOURCES.map((f) => (
+                              <SelectItem key={f} value={f} style={{ fontFamily: 'Inter, sans-serif' }}>{f}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -271,27 +417,24 @@ export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: Lic
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Fixed Term License" style={{ fontFamily: 'Inter, sans-serif' }}>Fixed Term License</SelectItem>
-                            <SelectItem value="Month-to-Month License" style={{ fontFamily: 'Inter, sans-serif' }}>Month-to-Month License</SelectItem>
-                            <SelectItem value="Annual License" style={{ fontFamily: 'Inter, sans-serif' }}>Annual License</SelectItem>
-                            <SelectItem value="Multi-Year License" style={{ fontFamily: 'Inter, sans-serif' }}>Multi-Year License</SelectItem>
+                            {CONTRACT_TYPES.map((t) => (
+                              <SelectItem key={t} value={t} style={{ fontFamily: 'Inter, sans-serif' }}>{t}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
                         <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
-                          Renewal Option
+                          Renewal Mechanism
                         </Label>
-                        <Select value={formData.renewalOption} onValueChange={(value) => handleInputChange('renewalOption', value)}>
+                        <Select value={formData.renewalMechanism} onValueChange={(value) => handleInputChange('renewalMechanism', value)}>
                           <SelectTrigger className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body h-10" style={{ fontFamily: 'Inter, sans-serif' }}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Auto-Renewal with 30-day notice" style={{ fontFamily: 'Inter, sans-serif' }}>Auto-Renewal with 30-day notice</SelectItem>
-                            <SelectItem value="Auto-Renewal with 60-day notice" style={{ fontFamily: 'Inter, sans-serif' }}>Auto-Renewal with 60-day notice</SelectItem>
-                            <SelectItem value="Auto-Renewal with 90-day notice" style={{ fontFamily: 'Inter, sans-serif' }}>Auto-Renewal with 90-day notice</SelectItem>
-                            <SelectItem value="Manual Renewal Required" style={{ fontFamily: 'Inter, sans-serif' }}>Manual Renewal Required</SelectItem>
-                            <SelectItem value="No Renewal Option" style={{ fontFamily: 'Inter, sans-serif' }}>No Renewal Option</SelectItem>
+                            {RENEWAL_MECHANISMS.map((r) => (
+                              <SelectItem key={r} value={r} style={{ fontFamily: 'Inter, sans-serif' }}>{r}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -321,15 +464,18 @@ export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: Lic
                       </div>
                       <div className="space-y-2 col-span-2">
                         <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
-                          Termination Rights
+                          Notification Period
                         </Label>
-                        <Input
-                          value={formData.terminationRights}
-                          onChange={(e) => handleInputChange('terminationRights', e.target.value)}
-                          className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body"
-                          style={{ fontFamily: 'Inter, sans-serif' }}
-                          placeholder="e.g., Either party with 90-day notice"
-                        />
+                        <Select value={formData.notificationPeriod} onValueChange={(value) => handleInputChange('notificationPeriod', value)}>
+                          <SelectTrigger className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body h-10 md:w-1/2" style={{ fontFamily: 'Inter, sans-serif' }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {NOTIFICATION_PERIODS.map((n) => (
+                              <SelectItem key={n} value={n} style={{ fontFamily: 'Inter, sans-serif' }}>{n}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </CardContent>
