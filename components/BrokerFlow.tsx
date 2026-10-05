@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { toast } from './ui/toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Input } from './ui/input';
+import { HubOrigin, readHubOrigin, loadOriginated, saveOriginated } from './hubOrigin';
 import {
   Search,
   Plus,
@@ -49,6 +50,8 @@ export interface Deal {
   closeDate?: string;
   notes?: string;
   aiAgents?: AgentCard[];
+  /** Set when the requirement was originated from Workplace Strategist. */
+  origin?: HubOrigin;
 }
 
 interface BrokerFlowProps {
@@ -736,7 +739,9 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
   const [searchParams] = useSearchParams();
-  const [injectedDeal, setInjectedDeal] = useState<Deal | null>(null);
+  // Requirements originated from Workplace Strategist this browser session
+  // (newest first). Kept in sessionStorage so they survive reload/navigation.
+  const [originatedDeals, setOriginatedDeals] = useState<Deal[]>(() => loadOriginated<Deal>());
 
   // Read hub-originated requirement from URL params (set by Workplace Strategist)
   useEffect(() => {
@@ -744,11 +749,17 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
     const reqId  = searchParams.get('reqId')        ?? `REQ-${Math.floor(1000 + Math.random() * 9000)}`;
     const company = searchParams.get('company')     ?? 'Unknown';
     const city    = searchParams.get('city')        ?? 'Unknown';
-    const estValue = parseInt(searchParams.get('estValue') ?? '0', 10);
+    // The list column ("Cost/Mos") and the detail "Budget ($/mo)" field are
+    // monthly. Workplace Strategist sends `estValue` as ANNUAL hub cost and
+    // `estMonthly` as the monthly figure — use the monthly one when present.
+    const estMonthly = parseInt(searchParams.get('estMonthly') ?? '', 10);
+    const estValue = Number.isFinite(estMonthly)
+      ? estMonthly
+      : parseInt(searchParams.get('estValue') ?? '0', 10);
     const seats    = parseInt(searchParams.get('seats')    ?? '20', 10);
     const wsType   = searchParams.get('workspaceType')     ?? 'Office Suite';
     const today = new Date().toISOString().split('T')[0];
-    setInjectedDeal({
+    const deal: Deal = {
       id: reqId,
       dealName: `${company} ${city} Hub Sourcing`,
       clientName: company,
@@ -760,6 +771,12 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
       status: 'Active',
       lastUpdated: today,
       broker: 'Sarah Chen',
+      origin: readHubOrigin(searchParams),
+    };
+    setOriginatedDeals((prev) => {
+      const next = [deal, ...prev.filter((d) => d.id !== reqId)];
+      saveOriginated(next);
+      return next;
     });
     // Clear params from URL so refresh doesn't re-inject
     window.history.replaceState({}, '', window.location.pathname);
@@ -769,9 +786,10 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
   const cities = Array.from(new Set(deals.map((d) => d.city))).sort();
 
   // Prepend hub-originated deal at top of page 1 (not subject to filters — always pinned)
-  const allDeals = injectedDeal ? [injectedDeal, ...deals] : deals;
+  const originatedIds = new Set(originatedDeals.map((d) => d.id));
+  const allDeals = [...originatedDeals, ...deals];
   const filtered = allDeals.filter((d) => {
-    if (d.id === injectedDeal?.id) return true; // pinned deal always shows
+    if (originatedIds.has(d.id)) return true; // pinned deals always show
     const q = search.toLowerCase();
     const matchesSearch =
       !q ||
@@ -997,7 +1015,7 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
                     key={deal.id}
                     deal={deal}
                     isLast={idx === paginated.length - 1}
-                    isNew={deal.id === injectedDeal?.id}
+                    isNew={originatedIds.has(deal.id)}
                     onClick={() => openDeal(deal)}
                     assessment={liveAssessments[deal.id]}
                     onCreateCollection={() => {
@@ -1276,6 +1294,13 @@ function DealRow({
             {deal.dealName}
           </span>
         </div>
+        {deal.origin && (
+          <div style={{ fontSize: '11px', color: '#047857', fontFamily: 'Inter, sans-serif', marginTop: '3px' }}>
+            Originated from Hub Locator
+            {deal.origin.hvsScore != null && ` · HVS ${deal.origin.hvsScore}`}
+            {deal.origin.seats != null && ` · ${deal.origin.seats} seats`}
+          </div>
+        )}
       </td>
 
       {/* Client Name */}

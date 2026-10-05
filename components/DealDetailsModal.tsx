@@ -65,6 +65,7 @@ import {
 import { MessagingThread } from './MessagingThread';
 import { DealTeamSection, TeamMember, sampleTeamMembers } from './DealTeamSection';
 import { SpaceSourcing } from './SpaceSourcing';
+import { HubOrigin, formatVerdict, formatPurpose, formatUsd } from './hubOrigin';
 
 interface Deal {
   id: string;
@@ -79,6 +80,7 @@ interface Deal {
   lastUpdated: string;
   broker: string;
   notes?: string;
+  origin?: HubOrigin;
 }
 
 interface DealDetailsModalProps {
@@ -1410,6 +1412,7 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
           <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 180px)' }}>
             {/* Summary Tab */}
             <TabsContent value="summary" className="p-6 mt-0">
+              {deal.origin && <HubOriginPanel deal={deal} origin={deal.origin} />}
               {/* Primary Section Header */}
               <div className="mb-3">
                 <div style={{ fontSize: '18px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
@@ -2797,5 +2800,61 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
       </DialogContent>
     </Dialog>
     </>
+  );
+}
+// ─── Originated from Hub Locator ──────────────────────────────────────────────
+
+function HubOriginPanel({ deal, origin }: { deal: Deal; origin: HubOrigin }) {
+  const market = origin.state ? `${deal.city}, ${origin.state}` : deal.city;
+  const rows: Array<[string, string | undefined]> = [
+    ['Customer', deal.clientName],
+    ['Market', market],
+    ['Hub Viability Score', origin.hvsScore != null ? `${origin.hvsScore} / 100` : undefined],
+    ['Recommendation', formatVerdict(origin.verdict)],
+    ['Recommended seats', origin.seats != null
+      ? `${origin.seats}${origin.seatRange ? ` (range ${origin.seatRange.replace('-', '–')})` : ''}`
+      : undefined],
+    ['Hub purpose', formatPurpose(origin.hubPurpose)],
+    ['Est. hub cost', origin.estMonthlyCost != null ? `${formatUsd(origin.estMonthlyCost)}/mo` : undefined],
+    ['Rate per seat', origin.ratePerSeat != null ? `${formatUsd(origin.ratePerSeat)}/seat/mo` : undefined],
+    ['Current flex spend', origin.baselineAnnualSpend != null ? `${formatUsd(origin.baselineAnnualSpend)}/yr` : undefined],
+    ['Net saving', origin.annualNetSaving != null ? `${formatUsd(origin.annualNetSaving)}/yr` : undefined],
+    ['Payback', origin.paybackMonths != null ? `${origin.paybackMonths} months` : undefined],
+    ['Configuration', origin.configuration],
+  ];
+  const label = { fontSize: '12px', color: '#6B7280', fontFamily: 'Inter, sans-serif' } as const;
+  const value = { fontSize: '13px', fontWeight: 500, color: '#111827', fontFamily: 'Inter, sans-serif' } as const;
+  return (
+    <div style={{ border: '1px solid #A7F3D0', backgroundColor: '#F0FDF4', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px' }}>
+      <div className="flex items-start justify-between gap-3" style={{ marginBottom: '10px' }}>
+        <div>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: '#065F46', fontFamily: 'Inter, sans-serif' }}>
+            Originated from Hub Locator
+          </div>
+          <div style={{ fontSize: '12px', color: '#047857', fontFamily: 'Inter, sans-serif' }}>
+            Workplace Strategist identified a dedicated hub opportunity in {market}
+            {origin.provenance === 'demonstration' ? ' (demonstration data)' : ''}.
+          </div>
+        </div>
+        {origin.backUrl && (
+          <a
+            href={origin.backUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: '12px', fontWeight: 600, color: '#047857', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}
+          >
+            Back to Hub Locator ↗
+          </a>
+        )}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '10px 16px' }}>
+        {rows.filter(([, v]) => v).map(([k, v]) => (
+          <div key={k}>
+            <div style={label}>{k}</div>
+            <div style={value}>{v}</div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
