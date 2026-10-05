@@ -753,9 +753,10 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
     // monthly. Workplace Strategist sends `estValue` as ANNUAL hub cost and
     // `estMonthly` as the monthly figure — use the monthly one when present.
     const estMonthly = parseInt(searchParams.get('estMonthly') ?? '', 10);
+    const estAnnual = parseInt(searchParams.get('estValue') ?? '', 10);
     const estValue = Number.isFinite(estMonthly)
       ? estMonthly
-      : parseInt(searchParams.get('estValue') ?? '0', 10);
+      : Number.isFinite(estAnnual) ? Math.round(estAnnual / 12) : 0;
     const seats    = parseInt(searchParams.get('seats')    ?? '20', 10);
     const wsType   = searchParams.get('workspaceType')     ?? 'Office Suite';
     const today = new Date().toISOString().split('T')[0];
