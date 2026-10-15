@@ -209,7 +209,14 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                     {stage === 'working' ? <Loader2 size={22} color="#059669" className="animate-spin" /> : <Bot size={24} color="#059669" />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0, fontFamily: FONT }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: INK, marginBottom: 4 }}>{COLLECTION_AGENT}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 24, marginBottom: stage === 'done' ? 6 : 4 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{COLLECTION_AGENT}</span>
+                      {stage === 'done' && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 600, color: GREEN, background: '#fff', border: '1px solid #BFE5CC', borderRadius: 999, padding: '3px 10px' }}>
+                          <Check size={13} /> Created and linked
+                        </span>
+                      )}
+                    </div>
 
                     {stage === 'setup' && (
                       <>
@@ -239,10 +246,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                     )}
 
                     {stage === 'done' && result && outcome && (
-                      <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.55 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: GREEN, fontWeight: 600, marginBottom: 4 }}><Check size={16} /> Collection created and linked.</div>
-                        {result.summary}
-                      </div>
+                      <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.5 }}>{result.headline}</div>
                     )}
                   </div>
                 </div>
@@ -250,7 +254,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
 
               {stage === 'done' && result && outcome && (
                 <>
-                  <div style={{ border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden', marginTop: 16, fontFamily: FONT }}>
+                  <div style={{ border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden', marginTop: 12, fontFamily: FONT }}>
                     <div style={{ padding: '14px 16px 10px' }}>
                       <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>{outcome.name}</div>
                       <div style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{result.found} space{result.found === 1 ? '' : 's'} total</div>
@@ -280,7 +284,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                   </div>
                   {result.gaps.length > 0 && (
                     <>
-                      <div style={{ margin: '20px 0 8px', fontSize: 14, fontWeight: 700, color: INK, fontFamily: FONT }}>Gaps and trade-offs</div>
+                      <div style={{ margin: '16px 0 8px', fontSize: 14, fontWeight: 700, color: INK, fontFamily: FONT }}>Gaps and trade-offs</div>
                       <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden' }}>
                         {result.gaps.map((g, i) => {
                           const dot = g.severity === 'high' ? '#DC2626' : g.severity === 'medium' ? '#E8A91C' : '#9CA3AF';

@@ -122,6 +122,8 @@ export interface SourcingResult {
   withinBudget: number;
   fitsPeople: number;
   summary: string;
+  /** Short line for the UI; counts are shown separately. */
+  headline: string;
   gaps: Gap[];
   missingInputs: string[];
 }
@@ -212,7 +214,8 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
   if (counts.strong === 0) gaps.push({ label: 'Next step', text: "If these gaps matter, additional supply may be worth sourcing. That's a separate process I don't start.", severity: 'info' });
 
   const summary = `I found ${scored.length} spaces in ${c.location.split(',')[0]} and added them to “${collectionName}”: ${counts.strong} strong, ${counts.partial} partial, ${counts.weak} weak.`;
-  return { found: scored.length, spaces: scored, counts, inMarket: scored.length, withinBudget, fitsPeople, summary, gaps, missingInputs };
+  const headline = `I found ${scored.length} space${scored.length === 1 ? '' : 's'} in ${c.location.split(',')[0]} and added ${scored.length === 1 ? 'it' : 'them'} to “${collectionName}”.`;
+  return { found: scored.length, spaces: scored, counts, headline, inMarket: scored.length, withinBudget, fitsPeople, summary, gaps, missingInputs };
 }
 
 // ── Linking an existing Collection by URL ──────────────────────────────────
