@@ -330,7 +330,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280', marginBottom: 6 }}>
                       <span>{n.author}</span><span>{n.date}</span>
                     </div>
-                    <div style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{n.text}</div>
+                    <div style={{ fontSize: 15, color: INK, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{n.text}</div>
                   </div>
                 ))}
                 <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Enter note" rows={3} style={{ ...input, resize: 'vertical', marginBottom: 14 }} />

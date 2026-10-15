@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
+import { AGENT_NAME, AGENT_EMAIL } from './data/intakeAgent';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
 import { useSearchParams } from 'react-router-dom';
 import { readHubOrigin, formatVerdict, formatPurpose, formatUsd } from './hubOrigin';
@@ -365,11 +366,28 @@ export function RequirementsHome() {
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
 
-  const handleCreate = (d: NewRequirementData) => {
+  const buildRequirement = (d: NewRequirementData, seq: number): MvpRequirement => {
     const today = new Date().toISOString().slice(0, 10);
+    const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const budget = Number(d.budget) || 0;
-    const fresh: MvpRequirement = {
-      id: `req-${Date.now()}`,
+    const events: MvpRequirement['details']['events'] = [
+      { id: `e-${Date.now()}-${seq}`, type: 'created', title: 'Requirement Created', description: `${d.name} requirement created for ${d.company}`, date: dispDate, actor: CURRENT_USER_EMAIL },
+    ];
+    const notes: MvpRequirement['details']['notes'] = [];
+    if (d.intake) {
+      // The agent keeps the complete source and its open questions with the requirement.
+      notes.push({ author: AGENT_NAME, date: dispDate, text: `Source provided by Sales (pasted), kept in full:\n\n${d.intake.sourceText}` });
+      if (d.intake.questions.length) {
+        notes.push({ author: AGENT_NAME, date: dispDate, text: `I flagged these open questions to clarify with the customer:\n${d.intake.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` });
+      }
+      events.push({
+        id: `e-${Date.now()}-${seq}-agent`, type: 'note', title: 'Draft Prepared',
+        description: `${AGENT_NAME} drafted this requirement from pasted text${d.intake.licenseId ? ` and license ${d.intake.licenseId}` : ''}. Reviewed and created by Sales.`,
+        date: dispDate, actor: AGENT_EMAIL,
+      });
+    }
+    return {
+      id: `req-${Date.now()}-${seq}`,
       name: d.name,
       company: d.company,
       status: d.status as MvpRequirement['status'],
@@ -377,19 +395,19 @@ export function RequirementsHome() {
       budget,
       city: d.location,
       lastUpdated: today,
-      agentTasks: 0,
+      agentTasks: d.intake ? 1 : 0,
       collection: {
         name: `${d.name} Collection`, totalSpaces: 0, location: `In ${d.location}`, locationSpaces: 0,
         budgetLabel: `Within ${money(budget)}/mo`, budgetSpaces: 0, peopleLabel: `For ${d.capacity} people`, peopleSpaces: 0,
-        saved: 0, shortlisted: 0,
-        updated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        saved: 0, shortlisted: 0, updated: dispDate,
       },
       details: {
         ...EMPTY_DETAILS,
         createdDate: today,
         tasks: defaultTasks('Intake'),
         team: defaultTeam(),
-        events: [{ id: `e-${Date.now()}`, type: 'created', title: 'Requirement Created', description: `${d.name} requirement created for ${d.company}`, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), actor: CURRENT_USER_EMAIL }],
+        events,
+        notes,
         location: d.location,
         capacity: d.capacity,
         size: d.size,
@@ -404,8 +422,12 @@ export function RequirementsHome() {
         otherCommercial: d.otherCommercial,
       },
     };
-    setRows((rs) => [fresh, ...rs]);
-    toast.success(`Requirement "${d.name}" created.`);
+  };
+
+  const handleCreate = (items: NewRequirementData[]) => {
+    const created = items.map((d, i) => buildRequirement(d, i));
+    setRows((rs) => [...created, ...rs]);
+    toast.success(created.length === 1 ? `Requirement "${created[0].name}" created.` : `${created.length} requirements created: ${created.map((c) => c.name).join(', ')}.`);
   };
 
   const handleAction = (req: MvpRequirement, action: string) => {
