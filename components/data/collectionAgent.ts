@@ -93,6 +93,7 @@ export interface SourcingCriteria {
   workspaceType: string;
   startDate: string;
   termLength: string;
+  amenityNeeds: string;
 }
 
 export function criteriaFor(r: MvpRequirement): SourcingCriteria {
@@ -104,6 +105,7 @@ export function criteriaFor(r: MvpRequirement): SourcingCriteria {
     workspaceType: r.details.workspaceType || '',
     startDate: r.details.startDate || '',
     termLength: r.details.termLength && r.details.termLength !== '0' ? r.details.termLength : '',
+    amenityNeeds: [r.details.programNeeds, r.details.amenityNeeds].filter((x) => x && x.trim()).join(' '),
   };
 }
 
@@ -209,6 +211,8 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
     const late = scored.filter((s) => s.availableFrom > c.startDate);
     if (late.length) gaps.push({ label: 'Availability', text: `${late.length} of ${scored.length} ${late.length === 1 ? "isn't" : "aren't"} available by ${fmtLong(c.startDate)}. The earliest opens ${fmtLong(late.map((s) => s.availableFrom).sort()[0])}.`, severity: 'medium' });
   }
+  const unsupported = [c.termLength ? 'term length' : '', c.amenityNeeds ? 'program and amenity needs' : ''].filter(Boolean);
+  if (unsupported.length) gaps.push({ label: 'Not matched', text: `I couldn't match on ${unsupported.join(' or ')}; the available inventory data doesn't include ${unsupported.length === 1 && unsupported[0] === 'term length' ? 'it' : 'them'}.`, severity: 'info' });
   if (missingInputs.length) gaps.push({ label: 'Not matched', text: `${cap(missingInputs.join(', '))} ${missingInputs.length === 1 ? 'was' : 'were'} not provided, so I couldn't match on ${missingInputs.length === 1 ? 'it' : 'them'}.`, severity: 'info' });
 
   const summary = `Found ${scored.length} space${scored.length === 1 ? '' : 's'} in ${c.location.split(',')[0]} and added ${scored.length === 1 ? 'it' : 'them'} to “${collectionName}”.`;
