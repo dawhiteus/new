@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, ChevronsUpDown } from 'lucide-react';
 import { toast } from './ui/toast';
+import { RequirementTimelineTab } from './RequirementTimelineTab';
 import { RequirementDocumentsTab } from './RequirementDocumentsTab';
 import { RequirementTeamTab } from './RequirementTeamTab';
 import { RequirementWorkflowTab } from './RequirementWorkflowTab';
-import { STAGES, type MvpRequirement, type RequirementDetails, type WorkflowTask, type TeamMember, type RequirementDocument } from './data/mvpRequirements';
+import { STAGES, type MvpRequirement, type RequirementDetails, type WorkflowTask, type TeamMember, type RequirementDocument, type TimelineEvent, CURRENT_USER_EMAIL } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const BLUE = '#0D619B';
@@ -98,8 +99,8 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
     setF((p) => (p ? { ...p, [k]: e.target.value } : p));
   const setVal = (k: keyof FormState, v: string) => setF((p) => (p ? { ...p, [k]: v } : p));
 
-  const buildUpdated = (notes = f.notes, tasks = f.tasks, team = f.team, documents = f.documents): MvpRequirement => {
-    const { company, status, stage, name, budget, ...details } = f;
+  const buildUpdated = (form: FormState = f): MvpRequirement => {
+    const { company, status, stage, name, budget, ...details } = form;
     return {
       ...requirement,
       company,
@@ -109,24 +110,59 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
       budget: Number(budget) || 0,
       city: details.location || requirement.city,
       lastUpdated: new Date().toISOString().slice(0, 10),
-      details: { ...details, notes, tasks, team, documents },
+      details,
     };
   };
 
+  const today = () => new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const ev = (type: TimelineEvent['type'], title: string, description: string): TimelineEvent => ({
+    id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type, title, description, date: today(), actor: CURRENT_USER_EMAIL,
+  });
+  /** Apply a change, log timeline events for it, and persist to the table row. */
+  const commit = (patch: Partial<FormState>, events: TimelineEvent[]) => {
+    const next = { ...f, ...patch, events: [...f.events, ...events] };
+    setF(next);
+    onSave(buildUpdated(next));
+  };
+
   const save = () => {
-    onSave(buildUpdated());
+    commit({}, [ev('update', 'Requirement Updated', `${f.name} requirement details were updated.`)]);
     toast.success('Requirement updated.');
   };
 
   const addNote = () => {
     if (!note.trim()) return;
-    const notes = [
-      ...f.notes,
-      { author: 'You', date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), text: note.trim() },
-    ];
-    setF({ ...f, notes });
-    onSave(buildUpdated(notes));
+    commit(
+      { notes: [...f.notes, { author: 'You', date: today(), text: note.trim() }] },
+      [ev('note', 'Note Added', 'A note was added to the requirement.')],
+    );
     setNote('');
+  };
+
+  const onTasks = (tasks: WorkflowTask[]) => {
+    const old = new Map(f.tasks.map((t) => [t.id, t]));
+    const events: TimelineEvent[] = [];
+    tasks.forEach((t) => {
+      const o = old.get(t.id);
+      if (!o) events.push(ev('task', 'Task Added', `'${t.name}' added to ${t.stage}.`));
+      else if (o.status !== t.status) events.push(ev('task', 'Task Updated', `'${t.name}' updated in ${t.stage}: Status was changed from ${o.status} to ${t.status}`));
+    });
+    f.tasks.filter((t) => !tasks.some((x) => x.id === t.id)).forEach((t) => events.push(ev('task', 'Task Removed', `'${t.name}' removed from ${t.stage}.`)));
+    commit({ tasks }, events);
+  };
+  const onTeam = (team: TeamMember[]) => {
+    const events: TimelineEvent[] = [
+      ...team.filter((m) => !f.team.some((x) => x.id === m.id)).map((m) => ev('team', 'Team Member Added', `${m.name} added to the requirement team.`)),
+      ...f.team.filter((m) => !team.some((x) => x.id === m.id)).map((m) => ev('team', 'Team Member Removed', `${m.name} removed from the requirement team.`)),
+    ];
+    commit({ team }, events);
+  };
+  const onDocs = (documents: RequirementDocument[]) => {
+    const events: TimelineEvent[] = [
+      ...documents.filter((d) => !f.documents.some((x) => x.id === d.id)).map((d) => ev('document', 'Document Uploaded', `${d.name} uploaded to the requirement.`)),
+      ...f.documents.filter((d) => !documents.some((x) => x.id === d.id)).map((d) => ev('document', 'Document Removed', `${d.name} removed from the requirement.`)),
+    ];
+    commit({ documents }, events);
   };
 
   const text = (k: keyof FormState, opts: { type?: string; disabled?: boolean } = {}) => (
@@ -197,28 +233,20 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
               currentStage={requirement.stage}
               lastUpdated={requirement.lastUpdated}
               tasks={f.tasks}
-              onChange={(tasks: WorkflowTask[]) => {
-                const next = { ...f, tasks };
-                setF(next);
-                onSave(buildUpdated(next.notes, next.tasks));
-              }}
+              onChange={onTasks}
             />
           ) : tab === 'Team' ? (
             <RequirementTeamTab
               team={f.team}
-              onChange={(team: TeamMember[]) => {
-                setF({ ...f, team });
-                onSave(buildUpdated(f.notes, f.tasks, team, f.documents));
-              }}
+              onChange={onTeam}
             />
           ) : tab === 'Documents' ? (
             <RequirementDocumentsTab
               documents={f.documents}
-              onChange={(documents: RequirementDocument[]) => {
-                setF({ ...f, documents });
-                onSave(buildUpdated(f.notes, f.tasks, f.team, documents));
-              }}
+              onChange={onDocs}
             />
+          ) : tab === 'Timeline' ? (
+            <RequirementTimelineTab events={f.events} />
           ) : tab !== 'Overview' ? (
             <div style={{ padding: '60px 0', textAlign: 'center', color: '#9CA3AF', fontFamily: FONT, fontSize: 15 }}>
               {tab} tab coming next.

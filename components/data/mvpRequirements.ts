@@ -104,6 +104,19 @@ export interface RequirementDocument {
   url?: string;
 }
 
+export type TimelineEventType = 'created' | 'team' | 'collection' | 'task' | 'document' | 'update' | 'note';
+
+export interface TimelineEvent {
+  id: string;
+  type: TimelineEventType;
+  title: string;
+  description: string;
+  date: string; // display date
+  actor: string;
+}
+
+export const CURRENT_USER_EMAIL = 'david@liquidspace.com';
+
 export interface RequirementDetails {
   dealId: string;
   createdDate: string; // ISO
@@ -123,12 +136,13 @@ export interface RequirementDetails {
   tasks: WorkflowTask[];
   team: TeamMember[];
   documents: RequirementDocument[];
+  events: TimelineEvent[];
 }
 
 export const EMPTY_DETAILS: RequirementDetails = {
   dealId: '', createdDate: '', location: '', capacity: '', size: '', workspaceType: '', configuration: '',
   programNeeds: '', amenityNeeds: '', otherFunctional: '', startDate: '', termLength: '0', closeDate: '',
-  otherCommercial: '', notes: [], tasks: [], team: [], documents: [],
+  otherCommercial: '', notes: [], tasks: [], team: [], documents: [], events: [],
 };
 
 export interface MvpRequirement {
@@ -178,6 +192,12 @@ export const MVP_REQUIREMENTS: MvpRequirement[] = [
       configuration: 'Single space',
       tasks: defaultTasks('Evaluation'),
       team: defaultTeam(),
+      events: [
+        { id: 'e1', type: 'created', title: 'Requirement Created', description: 'Lisbon requirement created for Slalom', date: 'Aug 25, 2026', actor: 'brent@liquidspace.com' },
+        { id: 'e2', type: 'team', title: 'Team Member Added', description: 'Brent Trebels added to the requirement team.', date: 'Aug 25, 2026', actor: 'brent@liquidspace.com' },
+        { id: 'e3', type: 'collection', title: 'Collection Created', description: 'Lisbon Collection collection created for Lisbon requirement.', date: 'Aug 25, 2026', actor: 'david@liquidspace.com' },
+        { id: 'e4', type: 'task', title: 'Task Updated', description: "'Requirement intake' updated in Intake: Status was changed from Not Started to Completed", date: 'Sep 22, 2026', actor: 'david@liquidspace.com' },
+      ],
       notes: [
         {
           author: 'Brent Trebels',
@@ -210,6 +230,7 @@ export const MVP_REQUIREMENTS: MvpRequirement[] = [
       shortlisted: 0,
       updated: 'Sep 22, 2026',
     },
-    details: { ...EMPTY_DETAILS, createdDate: '2026-09-22', location: 'Test', tasks: defaultTasks('Evaluation'), team: defaultTeam() },
+    details: { ...EMPTY_DETAILS, createdDate: '2026-09-22', location: 'Test', tasks: defaultTasks('Evaluation'), team: defaultTeam(),
+      events: [{ id: 'e1', type: 'created', title: 'Requirement Created', description: 'Test requirement created for Test', date: 'Sep 22, 2026', actor: 'david@liquidspace.com' }] },
   },
 ];

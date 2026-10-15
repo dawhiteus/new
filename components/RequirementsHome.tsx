@@ -17,7 +17,7 @@ import {
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
-import { MVP_REQUIREMENTS, EMPTY_DETAILS, defaultTasks, defaultTeam, type MvpRequirement } from './data/mvpRequirements';
+import { MVP_REQUIREMENTS, EMPTY_DETAILS, defaultTasks, defaultTeam, CURRENT_USER_EMAIL, type MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const NAVY = '#0B4F7F';
@@ -301,6 +301,7 @@ export function RequirementsHome() {
         createdDate: today,
         tasks: defaultTasks('Intake'),
         team: defaultTeam(),
+        events: [{ id: `e-${Date.now()}`, type: 'created', title: 'Requirement Created', description: `${d.name} requirement created for ${d.company}`, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), actor: CURRENT_USER_EMAIL }],
         location: d.location,
         capacity: d.capacity,
         size: d.size,
