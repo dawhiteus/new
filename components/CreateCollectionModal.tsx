@@ -209,13 +209,8 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                     {stage === 'working' ? <Loader2 size={22} color="#059669" className="animate-spin" /> : <Bot size={24} color="#059669" />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0, fontFamily: FONT }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 24, marginBottom: stage === 'done' ? 6 : 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{COLLECTION_AGENT}</span>
-                      {stage === 'done' && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 600, color: GREEN, background: '#fff', border: '1px solid #BFE5CC', borderRadius: 999, padding: '3px 10px' }}>
-                          <Check size={13} /> Created and linked
-                        </span>
-                      )}
                     </div>
 
                     {stage === 'setup' && (

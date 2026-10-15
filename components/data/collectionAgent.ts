@@ -214,7 +214,7 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
   if (counts.strong === 0) gaps.push({ label: 'Next step', text: "If these gaps matter, additional supply may be worth sourcing. That's a separate process I don't start.", severity: 'info' });
 
   const summary = `I found ${scored.length} spaces in ${c.location.split(',')[0]} and added them to “${collectionName}”: ${counts.strong} strong, ${counts.partial} partial, ${counts.weak} weak.`;
-  const headline = `I found ${scored.length} space${scored.length === 1 ? '' : 's'} in ${c.location.split(',')[0]} and added ${scored.length === 1 ? 'it' : 'them'} to “${collectionName}”.`;
+  const headline = `Added ${scored.length} space${scored.length === 1 ? '' : 's'} in ${c.location.split(',')[0]} to “${collectionName}”.`;
   return { found: scored.length, spaces: scored, counts, headline, inMarket: scored.length, withinBudget, fitsPeople, summary, gaps, missingInputs };
 }
 
