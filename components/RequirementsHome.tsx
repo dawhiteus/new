@@ -17,7 +17,8 @@ import {
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
-import { MVP_REQUIREMENTS, EMPTY_DETAILS, defaultTasks, defaultTeam, CURRENT_USER_EMAIL, type MvpRequirement } from './data/mvpRequirements';
+import { useRequirements } from './data/requirementsStore';
+import { EMPTY_DETAILS, defaultTasks, defaultTeam, CURRENT_USER_EMAIL, type MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const NAVY = '#0B4F7F';
@@ -232,7 +233,7 @@ function CollectionPill({ req }: { req: MvpRequirement }) {
 }
 
 export function RequirementsHome() {
-  const [rows, setRows] = useState<MvpRequirement[]>(MVP_REQUIREMENTS);
+  const [rows, setRows] = useRequirements();
   const [statusFilter, setStatusFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
   const [cityFilter, setCityFilter] = useState('');

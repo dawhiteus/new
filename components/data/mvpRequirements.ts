@@ -23,6 +23,8 @@ export interface RequirementNote {
 
 export const STAGES = ['Intake', 'Evaluation', 'Proposal', 'Contracting', 'Execution'] as const;
 
+export const ASSIGNEES = ['Unassigned', 'Brent Trebels', 'David White', 'Create Collection Agent', 'Assess Collection Agent'];
+
 export type TaskStatus = 'Not Started' | 'In Progress' | 'Completed';
 
 export interface WorkflowTask {
