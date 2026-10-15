@@ -469,7 +469,7 @@ export function RequirementsHome() {
         ]
       : [{ id: `e-${stamp}-l`, type: 'collection', title: o.method === 'manual' ? 'Collection Created' : 'Collection Linked', description: `${o.name} collection ${how} for ${req.name} requirement.`, date: dispDate, actor: CURRENT_USER_EMAIL }];
     const createNote = o.method === 'agent'
-      ? `I created “${o.name}” with ${o.spaces} space${o.spaces === 1 ? '' : 's'} from LiquidSpace inventory.\n${o.url}`
+      ? (o.spaces === 0 ? `I created an empty “${o.name}” Collection because no suitable LiquidSpace inventory was found.\n${o.url}` : `I created “${o.name}” with ${o.spaces} space${o.spaces === 1 ? '' : 's'} from LiquidSpace inventory.\n${o.url}`)
       : (o.method === 'manual'
         ? `Collection “${o.name}” created in LiquidSpace by Sales and linked to this requirement. Spaces are added in LiquidSpace.\n${o.url}`
         : `Existing LiquidSpace Collection “${o.name}” linked by Sales.\n${o.url}`);

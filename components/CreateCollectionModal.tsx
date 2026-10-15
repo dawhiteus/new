@@ -101,7 +101,19 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
     steps.forEach((s, i) => setTimeout(() => setWorkMsg(s), i * 650));
     setTimeout(() => {
       const r = sourceCollection(criteria, name.trim());
-      if (!r) { setResult(null); setStage('none'); return; }
+      if (!r) {
+        // No suitable inventory: still create an empty Collection and explain the result.
+        const empty: CollectionOutcome = {
+          method: 'agent', name: name.trim(), url: newCollectionUrl(name.trim()), spaces: 0, saved: 0, shortlisted: 0,
+          locationSpaces: 0, budgetSpaces: 0, peopleSpaces: 0,
+          assessment: { summary: `I found no suitable LiquidSpace inventory in ${criteria.location.split(',')[0]}, so “${name.trim()}” was created empty.`, gaps: [`Overall: No suitable inventory was found in ${criteria.location.split(',')[0]}. Add spaces in LiquidSpace or link another Collection.`] },
+        };
+        setResult(null);
+        setOutcome(empty);
+        onComplete(requirement, empty);
+        setStage('none');
+        return;
+      }
       const collectionUrl = newCollectionUrl(name.trim());
       const o: CollectionOutcome = {
         method: 'agent', name: name.trim(), url: collectionUrl, spaces: r.found, saved: 0, shortlisted: 0,
@@ -236,7 +248,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
 
                     {stage === 'none' && (
                       <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.55 }}>
-                        I couldn't find any LiquidSpace inventory in <b>{criteria.location.split(',')[0]}</b>, so I didn't create a Collection. You can link an existing Collection or build one in LiquidSpace instead.
+                        I found no suitable LiquidSpace inventory in <b>{criteria.location.split(',')[0]}</b>, so I created an empty “{outcome?.name}” Collection and linked it to this requirement. You can add spaces in LiquidSpace, or link a different Collection.
                       </div>
                     )}
 
@@ -305,10 +317,12 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                     </button>
                   </>
                 )}
-                {stage === 'none' && (
+                {stage === 'none' && outcome && (
                   <>
-                    <button type="button" onClick={back} style={secondary}>Back</button>
-                    <button type="button" onClick={onClose} style={primary}>Close</button>
+                    <a href={outcome.url} target="_blank" rel="noreferrer" style={{ ...secondary, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      Open in LiquidSpace <ExternalLink size={15} />
+                    </a>
+                    <button type="button" onClick={onClose} style={primary}>Done</button>
                   </>
                 )}
                 {stage === 'done' && outcome && (
