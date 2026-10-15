@@ -19,8 +19,12 @@ import {
   ChevronRight,
   Sparkles,
   Table2,
+  Calendar,
+  Search,
+  Star,
 } from 'lucide-react';
 import { cn } from './ui/utils';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 type ViewType = 'broker-flow' | 'liquid-ai' | 'cfo-dashboard';
 
@@ -113,15 +117,29 @@ const workplaceStrategyItems = [
 const transactionManagerItems = [
   {
     id: 'broker-flow' as ViewType,
-    label: 'Transactions',
+    label: 'Requirements',
     icon: Table2,
   },
 ];
 
+const activitySubItems = [
+  { id: 'reservations', label: 'Reservations', icon: Calendar, path: '/workplace/activity/reservations' },
+  { id: 'searches',     label: 'Searches',     icon: Search,   path: '/workplace/activity/searches'     },
+  { id: 'reviews',      label: 'Reviews',      icon: Star,     path: '/workplace/activity/reviews'      },
+];
+
 export function Sidebar({ currentView, onViewChange, isOpen, onToggle }: SidebarProps) {
-  const [workplaceOpsExpanded, setWorkplaceOpsExpanded] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isWorkplacePath = location.pathname.startsWith('/workplace');
+  const isActivityPath = location.pathname.startsWith('/workplace/activity');
+
+  const [workplaceOpsExpanded, setWorkplaceOpsExpanded] = useState(isWorkplacePath);
   const [workplaceStrategyExpanded, setWorkplaceStrategyExpanded] = useState(false);
   const [transactionManagerExpanded, setTransactionManagerExpanded] = useState(true);
+  const [activityManualExpanded, setActivityManualExpanded] = useState(false);
+  const activityExpanded = isActivityPath || activityManualExpanded;
+  const isActivityActive = isActivityPath;
 
   if (!isOpen) {
     return (
@@ -251,7 +269,48 @@ export function Sidebar({ currentView, onViewChange, isOpen, onToggle }: Sidebar
               {workplaceOpsItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentView === item.id;
-                
+
+                if (item.id === 'activity') {
+                  return (
+                    <div key="activity">
+                      <button
+                        onClick={() => setActivityManualExpanded(m => !m)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                          isActivityActive ? "text-white" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        )}
+                        style={{ fontSize:'14px', fontFamily:'Inter, sans-serif', backgroundColor: isActivityActive ? '#005B94' : 'transparent' }}
+                      >
+                        <Activity className="h-5 w-5 flex-shrink-0" />
+                        <span className="truncate flex-1 text-left">Activity</span>
+                        {activityExpanded ? <ChevronDown className="h-3.5 w-3.5 opacity-60" /> : <ChevronRight className="h-3.5 w-3.5 opacity-60" />}
+                      </button>
+                      {activityExpanded && (
+                        <div className="ml-4 mt-1 space-y-0.5">
+                          {activitySubItems.map(sub => {
+                            const SubIcon = sub.icon;
+                            const isSubActive = location.pathname === sub.path;
+                            return (
+                              <button
+                                key={sub.id}
+                                onClick={() => navigate(sub.path)}
+                                className={cn(
+                                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+                                  isSubActive ? "text-white" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                )}
+                                style={{ fontSize:'13px', fontFamily:'Inter, sans-serif', backgroundColor: isSubActive ? '#005B94' : 'transparent' }}
+                              >
+                                <SubIcon className="h-4 w-4 flex-shrink-0" />
+                                <span className="truncate">{sub.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <button
                     key={item.id}
@@ -260,6 +319,14 @@ export function Sidebar({ currentView, onViewChange, isOpen, onToggle }: Sidebar
                         window.open('https://same-wasp-78624830.figma.site/', '_blank');
                       } else if (item.id === 'liquid-ai') {
                         onViewChange(item.id as ViewType);
+                      } else if (item.id === 'teams') {
+                        navigate('/workplace/teams');
+                      } else if (item.id === 'locations') {
+                        navigate('/workplace/locations');
+                      } else if (item.id === 'setup') {
+                        navigate('/workplace/setup');
+                      } else if (item.id === 'branding') {
+                        navigate('/workplace/branding');
                       }
                     }}
                     className={cn(

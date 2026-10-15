@@ -1,9 +1,8 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
-  LayoutPanelLeft,
   TrendingUp,
   FileText,
-  CheckCircle2,
+  CircleDot,
   Zap,
   ChevronsUpDown,
   ArrowUp,
@@ -14,7 +13,7 @@ import {
   Users,
   ArrowRight,
 } from 'lucide-react';
-import { CreateEditDealModal } from './CreateEditDealModal';
+import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
 import { MVP_REQUIREMENTS, type MvpRequirement } from './data/mvpRequirements';
 
@@ -266,14 +265,38 @@ export function RequirementsHome() {
 
   const active = rows.filter((r) => r.status === 'Active');
   const metrics = [
-    { label: 'REQUIREMENT COSTS', value: money(active.reduce((s, r) => s + r.budget, 0)), sub: 'Total estimated value of active requirements', Icon: TrendingUp, bg: '#2E9D4A' },
-    { label: 'ACTIVE REQUIREMENTS', value: String(active.length), sub: 'Number of requirements currently moving through workflow', Icon: FileText, bg: '#1DB5C4' },
-    { label: 'COLLECTIONS CREATED', value: String(rows.length), sub: 'Total collections generated for requirements', Icon: CheckCircle2, bg: '#6D5BF0' },
-    { label: 'AGENT TASKS COMPLETED', value: String(rows.reduce((s, r) => s + r.agentTasks, 0)), sub: 'Total tasks executed by agents', Icon: Zap, bg: '#0B4F7F' },
+    { label: 'REQUIREMENT COSTS', value: money(active.reduce((s, r) => s + r.budget, 0)), sub: 'Total estimated value of active requirements', Icon: TrendingUp, color: '#10B981' },
+    { label: 'ACTIVE REQUIREMENTS', value: String(active.length), sub: 'Number of requirements currently moving through workflow', Icon: FileText, color: '#0694A2' },
+    { label: 'COLLECTIONS CREATED', value: String(rows.length), sub: 'Total collections generated for requirements', Icon: CircleDot, color: '#0369A1' },
+    { label: 'AGENT TASKS COMPLETED', value: String(rows.reduce((s, r) => s + r.agentTasks, 0)), sub: 'Total tasks executed by agents', Icon: Zap, color: '#1E3A5F' },
   ];
 
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+
+  const handleCreate = (d: NewRequirementData) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const budget = Number(d.budget) || 0;
+    const fresh: MvpRequirement = {
+      id: `req-${Date.now()}`,
+      name: d.name,
+      company: d.company,
+      status: d.status as MvpRequirement['status'],
+      stage: 'Intake',
+      budget,
+      city: d.location,
+      lastUpdated: today,
+      agentTasks: 0,
+      collection: {
+        name: `${d.name} Collection`, totalSpaces: 0, location: `In ${d.location}`, locationSpaces: 0,
+        budgetLabel: `Within ${money(budget)}/mo`, budgetSpaces: 0, peopleLabel: `For ${d.capacity} people`, peopleSpaces: 0,
+        saved: 0, shortlisted: 0,
+        updated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      },
+    };
+    setRows((rs) => [fresh, ...rs]);
+    toast.success(`Requirement "${d.name}" created.`);
+  };
 
   const handleAction = (req: MvpRequirement, action: string) => {
     if (action === 'Remove Requirement') {
@@ -305,32 +328,28 @@ export function RequirementsHome() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8F9FA', fontFamily: FONT }}>
-      {/* Banner */}
-      <div style={{ backgroundColor: '#0D619B', height: 274, padding: '48px 32px 0' }}>
+      {/* Header (demo treatment) */}
+      <div style={{ background: 'linear-gradient(135deg, #004A7C 0%, #005B94 60%, #0071B8 100%)', padding: '28px 32px 32px' }}>
         <div className="max-w-7xl mx-auto">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <LayoutPanelLeft size={24} style={{ color: 'rgba(255,255,255,0.7)' }} />
-            <h1 style={{ fontSize: 36, fontWeight: 700, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1.1 }}>Requirements</h1>
+          <div className="flex items-center gap-3" style={{ marginBottom: '4px' }}>
+            <FileText className="h-7 w-7" style={{ color: 'rgba(255,255,255,0.85)' }} />
+            <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#FFFFFF', letterSpacing: '-0.3px' }}>Requirements</h1>
           </div>
-          <p style={{ fontSize: 18, color: '#fff', marginTop: 6 }}>Manage your workspace requirements and track opportunities.</p>
+          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.75)', paddingLeft: '40px' }}>
+            Manage your workspace requirements and track opportunities.
+          </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto" style={{ padding: '0 32px 48px', marginTop: -144 }}>
-        {/* Stat cards */}
-        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+      <div className="max-w-7xl mx-auto" style={{ padding: '24px 32px 48px' }}>
+        {/* Metric cards (demo treatment) */}
+        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
           {metrics.map((m) => (
-            <div key={m.label} style={{ background: '#fff', borderRadius: 20, padding: '24px 24px 20px', boxShadow: '0 4px 14px rgba(0,0,0,0.12)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 12, background: m.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <m.Icon size={22} color="#fff" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, color: '#6B7280', letterSpacing: '0.02em' }}>{m.label}</div>
-                  <div style={{ fontSize: 26, fontWeight: 700, color: '#0F2A3D', lineHeight: 1.2 }}>{m.value}</div>
-                </div>
-              </div>
-              <div style={{ fontSize: 12.5, color: '#6B7280', marginTop: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.sub}</div>
+            <div key={m.label} className="rounded-xl bg-white flex flex-col" style={{ padding: '18px 20px 14px', border: '1px solid #E5E7EB', minHeight: '116px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '6px' }}>{m.label}</div>
+              <div style={{ fontSize: '24px', fontWeight: 700, color: m.color, letterSpacing: '-0.5px', marginBottom: '4px', lineHeight: 1.1 }}>{m.value}</div>
+              <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.4, flex: 1 }}>{m.sub}</div>
+              <div style={{ marginTop: '10px' }}><m.Icon className="h-4 w-4" style={{ color: m.color }} /></div>
             </div>
           ))}
         </div>
@@ -422,7 +441,7 @@ export function RequirementsHome() {
         </div>
       </div>
 
-      <CreateEditDealModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
+      <NewRequirementModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
     </div>
   );
 }
