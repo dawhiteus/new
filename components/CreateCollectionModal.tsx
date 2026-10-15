@@ -278,10 +278,20 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                         </div>
                       ))}
                     </div>
+                    <div style={{ borderTop: '1px solid #E5E7EB', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
+                      {([['Strong', result.counts.strong], ['Partial', result.counts.partial], ['Weak', result.counts.weak]] as const).map(([label, n], i) => (
+                        <div key={label} style={{ padding: '10px 16px', borderLeft: i ? '1px solid #E5E7EB' : undefined }}>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: INK, lineHeight: 1.1 }}>{n}</div>
+                          <div style={{ fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: TIER_STYLE[label].bg }} /> {label} match{n === 1 ? '' : 'es'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   {result.gaps.length > 0 && (
                     <>
-                      <div style={{ margin: '16px 0 8px', fontSize: 14, fontWeight: 700, color: INK, fontFamily: FONT }}>Observations</div>
+                      <div style={{ margin: '16px 0 8px', fontSize: 14, fontWeight: 700, color: INK, fontFamily: FONT }}>Gaps and trade-offs</div>
                       <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden' }}>
                         {result.gaps.map((g, i) => {
                           return (
@@ -294,7 +304,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                       </div>
                     </>
                   )}
-                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 12, fontFamily: FONT }}>Prototype: simulated sourcing from fictitious sample inventory. Browse the individual spaces in LiquidSpace. These results are saved to this requirement's Create Collection task.</div>
+                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 12, fontFamily: FONT }}>Prototype: simulated sourcing from fictitious sample inventory. Browse the individual spaces in LiquidSpace. The assessment is saved to this requirement's sourcing tasks.</div>
                 </>
               )}
 

@@ -189,6 +189,7 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
   if (!c.workspaceType) missingInputs.push('workspace type');
   if (!c.startDate) missingInputs.push('start date');
 
+  if (counts.strong === 0) gaps.push({ label: 'Overall', text: 'No strong matches. Every space has at least one trade-off.', severity: 'high' });
   if (c.budget != null) {
     const cheapest = [...scored].sort((a, b) => a.monthlyPrice - b.monthlyPrice)[0];
     gaps.push({
@@ -212,10 +213,12 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
     if (late.length) gaps.push({ label: 'Availability', text: `${late.length} of ${scored.length} ${late.length === 1 ? "isn't" : "aren't"} available by ${fmtLong(c.startDate)}. The earliest opens ${fmtLong(late.map((s) => s.availableFrom).sort()[0])}.`, severity: 'medium' });
   }
   const unsupported = [c.termLength ? 'term length' : '', c.amenityNeeds ? 'program and amenity needs' : ''].filter(Boolean);
-  if (unsupported.length) gaps.push({ label: 'Not matched', text: `I couldn't match on ${unsupported.join(' or ')}; the available inventory data doesn't include ${unsupported.length === 1 && unsupported[0] === 'term length' ? 'it' : 'them'}.`, severity: 'info' });
-  if (missingInputs.length) gaps.push({ label: 'Not matched', text: `${cap(missingInputs.join(', '))} ${missingInputs.length === 1 ? 'was' : 'were'} not provided, so I couldn't match on ${missingInputs.length === 1 ? 'it' : 'them'}.`, severity: 'info' });
+  const notAssessed: string[] = [];
+  if (missingInputs.length) notAssessed.push(`${cap(missingInputs.join(', '))} ${missingInputs.length === 1 ? 'was' : 'were'} not provided.`);
+  if (unsupported.length) notAssessed.push(`${cap(unsupported.join(' and '))} ${unsupported.length === 1 && unsupported[0] === 'term length' ? "isn't" : "aren't"} in the available inventory data.`);
+  if (notAssessed.length) gaps.push({ label: 'Not assessed', text: notAssessed.join(' '), severity: 'info' });
 
-  const summary = `Found ${scored.length} space${scored.length === 1 ? '' : 's'} in ${c.location.split(',')[0]} and added ${scored.length === 1 ? 'it' : 'them'} to “${collectionName}”.`;
+  const summary = `Found ${scored.length} space${scored.length === 1 ? '' : 's'} in ${c.location.split(',')[0]} and added ${scored.length === 1 ? 'it' : 'them'} to “${collectionName}”: ${counts.strong} strong, ${counts.partial} partial, ${counts.weak} weak.`;
   const headline = `Added ${scored.length} space${scored.length === 1 ? '' : 's'} in ${c.location.split(',')[0]} to “${collectionName}”.`;
   return { found: scored.length, spaces: scored, counts, headline, inMarket: scored.length, withinBudget, fitsPeople, summary, gaps, missingInputs };
 }

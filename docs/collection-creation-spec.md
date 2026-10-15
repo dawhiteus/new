@@ -2,13 +2,13 @@
 Transaction Manager | Functional Specification | v.1
 
 ## Objective
-Reduce the time and effort required to build a LiquidSpace Collection for a Requirement. Sales can link an existing Collection, have the Collection Agent source and populate one, or create a named Collection in LiquidSpace. All three produce the same outcome: a LiquidSpace Collection associated with the Requirement.
+Reduce the time and effort required to build a LiquidSpace Collection for a Requirement. Sales can link an existing Collection, have the Collection Agent source and assess one, or create a named Collection in LiquidSpace. All three produce the same outcome: a LiquidSpace Collection associated with the Requirement.
 
 ## 1. User Experience
 Any Requirement without a Collection shows a **Create Collection** action in the existing Collection column, regardless of its stage or status (including Drafts). Selecting it opens a modal with three options:
 
 * **Use Existing Collection:** Link a Collection already built in LiquidSpace.
-* **Create with Collection Agent:** The agent sources spaces and builds the Collection.
+* **Create with Collection Agent:** The agent sources spaces, builds the Collection, and assesses the fit.
 * **Create Manually in LiquidSpace:** Name a Collection here, then add spaces in LiquidSpace.
 
 Once associated, the Collection column shows the Collection's workspace count and opens it in LiquidSpace. Collections are managed in LiquidSpace. Transaction Manager does not provide a separate Collection management interface.
@@ -29,12 +29,15 @@ Once associated, the Collection column shows the Collection's workspace count an
 * Search LiquidSpace marketplace inventory only. Do not fabricate inventory, pricing, or availability.
 * Create the Collection and populate it with relevant candidates, if available, and associate it with the Requirement. If no suitable inventory is found, create an empty Collection and clearly explain the result.
 
-**Results summary:** Show a concise, factual summary. It reports what the agent found; it does not score, rank, or recommend.
-* **Overview:** Collection name, total spaces, and how many match the Requirement's location, budget, and headcount.
-* **Observations:** Short, plain-language notes on obvious mismatches (for example, spaces over budget or not available by the start date) and any Requirement criteria it could not match, because they were not provided or the available inventory data does not support them (for example, term length or amenity needs).
-* Sales reviews the Collection in LiquidSpace and decides next steps, including whether to look beyond marketplace inventory.
+**Assessment:** The agent assesses how well the resulting Collection satisfies the Requirement and shows a concise result:
+* **Overview:** Collection name, total spaces, how many match the Requirement's location, budget, and headcount, and the count of Strong, Partial, and Weak matches.
+* **Gaps and trade-offs:** Only the categories that apply (for example Budget, Capacity, Workspace type, Availability), each in one plain sentence.
+* **Not assessed:** Any Requirement criteria the agent could not assess, because they were not provided or the available inventory data does not support them (for example, term length or amenity needs).
+* Individual spaces are reviewed in LiquidSpace, not in Transaction Manager.
 
-**Records:** The Create Collection sourcing task is marked complete and retains the agent's output and observations as task notes.
+The assessment is an initial snapshot produced when the Collection is created. It is not a recommendation to source beyond the marketplace. Sales reviews the Collection and the assessment and decides next steps, including whether to look beyond marketplace inventory.
+
+**Records:** The Create Collection and Assess Collection sourcing tasks are marked complete and retain the agent's output and assessment as task notes.
 
 ## 4. Collection Display and Management
 * The Requirements table shows the Collection link and workspace count. Selecting it opens the Collection in LiquidSpace.
@@ -45,7 +48,7 @@ Once associated, the Collection column shows the Collection's workspace count an
 * The Collection Agent is clearly identified, shows working and completion states, and attributes its Timeline entries and task notes to the agent.
 * Sales reviews and controls the resulting Collection.
 * The agent does not contact operators, solicit inventory, negotiate terms, or communicate with customers. Sales decides whether to look beyond marketplace inventory; supply-side activities belong to separate processes.
-* The agent runs once per request; there is no automatic re-run when the Requirement changes.
+* The agent runs once per request and does not re-run automatically when the Requirement or the Collection changes. On-demand re-assessment is out of scope for v.1.
 
 ## 6. HubSpot Integration
 Collection creation follows the standard Transaction Manager–HubSpot integration, as defined in the separate Integration Mapping specification. Agent outputs are recorded as notes, not tasks. No HubSpot logic is required within Collection creation.
@@ -57,14 +60,14 @@ Collection creation follows the standard Transaction Manager–HubSpot integrati
 
 ## 8. Success Criteria
 * Sales can associate an existing Collection by URL, with invalid links rejected clearly.
-* Sales can create a populated Collection with the agent, using only real inventory, with a clear summary of what was found.
+* Sales can create a populated Collection with the agent, using only real inventory, with an assessment of fit, gaps, and trade-offs.
 * Sales can create a named Collection in LiquidSpace without leaving Transaction Manager to copy a link.
 * All three paths result in a Collection link and workspace count against the Requirement.
-* The results summary states which criteria it could not match.
+* The assessment states which criteria it could not assess.
 * The agent never presents invented inventory, pricing, or availability.
 
 ## 9. Open Questions
 * **API operations:** The Marketplace collections endpoints are listed as done, but only list, add, and remove are mentioned. Confirm a create (named, empty) operation exists, and that a Collection's name and workspace count can be read from its URL.
 * **Off-marketplace venues:** Can a Collection hold a venue with no marketplace listing? This affects how Sales enriches a Collection after the agent builds it.
-* **Agent naming:** Is this a single Collection Agent, or the existing Market Sourcing Agent role (sourcing) with assessment left to Sales? Timeline and task-note attribution should use one name.
-* **Assessment:** Not an agent responsibility in v.1. Sales reviews the Collection. Revisit an on-demand assessment of any associated Collection once collection contents can be read.
+* **Agent naming:** Is this a single Collection Agent, or the existing Market Sourcing Agent (sourcing) and Collection Assessment Agent (assessment) roles? Timeline and task-note attribution should use one consistent name.
+* **Re-assessment:** Assessment after venues are added is mostly human review. Revisit an on-demand assessment of any associated Collection once a Collection's contents can be read.
