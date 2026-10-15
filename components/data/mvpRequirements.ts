@@ -59,6 +59,42 @@ export function defaultTasks(currentStage: string): WorkflowTask[] {
   ];
 }
 
+export type MemberType = 'Unknown' | 'Internal' | 'External' | 'Agent';
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string; // MVP enum value, e.g. 'RequirementsLead'
+  type: MemberType;
+  organization: string;
+  phone: string;
+  description?: string;
+  /** Agents display the task they own instead of a role label. */
+  taskLabel?: string;
+}
+
+export function defaultTeam(): TeamMember[] {
+  return [
+    { id: 'm-brent', name: 'Brent Trebels', email: 'brent@liquidspace.com', role: 'RequirementsLead', type: 'Internal', organization: 'LiquidSpace', phone: '' },
+    {
+      id: 'm-assess', name: 'Collection Assessment Agent', email: 'assessment.agent@ai.liquidspace.com', role: 'CollectionEvaluationAgent',
+      type: 'Agent', organization: 'LiquidSpace AI', phone: '', taskLabel: 'Assess collection',
+      description: "A Requirement-aware lens layered on top of LiquidSpace's existing recommendations. Answers: how well does this specific collection satisfy this specific requirement? Evaluates each space across five dimensions — location proximity, workspace type, size and capacity, budget, and term. Runs automatically after sourcing completes, and re-triggers when requirement fields are edited.",
+    },
+    {
+      id: 'm-sourcing', name: 'Market Sourcing Agent', email: 'sourcing.agent@ai.liquidspace.com', role: 'MarketplaceSearchAgent',
+      type: 'Agent', organization: 'LiquidSpace AI', phone: '', taskLabel: 'Build collection',
+      description: 'Searches the LiquidSpace marketplace and builds a comprehensive first-pass candidate set — not a curated shortlist. Its purpose is to give the Collection Assessment Agent and human reviewers a full option set to work from. After this task completes, the Collection Assessment Agent runs automatically and the Collection tab becomes visible on the requirement.',
+    },
+    {
+      id: 'm-intake', name: 'Requirements Intake Agent', email: 'requirements.agent@ai.liquidspace.com', role: 'RequirementsAgent',
+      type: 'Agent', organization: 'LiquidSpace AI', phone: '', taskLabel: 'Structure requirement',
+      description: 'Convert natural language descriptions, uploaded briefs, or reference spaces into structured requirement drafts.',
+    },
+  ];
+}
+
 export interface RequirementDetails {
   dealId: string;
   createdDate: string; // ISO
@@ -76,12 +112,13 @@ export interface RequirementDetails {
   otherCommercial: string;
   notes: RequirementNote[];
   tasks: WorkflowTask[];
+  team: TeamMember[];
 }
 
 export const EMPTY_DETAILS: RequirementDetails = {
   dealId: '', createdDate: '', location: '', capacity: '', size: '', workspaceType: '', configuration: '',
   programNeeds: '', amenityNeeds: '', otherFunctional: '', startDate: '', termLength: '0', closeDate: '',
-  otherCommercial: '', notes: [], tasks: [],
+  otherCommercial: '', notes: [], tasks: [], team: [],
 };
 
 export interface MvpRequirement {
@@ -130,6 +167,7 @@ export const MVP_REQUIREMENTS: MvpRequirement[] = [
       size: '375',
       configuration: 'Single space',
       tasks: defaultTasks('Evaluation'),
+      team: defaultTeam(),
       notes: [
         {
           author: 'Brent Trebels',
@@ -162,6 +200,6 @@ export const MVP_REQUIREMENTS: MvpRequirement[] = [
       shortlisted: 0,
       updated: 'Sep 22, 2026',
     },
-    details: { ...EMPTY_DETAILS, createdDate: '2026-09-22', location: 'Test', tasks: defaultTasks('Evaluation') },
+    details: { ...EMPTY_DETAILS, createdDate: '2026-09-22', location: 'Test', tasks: defaultTasks('Evaluation'), team: defaultTeam() },
   },
 ];

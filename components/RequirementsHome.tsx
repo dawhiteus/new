@@ -17,7 +17,7 @@ import {
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
-import { MVP_REQUIREMENTS, EMPTY_DETAILS, defaultTasks, type MvpRequirement } from './data/mvpRequirements';
+import { MVP_REQUIREMENTS, EMPTY_DETAILS, defaultTasks, defaultTeam, type MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const NAVY = '#0B4F7F';
@@ -300,6 +300,7 @@ export function RequirementsHome() {
         ...EMPTY_DETAILS,
         createdDate: today,
         tasks: defaultTasks('Intake'),
+        team: defaultTeam(),
         location: d.location,
         capacity: d.capacity,
         size: d.size,

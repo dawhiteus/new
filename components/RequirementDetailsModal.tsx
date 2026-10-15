@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, ChevronsUpDown } from 'lucide-react';
 import { toast } from './ui/toast';
+import { RequirementTeamTab } from './RequirementTeamTab';
 import { RequirementWorkflowTab } from './RequirementWorkflowTab';
-import { STAGES, type MvpRequirement, type RequirementDetails, type WorkflowTask } from './data/mvpRequirements';
+import { STAGES, type MvpRequirement, type RequirementDetails, type WorkflowTask, type TeamMember } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const BLUE = '#0D619B';
@@ -96,7 +97,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
     setF((p) => (p ? { ...p, [k]: e.target.value } : p));
   const setVal = (k: keyof FormState, v: string) => setF((p) => (p ? { ...p, [k]: v } : p));
 
-  const buildUpdated = (notes = f.notes, tasks = f.tasks): MvpRequirement => {
+  const buildUpdated = (notes = f.notes, tasks = f.tasks, team = f.team): MvpRequirement => {
     const { company, status, stage, name, budget, ...details } = f;
     return {
       ...requirement,
@@ -107,7 +108,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
       budget: Number(budget) || 0,
       city: details.location || requirement.city,
       lastUpdated: new Date().toISOString().slice(0, 10),
-      details: { ...details, notes, tasks },
+      details: { ...details, notes, tasks, team },
     };
   };
 
@@ -199,6 +200,14 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                 const next = { ...f, tasks };
                 setF(next);
                 onSave(buildUpdated(next.notes, next.tasks));
+              }}
+            />
+          ) : tab === 'Team' ? (
+            <RequirementTeamTab
+              team={f.team}
+              onChange={(team: TeamMember[]) => {
+                setF({ ...f, team });
+                onSave(buildUpdated(f.notes, f.tasks, team));
               }}
             />
           ) : tab !== 'Overview' ? (
