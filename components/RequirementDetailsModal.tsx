@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, ChevronsUpDown } from 'lucide-react';
 import { toast } from './ui/toast';
+import { RequirementDocumentsTab } from './RequirementDocumentsTab';
 import { RequirementTeamTab } from './RequirementTeamTab';
 import { RequirementWorkflowTab } from './RequirementWorkflowTab';
-import { STAGES, type MvpRequirement, type RequirementDetails, type WorkflowTask, type TeamMember } from './data/mvpRequirements';
+import { STAGES, type MvpRequirement, type RequirementDetails, type WorkflowTask, type TeamMember, type RequirementDocument } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const BLUE = '#0D619B';
@@ -97,7 +98,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
     setF((p) => (p ? { ...p, [k]: e.target.value } : p));
   const setVal = (k: keyof FormState, v: string) => setF((p) => (p ? { ...p, [k]: v } : p));
 
-  const buildUpdated = (notes = f.notes, tasks = f.tasks, team = f.team): MvpRequirement => {
+  const buildUpdated = (notes = f.notes, tasks = f.tasks, team = f.team, documents = f.documents): MvpRequirement => {
     const { company, status, stage, name, budget, ...details } = f;
     return {
       ...requirement,
@@ -108,7 +109,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
       budget: Number(budget) || 0,
       city: details.location || requirement.city,
       lastUpdated: new Date().toISOString().slice(0, 10),
-      details: { ...details, notes, tasks, team },
+      details: { ...details, notes, tasks, team, documents },
     };
   };
 
@@ -207,7 +208,15 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
               team={f.team}
               onChange={(team: TeamMember[]) => {
                 setF({ ...f, team });
-                onSave(buildUpdated(f.notes, f.tasks, team));
+                onSave(buildUpdated(f.notes, f.tasks, team, f.documents));
+              }}
+            />
+          ) : tab === 'Documents' ? (
+            <RequirementDocumentsTab
+              documents={f.documents}
+              onChange={(documents: RequirementDocument[]) => {
+                setF({ ...f, documents });
+                onSave(buildUpdated(f.notes, f.tasks, f.team, documents));
               }}
             />
           ) : tab !== 'Overview' ? (

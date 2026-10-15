@@ -95,6 +95,15 @@ export function defaultTeam(): TeamMember[] {
   ];
 }
 
+export interface RequirementDocument {
+  id: string;
+  name: string;
+  sizeBytes: number;
+  uploadedAt: string; // display date
+  /** Object URL for files uploaded this session (enables Download). */
+  url?: string;
+}
+
 export interface RequirementDetails {
   dealId: string;
   createdDate: string; // ISO
@@ -113,12 +122,13 @@ export interface RequirementDetails {
   notes: RequirementNote[];
   tasks: WorkflowTask[];
   team: TeamMember[];
+  documents: RequirementDocument[];
 }
 
 export const EMPTY_DETAILS: RequirementDetails = {
   dealId: '', createdDate: '', location: '', capacity: '', size: '', workspaceType: '', configuration: '',
   programNeeds: '', amenityNeeds: '', otherFunctional: '', startDate: '', termLength: '0', closeDate: '',
-  otherCommercial: '', notes: [], tasks: [], team: [],
+  otherCommercial: '', notes: [], tasks: [], team: [], documents: [],
 };
 
 export interface MvpRequirement {
