@@ -91,7 +91,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) close(); }}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden [&>button]:hidden" style={{ borderRadius: 24, border: 'none', maxHeight: '92vh' }}>
+      <DialogContent className="sm:max-w-[760px] p-0 overflow-hidden [&>button]:hidden" style={{ borderRadius: 24, border: 'none', maxHeight: '92vh' }}>
         <DialogDescription className="sr-only">Create a new workspace requirement</DialogDescription>
         <div style={{ background: BLUE, padding: '20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <DialogTitle style={{ color: '#fff', fontSize: 24, fontWeight: 700, fontFamily: FONT }}>Create New Requirement</DialogTitle>

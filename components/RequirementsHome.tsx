@@ -5,6 +5,7 @@ import {
   CircleDot,
   Zap,
   ChevronsUpDown,
+  MoreHorizontal,
   ArrowUp,
   ArrowUpDown,
   Folder,
@@ -23,13 +24,13 @@ const NAVY = '#0B4F7F';
 type SortKey = 'name' | 'company' | 'status' | 'stage' | 'budget' | 'collection' | 'lastUpdated';
 
 const COLUMNS: { key: SortKey; label: string; width: string }[] = [
-  { key: 'name', label: 'REQUIREMENT', width: '16%' },
-  { key: 'company', label: 'COMPANY', width: '16%' },
-  { key: 'status', label: 'STATUS', width: '14%' },
-  { key: 'stage', label: 'STAGE', width: '14%' },
-  { key: 'budget', label: 'BUDGET', width: '12%' },
-  { key: 'collection', label: 'COLLECTION', width: '14%' },
-  { key: 'lastUpdated', label: 'LAST UPDATED', width: '10%' },
+  { key: 'name', label: 'REQUIREMENT', width: '' },
+  { key: 'company', label: 'COMPANY', width: '' },
+  { key: 'status', label: 'STATUS', width: '' },
+  { key: 'stage', label: 'STAGE', width: '' },
+  { key: 'budget', label: 'BUDGET', width: '' },
+  { key: 'collection', label: 'COLLECTION', width: '' },
+  { key: 'lastUpdated', label: 'LAST UPDATED', width: '' },
 ];
 
 const money = (n: number) => `$${n.toLocaleString('en-US')}`;
@@ -138,9 +139,9 @@ function RowMenu({ onAction }: { onAction: (a: string) => void }) {
       <button
         aria-label="Row actions"
         onClick={() => setOpen((o) => !o)}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 20, letterSpacing: 1, padding: '0 8px', lineHeight: 1 }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: '4px', lineHeight: 0, display: 'inline-flex' }}
       >
-        •••
+        <MoreHorizontal size={18} />
       </button>
       {open && (
         <div
@@ -375,7 +376,7 @@ export function RequirementsHome() {
               <thead>
                 <tr style={{ background: '#F3F4F6' }}>
                   {COLUMNS.map((c) => (
-                    <th key={c.key} style={{ ...th, width: c.width }} onClick={() => toggleSort(c.key)}>
+                    <th key={c.key} style={{ ...th, width: c.width || undefined }} onClick={() => toggleSort(c.key)}>
                       {c.label}{' '}
                       {sort.key === c.key ? (
                         <ArrowUp size={12} style={{ display: 'inline', transform: sort.dir === 'desc' ? 'rotate(180deg)' : undefined }} />
@@ -384,7 +385,7 @@ export function RequirementsHome() {
                       )}
                     </th>
                   ))}
-                  <th style={{ ...th, width: '4%', cursor: 'default' }} />
+                  <th style={{ ...th, width: 56, cursor: 'default' }} />
                 </tr>
               </thead>
               <tbody>
@@ -404,7 +405,7 @@ export function RequirementsHome() {
                       <td style={td}>{money(r.budget)}</td>
                       <td style={td}><CollectionPill req={r} /></td>
                       <td style={td}>{fmtDate(r.lastUpdated)}</td>
-                      <td style={{ ...td, textAlign: 'right', padding: '14px 8px' }}>
+                      <td style={{ ...td, textAlign: 'right', padding: '14px 12px 14px 0' }}>
                         <RowMenu onAction={(a) => handleAction(r, a)} />
                       </td>
                     </tr>
