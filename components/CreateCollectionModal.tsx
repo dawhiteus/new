@@ -287,10 +287,8 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                       <div style={{ margin: '16px 0 8px', fontSize: 14, fontWeight: 700, color: INK, fontFamily: FONT }}>Gaps and trade-offs</div>
                       <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden' }}>
                         {result.gaps.map((g, i) => {
-                          const dot = g.severity === 'high' ? '#DC2626' : g.severity === 'medium' ? '#E8A91C' : '#9CA3AF';
                           return (
-                            <div key={g.label + i} style={{ display: 'flex', gap: 12, padding: '10px 14px', borderTop: i ? '1px solid #F1F3F5' : undefined, fontFamily: FONT, alignItems: 'flex-start' }}>
-                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot, marginTop: 7, flexShrink: 0 }} />
+                            <div key={g.label + i} style={{ display: 'flex', gap: 16, padding: '10px 14px', borderTop: i ? '1px solid #F1F3F5' : undefined, fontFamily: FONT, alignItems: 'flex-start' }}>
                               <div style={{ width: 112, flexShrink: 0, fontSize: 13.5, fontWeight: 600, color: INK }}>{g.label}</div>
                               <div style={{ flex: 1, fontSize: 13.5, color: '#374151', lineHeight: 1.5 }}>{g.text}</div>
                             </div>
