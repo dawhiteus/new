@@ -103,7 +103,7 @@ export const IA: Record<string, Product> = {
         id: 'tm',
         label: 'Transaction Manager',
         items: [
-          { id: 'transactions', icon: 'book-open',    label: 'Transactions', url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/transactions/list' },
+          { id: 'transactions', icon: 'book-open',    label: 'Requirements', url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/transactions/list' },
           { id: 'tm-tasks',     icon: 'check-square', label: 'Tasks',        url: 'https://transaction-manager-git-main-david-4453s-projects.vercel.app/transactions/tasks' },
         ],
       },
