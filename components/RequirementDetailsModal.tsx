@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, ChevronsUpDown } from 'lucide-react';
 import { toast } from './ui/toast';
-import type { MvpRequirement, RequirementDetails } from './data/mvpRequirements';
+import { RequirementWorkflowTab } from './RequirementWorkflowTab';
+import { STAGES, type MvpRequirement, type RequirementDetails, type WorkflowTask } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const BLUE = '#0D619B';
 const INK = '#0F2A3D';
 const STATUSES = ['Active', 'Draft', 'Executed', 'Archived'];
-const STAGES = ['Intake', 'Evaluation', 'Proposal', 'Negotiation', 'Contracting', 'Execution'];
 const WORKSPACE_TYPES = ['Office Suite', 'Private Office', 'Team Office', 'Coworking', 'Meeting Space'];
 const CONFIGURATIONS = ['Single space', 'Collection of spaces'];
 const TABS = ['Overview', 'Workflow', 'Team', 'Documents', 'Timeline'] as const;
@@ -96,7 +96,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
     setF((p) => (p ? { ...p, [k]: e.target.value } : p));
   const setVal = (k: keyof FormState, v: string) => setF((p) => (p ? { ...p, [k]: v } : p));
 
-  const buildUpdated = (notes = f.notes): MvpRequirement => {
+  const buildUpdated = (notes = f.notes, tasks = f.tasks): MvpRequirement => {
     const { company, status, stage, name, budget, ...details } = f;
     return {
       ...requirement,
@@ -107,7 +107,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
       budget: Number(budget) || 0,
       city: details.location || requirement.city,
       lastUpdated: new Date().toISOString().slice(0, 10),
-      details: { ...details, notes },
+      details: { ...details, notes, tasks },
     };
   };
 
@@ -189,7 +189,19 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
         </div>
 
         <div style={{ overflowY: 'auto', padding: '20px 20px 28px', background: '#fff' }}>
-          {tab !== 'Overview' ? (
+          {tab === 'Workflow' ? (
+            <RequirementWorkflowTab
+              status={requirement.status}
+              currentStage={requirement.stage}
+              lastUpdated={requirement.lastUpdated}
+              tasks={f.tasks}
+              onChange={(tasks: WorkflowTask[]) => {
+                const next = { ...f, tasks };
+                setF(next);
+                onSave(buildUpdated(next.notes, next.tasks));
+              }}
+            />
+          ) : tab !== 'Overview' ? (
             <div style={{ padding: '60px 0', textAlign: 'center', color: '#9CA3AF', fontFamily: FONT, fontSize: 15 }}>
               {tab} tab coming next.
             </div>
@@ -206,7 +218,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                   {field('Company', text('company'))}
                   {field('Deal ID', text('dealId'))}
                   {field('Status', <Select value={f.status} onChange={(v) => setVal('status', v)} options={STATUSES} />)}
-                  {field('Current Stage', <Select value={f.stage} options={STAGES} disabled />)}
+                  {field('Current Stage', <Select value={f.stage} options={[...STAGES]} disabled />)}
                   {field('Created Date', <input value={fmtDate(f.createdDate)} disabled style={disabledInput} />)}
                 </div>
 

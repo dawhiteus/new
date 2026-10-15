@@ -21,6 +21,44 @@ export interface RequirementNote {
   text: string;
 }
 
+export const STAGES = ['Intake', 'Evaluation', 'Proposal', 'Contracting', 'Execution'] as const;
+
+export type TaskStatus = 'Not Started' | 'In Progress' | 'Completed';
+
+export interface WorkflowTask {
+  id: string;
+  stage: string;
+  name: string;
+  description: string;
+  status: TaskStatus;
+  assignee: string;
+  dueDate: string;
+  dependsOn: string;
+}
+
+const T = (stage: string, name: string, description: string, status: TaskStatus = 'Not Started'): WorkflowTask => ({
+  id: `${stage}-${name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+  stage, name, description, status, assignee: '', dueDate: '', dependsOn: '',
+});
+
+/** Default MVP task set; Intake is complete when the requirement is past Intake. */
+export function defaultTasks(currentStage: string): WorkflowTask[] {
+  const introDone: TaskStatus = currentStage === 'Intake' ? 'Not Started' : 'Completed';
+  return [
+    T('Intake', 'Requirement intake', 'Define business and commercial requirements', introDone),
+    T('Evaluation', 'Create Collection', 'Build Compliant Collection and Confirm Availability'),
+    T('Evaluation', 'Assess Collection', 'Evaluate Collection Against Requirement Criteria'),
+    T('Evaluation', 'Shortlist', 'Evaluate Alternatives and Recommend Shortlist'),
+    T('Evaluation', 'Tour', 'Coordinate and Document Tour Evaluations'),
+    T('Proposal', 'Review proposal(s)', 'Compare Proposals and Identify Negotiation Targets'),
+    T('Proposal', 'Site selection', 'Select Final Space Option and Notify Stakeholders'),
+    T('Contracting', 'Legal review', 'Manage Agreement Routing and Legal Risk Resolution'),
+    T('Execution', 'Contract execution', 'Complete Document Finalization and Approval Process'),
+    T('Execution', 'Onboarding', 'Prepare and Distribute Venue Onboarding Manual'),
+    T('Execution', 'License Administration', 'Validate Closure Documents and Confirm Operational Handoff'),
+  ];
+}
+
 export interface RequirementDetails {
   dealId: string;
   createdDate: string; // ISO
@@ -37,12 +75,13 @@ export interface RequirementDetails {
   closeDate: string;
   otherCommercial: string;
   notes: RequirementNote[];
+  tasks: WorkflowTask[];
 }
 
 export const EMPTY_DETAILS: RequirementDetails = {
   dealId: '', createdDate: '', location: '', capacity: '', size: '', workspaceType: '', configuration: '',
   programNeeds: '', amenityNeeds: '', otherFunctional: '', startDate: '', termLength: '0', closeDate: '',
-  otherCommercial: '', notes: [],
+  otherCommercial: '', notes: [], tasks: [],
 };
 
 export interface MvpRequirement {
@@ -90,6 +129,7 @@ export const MVP_REQUIREMENTS: MvpRequirement[] = [
       capacity: '5',
       size: '375',
       configuration: 'Single space',
+      tasks: defaultTasks('Evaluation'),
       notes: [
         {
           author: 'Brent Trebels',
@@ -122,6 +162,6 @@ export const MVP_REQUIREMENTS: MvpRequirement[] = [
       shortlisted: 0,
       updated: 'Sep 22, 2026',
     },
-    details: { ...EMPTY_DETAILS, createdDate: '2026-09-22', location: 'Test' },
+    details: { ...EMPTY_DETAILS, createdDate: '2026-09-22', location: 'Test', tasks: defaultTasks('Evaluation') },
   },
 ];

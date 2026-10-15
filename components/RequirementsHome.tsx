@@ -17,7 +17,7 @@ import {
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
-import { MVP_REQUIREMENTS, EMPTY_DETAILS, type MvpRequirement } from './data/mvpRequirements';
+import { MVP_REQUIREMENTS, EMPTY_DETAILS, defaultTasks, type MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const NAVY = '#0B4F7F';
@@ -299,6 +299,7 @@ export function RequirementsHome() {
       details: {
         ...EMPTY_DETAILS,
         createdDate: today,
+        tasks: defaultTasks('Intake'),
         location: d.location,
         capacity: d.capacity,
         size: d.size,
@@ -417,15 +418,15 @@ export function RequirementsHome() {
                   </tr>
                 ) : (
                   visible.map((r, i) => (
-                    <tr key={r.id} style={{ borderTop: '1px solid #E5E7EB', background: i % 2 ? '#F9FAFB' : '#fff' }}>
+                    <tr key={r.id} onClick={() => setDetailId(r.id)} style={{ borderTop: '1px solid #E5E7EB', background: i % 2 ? '#F9FAFB' : '#fff', cursor: 'pointer' }}>
                       <td style={td}>{r.name}</td>
                       <td style={td}>{r.company}</td>
                       <td style={td}><Pill label={r.status} {...(({ bg, color }) => ({ bg, color }))(STATUS_STYLE[r.status])} /></td>
                       <td style={td}><Pill label={r.stage} bg="#E8A91C" color="#fff" /></td>
                       <td style={td}>{money(r.budget)}</td>
-                      <td style={td}><CollectionPill req={r} /></td>
+                      <td style={td} onClick={(e) => e.stopPropagation()}><CollectionPill req={r} /></td>
                       <td style={td}>{fmtDate(r.lastUpdated)}</td>
-                      <td style={{ ...td, textAlign: 'right', padding: '14px 12px 14px 0' }}>
+                      <td style={{ ...td, textAlign: 'right', padding: '14px 12px 14px 0' }} onClick={(e) => e.stopPropagation()}>
                         <RowMenu onAction={(a) => handleAction(r, a)} />
                       </td>
                     </tr>
