@@ -162,6 +162,12 @@ export function RequirementWorkflowTab({ status, currentStage, lastUpdated, task
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: INK, fontFamily: FONT }}>{t.name}</div>
                   <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4, fontFamily: FONT }}>{t.description}</div>
+                  {t.output && (
+                    <div style={{ marginTop: 10, background: '#F8F9FA', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 12px', fontFamily: FONT }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Notes</div>
+                      <div style={{ fontSize: 13, color: INK, lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{t.output}</div>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: 14, marginTop: 8, color: '#6B7280', fontSize: 12, fontFamily: FONT }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><User size={13} />{t.assignee}</span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={13} />{fmtDate(t.dueDate)}</span>

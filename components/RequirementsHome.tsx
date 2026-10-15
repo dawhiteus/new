@@ -6,6 +6,7 @@ import {
   Zap,
   ChevronsUpDown,
   MoreHorizontal,
+  FolderPlus,
   ArrowUp,
   ArrowUpDown,
   Folder,
@@ -17,6 +18,7 @@ import {
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
 import { AGENT_NAME, AGENT_EMAIL } from './data/intakeAgent';
+import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
 import { useSearchParams } from 'react-router-dom';
 import { readHubOrigin, formatVerdict, formatPurpose, formatUsd } from './hubOrigin';
@@ -24,6 +26,7 @@ import { useRequirements } from './data/requirementsStore';
 import { ACTIVE_REQUIRED, type FieldProvenance, EMPTY_DETAILS, defaultTasks, defaultTeam, CURRENT_USER_EMAIL, type MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
+const INK = '#0F2A3D';
 const NAVY = '#0B4F7F';
 
 type SortKey = 'name' | 'company' | 'status' | 'stage' | 'budget' | 'collection' | 'lastUpdated';
@@ -115,7 +118,7 @@ function FilterButton({
   );
 }
 
-function RowMenu({ onAction }: { onAction: (a: string) => void }) {
+function RowMenu({ onAction, hasCollection }: { onAction: (a: string) => void; hasCollection: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -166,16 +169,22 @@ function RowMenu({ onAction }: { onAction: (a: string) => void }) {
           {item('View Requirement')}
           {item('Remove Requirement')}
           <div style={{ height: 1, background: '#E5E7EB', margin: '4px 0' }} />
-          {item('View collection')}
-          {item('Update collection')}
-          {item('Remove collection')}
+          {hasCollection ? (
+            <>
+              {item('View collection')}
+              {item('Update collection')}
+              {item('Remove collection')}
+            </>
+          ) : (
+            item('Create collection')
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function CollectionPill({ req }: { req: MvpRequirement }) {
+function CollectionPill({ req, onOpen }: { req: MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }; onOpen: () => void }) {
   const c = req.collection;
   const [show, setShow] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>();
@@ -194,6 +203,7 @@ function CollectionPill({ req }: { req: MvpRequirement }) {
       onMouseLeave={() => { timer.current = setTimeout(() => setShow(false), 120); }}
     >
         <span
+          onClick={onOpen}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: '#E8F0FE', color: '#1D4ED8', border: '1px solid #D5E3FB', cursor: 'pointer' }}
         >
           <Folder size={13} /> {c.totalSpaces} spaces
@@ -223,7 +233,7 @@ function CollectionPill({ req }: { req: MvpRequirement }) {
         <div style={{ borderTop: '1px solid #E5E7EB', padding: '8px 12px 12px' }}>
           <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Updated {c.updated}</div>
           <button
-            onClick={() => toast.info('Collection view is not available in the demo yet.')}
+            onClick={onOpen}
             style={{ width: '100%', background: '#005B94', color: '#fff', border: 'none', borderRadius: 4, padding: '8px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
             View Collection <ArrowRight size={14} />
@@ -246,6 +256,7 @@ export function RequirementsHome() {
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailIdRaw] = useState<string | null>(null);
+  const [collectionForId, setCollectionForId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
 
   const setDetailId = (id: string | null) => {
@@ -299,11 +310,7 @@ export function RequirementsHome() {
         city,
         lastUpdated: today,
         agentTasks: 0,
-        collection: {
-          name: `${city} Hub Collection`, totalSpaces: 0, location: `In ${city}${state ? `, ${state}` : ''}`, locationSpaces: 0,
-          budgetLabel: `Within ${money(monthly)}/mo`, budgetSpaces: 0, peopleLabel: `For ${seats} people`, peopleSpaces: 0,
-          saved: 0, shortlisted: 0, updated: dispDate,
-        },
+        collection: null,
         details: {
           ...EMPTY_DETAILS,
           dealId: reqId,
@@ -342,7 +349,7 @@ export function RequirementsHome() {
         (!cityFilter || r.city === cityFilter),
     );
     const val = (r: MvpRequirement): string | number =>
-      sort.key === 'collection' ? r.collection.totalSpaces : sort.key === 'budget' ? (r.budget ?? -1) : (r as any)[sort.key];
+      sort.key === 'collection' ? (r.collection ? r.collection.totalSpaces : -1) : sort.key === 'budget' ? (r.budget ?? -1) : (r as any)[sort.key];
     out.sort((a, b) => {
       const x = val(a), y = val(b);
       const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y));
@@ -360,7 +367,7 @@ export function RequirementsHome() {
   const metrics = [
     { label: 'REQUIREMENT COSTS', value: money(active.reduce((s, r) => s + (r.budget ?? 0), 0)), sub: 'Total estimated value of active requirements', Icon: TrendingUp, color: '#10B981' },
     { label: 'ACTIVE REQUIREMENTS', value: String(active.length), sub: 'Number of requirements currently moving through workflow', Icon: FileText, color: '#0694A2' },
-    { label: 'COLLECTIONS CREATED', value: String(rows.length), sub: 'Total collections generated for requirements', Icon: CircleDot, color: '#0369A1' },
+    { label: 'COLLECTIONS CREATED', value: String(rows.filter((r) => r.collection).length), sub: 'Total collections generated for requirements', Icon: CircleDot, color: '#0369A1' },
     { label: 'AGENT TASKS COMPLETED', value: String(rows.reduce((s, r) => s + r.agentTasks, 0)), sub: 'Total tasks executed by agents', Icon: Zap, color: '#1E3A5F' },
   ];
 
@@ -402,13 +409,7 @@ export function RequirementsHome() {
       city: loc,
       lastUpdated: today,
       agentTasks: d.intake ? 1 : 0,
-      collection: {
-        name: `${d.name} Collection`, totalSpaces: 0,
-        location: loc ? `In ${loc}` : 'Location not provided', locationSpaces: 0,
-        budgetLabel: budget == null ? 'Budget not provided' : `Within ${money(budget)}/mo`, budgetSpaces: 0,
-        peopleLabel: d.capacity ? `For ${d.capacity} people` : 'Headcount not provided', peopleSpaces: 0,
-        saved: 0, shortlisted: 0, updated: dispDate,
-      },
+      collection: null,
       details: {
         ...EMPTY_DETAILS,
         createdDate: today,
@@ -442,15 +443,66 @@ export function RequirementsHome() {
     toast.success(drafts.length ? `${base} ${drafts.length === 1 && created.length === 1 ? 'Some details are not provided yet.' : `${drafts.length} saved as Drafts: some details are not provided yet.`}` : base);
   };
 
+  const openCollection = (req: MvpRequirement) => {
+    const url = req.collection?.url;
+    if (url) window.open(url, '_blank', 'noopener');
+    else toast.info('This collection has no LiquidSpace link in the demo.');
+  };
+
+  /** All three creation paths end here: the Collection is associated with the requirement. */
+  const applyCollection = (req: MvpRequirement, o: CollectionOutcome) => {
+    const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const collection = {
+      name: o.name, url: o.url, totalSpaces: o.spaces,
+      location: req.details.location || req.city ? `In ${req.details.location || req.city}` : 'Location not provided', locationSpaces: o.locationSpaces,
+      budgetLabel: req.budget == null ? 'Budget not provided' : `Within ${money(req.budget)}/mo`, budgetSpaces: o.budgetSpaces,
+      peopleLabel: req.details.capacity ? `For ${req.details.capacity} people` : 'Headcount not provided', peopleSpaces: o.peopleSpaces,
+      saved: o.saved, shortlisted: o.shortlisted, updated: dispDate,
+    };
+    const how = o.method === 'agent' ? `created by the Collection Agent`
+      : o.method === 'manual' ? 'built in LiquidSpace and linked by Sales' : 'linked by Sales';
+    const stamp = Date.now();
+    const events: MvpRequirement['details']['events'] = o.method === 'agent'
+      ? [
+          { id: `e-${stamp}-c`, type: 'collection', title: 'Collection Created', description: `${o.name} collection ${how} for ${req.name} requirement.`, date: dispDate, actor: 'sourcing.agent@ai.liquidspace.com' },
+          { id: `e-${stamp}-a`, type: 'collection', title: 'Collection Assessed', description: o.assessment?.summary ?? `${o.name} was assessed against the requirement.`, date: dispDate, actor: 'assessment.agent@ai.liquidspace.com' },
+        ]
+      : [{ id: `e-${stamp}-l`, type: 'collection', title: 'Collection Linked', description: `${o.name} collection ${how} for ${req.name} requirement.`, date: dispDate, actor: CURRENT_USER_EMAIL }];
+    const createNote = o.method === 'agent'
+      ? `I created “${o.name}” with ${o.spaces} space${o.spaces === 1 ? '' : 's'} from LiquidSpace inventory.\n${o.url}`
+      : `${o.method === 'manual' ? 'Collection built in LiquidSpace and linked by Sales' : 'Existing LiquidSpace Collection linked by Sales'}: “${o.name}”.\n${o.url}`;
+    const assessNote = o.assessment ? [o.assessment.summary, ...o.assessment.gaps.map((g) => `• ${g}`)].join('\n') : '';
+    setRows((rs) => rs.map((r) => r.id !== req.id ? r : {
+      ...r,
+      collection,
+      lastUpdated: new Date().toISOString().slice(0, 10),
+      agentTasks: r.agentTasks + (o.method === 'agent' ? 2 : 0),
+      details: {
+        ...r.details,
+        events: [...r.details.events, ...events],
+        tasks: r.details.tasks.map((t) => {
+          if (t.stage === 'Evaluation' && t.name === 'Create Collection') return { ...t, status: 'Completed' as const, assignee: o.method === 'agent' ? 'Market Sourcing Agent' : t.assignee, output: createNote };
+          if (o.method === 'agent' && t.stage === 'Evaluation' && t.name === 'Assess Collection') return { ...t, status: 'Completed' as const, assignee: 'Collection Assessment Agent', output: assessNote };
+          return t;
+        }),
+      },
+    }));
+    toast.success(o.method === 'agent' ? `“${o.name}” created and assessed.` : `“${o.name}” linked.`);
+  };
+
   const handleAction = (req: MvpRequirement, action: string) => {
     if (action === 'Remove Requirement') {
       setRows((rs) => rs.filter((r) => r.id !== req.id));
       toast.success(`Requirement "${req.name}" removed.`);
     } else if (action === 'Remove collection') {
       setRows((rs) =>
-        rs.map((r) => (r.id === req.id ? { ...r, collection: { ...r.collection, totalSpaces: 0, saved: 0, shortlisted: 0 } } : r)),
+        rs.map((r) => (r.id === req.id ? { ...r, collection: null } : r)),
       );
       toast.success(`Collection for "${req.name}" removed.`);
+    } else if (action === 'Create collection') {
+      setCollectionForId(req.id);
+    } else if (action === 'View collection' || action === 'Update collection') {
+      openCollection(req);
     } else if (action === 'View Requirement') {
       setDetailId(req.id);
     } else {
@@ -553,10 +605,19 @@ export function RequirementsHome() {
                       <td style={td}><Pill label={r.status} {...(({ bg, color }) => ({ bg, color }))(STATUS_STYLE[r.status])} /></td>
                       <td style={td}><Pill label={r.stage} bg="#E8A91C" color="#fff" /></td>
                       <td style={td}>{r.budget == null ? <NotProvided /> : money(r.budget)}</td>
-                      <td style={td} onClick={(e) => e.stopPropagation()}><CollectionPill req={r} /></td>
+                      <td style={td} onClick={(e) => e.stopPropagation()}>{r.collection ? (
+                          <CollectionPill req={r as MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }} onOpen={() => openCollection(r)} />
+                        ) : (
+                          <button
+                            onClick={() => setCollectionForId(r.id)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: '#fff', color: INK, border: '1px solid #E5E7EB', cursor: 'pointer', fontFamily: FONT, whiteSpace: 'nowrap' }}
+                          >
+                            <FolderPlus size={13} /> Create Collection
+                          </button>
+                        )}</td>
                       <td style={td}>{fmtDate(r.lastUpdated)}</td>
                       <td style={{ ...td, textAlign: 'right', padding: '14px 12px 14px 0' }} onClick={(e) => e.stopPropagation()}>
-                        <RowMenu onAction={(a) => handleAction(r, a)} />
+                        <RowMenu hasCollection={!!r.collection} onAction={(a) => handleAction(r, a)} />
                       </td>
                     </tr>
                   ))
@@ -592,6 +653,11 @@ export function RequirementsHome() {
         </div>
       </div>
 
+      <CreateCollectionModal
+        requirement={rows.find((r) => r.id === collectionForId) ?? null}
+        onClose={() => setCollectionForId(null)}
+        onComplete={applyCollection}
+      />
       <RequirementDetailsModal
         requirement={rows.find((r) => r.id === detailId) ?? null}
         isOpen={detailId !== null}

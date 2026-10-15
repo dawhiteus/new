@@ -13,6 +13,8 @@ export interface MvpCollection {
   saved: number;
   shortlisted: number;
   updated: string;
+  /** Link to the Collection in LiquidSpace (collections are managed there, not in TM). */
+  url?: string;
 }
 
 export interface RequirementNote {
@@ -36,6 +38,8 @@ export interface WorkflowTask {
   assignee: string;
   dueDate: string;
   dependsOn: string;
+  /** Notes retained on the task, e.g. agent output or an assessment. */
+  output?: string;
 }
 
 const T = (stage: string, name: string, description: string, status: TaskStatus = 'Not Started'): WorkflowTask => ({
@@ -174,7 +178,8 @@ export interface MvpRequirement {
   city: string;
   lastUpdated: string; // ISO date
   agentTasks: number;
-  collection: MvpCollection;
+  /** null = no collection created yet; the table shows a Create Collection action. */
+  collection: MvpCollection | null;
   details: RequirementDetails;
   /** Set when the requirement was created by Workplace Strategist (Hub Locator). */
   origin?: RequirementOrigin;
@@ -202,6 +207,7 @@ export const MVP_REQUIREMENTS: MvpRequirement[] = [
     agentTasks: 1,
     collection: {
       name: 'Lisbon Collection',
+      url: 'https://liquidspace.com/collections/lisbon-private-offices-a1b2c3',
       totalSpaces: 6,
       location: 'In Lisbon, Portugal',
       locationSpaces: 0,
@@ -262,5 +268,39 @@ export const MVP_REQUIREMENTS: MvpRequirement[] = [
     },
     details: { ...EMPTY_DETAILS, createdDate: '2026-09-22', location: 'Test', tasks: defaultTasks('Evaluation'), team: defaultTeam(),
       events: [{ id: 'e1', type: 'created', title: 'Requirement Created', description: 'Test requirement created for Test', date: 'Sep 22, 2026', actor: 'david@liquidspace.com' }] },
+  },
+  {
+    id: 'req-austin',
+    name: 'Austin',
+    company: 'Acme',
+    status: 'Active',
+    stage: 'Intake',
+    budget: 9000,
+    city: 'Austin',
+    lastUpdated: '2026-10-15',
+    agentTasks: 0,
+    collection: null,
+    details: {
+      ...EMPTY_DETAILS, createdDate: '2026-10-15', location: 'Austin', capacity: '10', startDate: '2027-03-01', termLength: '12',
+      tasks: defaultTasks('Intake'), team: defaultTeam(),
+      events: [{ id: 'e1', type: 'created', title: 'Requirement Created', description: 'Austin requirement created for Acme', date: 'Oct 15, 2026', actor: 'david@liquidspace.com' }],
+    },
+  },
+  {
+    id: 'req-test-draft',
+    name: 'Test',
+    company: 'Slalom',
+    status: 'Draft',
+    stage: 'Intake',
+    budget: 5000,
+    city: '',
+    lastUpdated: '2026-10-15',
+    agentTasks: 0,
+    collection: null,
+    details: {
+      ...EMPTY_DETAILS, createdDate: '2026-10-15',
+      tasks: defaultTasks('Intake'), team: defaultTeam(),
+      events: [{ id: 'e1', type: 'created', title: 'Draft Created', description: 'Test draft created for Slalom', date: 'Oct 15, 2026', actor: 'david@liquidspace.com' }],
+    },
   },
 ];
