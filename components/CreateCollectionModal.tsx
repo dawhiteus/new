@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, Link2, Bot, ExternalLink, ChevronLeft, Loader2, Sparkles, Check } from 'lucide-react';
 import {
-  COLLECTION_AGENT, LIQUIDSPACE_COLLECTIONS_URL, criteriaFor, sourceCollection, resolveCollectionUrl, newCollectionUrl,
+  COLLECTION_AGENT, criteriaFor, sourceCollection, resolveCollectionUrl, newCollectionUrl,
   type SourcingResult,
 } from './data/collectionAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
@@ -67,13 +67,21 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
 
   const back = () => { setView('choose'); setError(''); setStage('setup'); };
 
-  const linkByUrl = (method: 'existing' | 'manual') => {
+  const linkByUrl = () => {
     const r = resolveCollectionUrl(url);
     if ('error' in r) { setError(r.error); return; }
     onComplete(requirement, {
-      method, name: r.name, url: r.url, spaces: r.spaces, saved: r.saved, shortlisted: r.shortlisted,
+      method: 'existing', name: r.name, url: r.url, spaces: r.spaces, saved: r.saved, shortlisted: r.shortlisted,
       locationSpaces: 0, budgetSpaces: 0, peopleSpaces: 0,
     });
+    onClose();
+  };
+
+  const createManual = () => {
+    if (!name.trim()) return;
+    const collectionUrl = newCollectionUrl(name.trim());
+    window.open(collectionUrl, '_blank', 'noopener');
+    onComplete(requirement, { method: 'manual', name: name.trim(), url: collectionUrl, spaces: 0, saved: 0, shortlisted: 0, locationSpaces: 0, budgetSpaces: 0, peopleSpaces: 0 });
     onClose();
   };
 
@@ -128,7 +136,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
     <>
       <label style={lbl}>Collection URL</label>
       <input value={url} onChange={(e) => { setUrl(e.target.value); setError(''); }} placeholder="https://liquidspace.com/collections/…" style={input}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); linkByUrl(view === 'manual' ? 'manual' : 'existing'); } }} />
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); linkByUrl(); } }} />
       {error && <div style={{ fontSize: 13, color: '#B91C1C', marginTop: 6, fontFamily: FONT }}>{error}</div>}
     </>
   );
@@ -157,7 +165,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
             <>
               <Option icon={<Link2 size={22} color={BLUE} />} title="Use Existing Collection" desc="Link a Collection you've already built in LiquidSpace." onClick={() => setView('existing')} />
               <Option icon={<Bot size={22} color="#059669" />} title="Create with Collection Agent" desc="I'll source spaces from LiquidSpace inventory, build the Collection and assess the fit." onClick={() => setView('agent')} />
-              <Option icon={<ExternalLink size={22} color={BLUE} />} title="Create Manually in LiquidSpace" desc="Build the Collection in LiquidSpace, then link it back here." onClick={() => setView('manual')} />
+              <Option icon={<ExternalLink size={22} color={BLUE} />} title="Create Manually in LiquidSpace" desc="Name it here, then add spaces yourself in LiquidSpace." onClick={() => setView('manual')} />
             </>
           )}
 
@@ -168,7 +176,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
               {urlField}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
                 <button type="button" onClick={onClose} style={secondary}>Cancel</button>
-                <button type="button" onClick={() => linkByUrl('existing')} style={primary}>Link Collection</button>
+                <button type="button" onClick={linkByUrl} style={primary}>Link Collection</button>
               </div>
             </>
           )}
@@ -176,17 +184,18 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
           {view === 'manual' && (
             <>
               {backBtn}
-              <div style={{ fontSize: 14, color: '#374151', fontFamily: FONT, marginBottom: 14, lineHeight: 1.5 }}>
-                Build and name your Collection in LiquidSpace using its Collections tools. When you're done, come back and paste its link here.
+              <div style={{ fontSize: 14, color: '#374151', fontFamily: FONT, marginBottom: 16, lineHeight: 1.5 }}>
+                Name your Collection. We'll create it in LiquidSpace, link it to this requirement, and open it so you can add spaces.
               </div>
-              <a href={LIQUIDSPACE_COLLECTIONS_URL} target="_blank" rel="noreferrer"
-                style={{ ...primary, display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 22 }}>
-                Open LiquidSpace Collections <ExternalLink size={15} />
-              </a>
-              {urlField}
+              <label style={lbl}>Collection name</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} style={input} autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); createManual(); } }} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
                 <button type="button" onClick={onClose} style={secondary}>Cancel</button>
-                <button type="button" onClick={() => linkByUrl('manual')} style={primary}>Link Collection</button>
+                <button type="button" onClick={createManual} disabled={!name.trim()}
+                  style={{ ...primary, opacity: name.trim() ? 1 : 0.5, cursor: name.trim() ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  Create and open in LiquidSpace <ExternalLink size={15} />
+                </button>
               </div>
             </>
           )}

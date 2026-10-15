@@ -460,17 +460,19 @@ export function RequirementsHome() {
       saved: o.saved, shortlisted: o.shortlisted, updated: dispDate,
     };
     const how = o.method === 'agent' ? `created by the Collection Agent`
-      : o.method === 'manual' ? 'built in LiquidSpace and linked by Sales' : 'linked by Sales';
+      : o.method === 'manual' ? 'created in LiquidSpace by Sales' : 'linked by Sales';
     const stamp = Date.now();
     const events: MvpRequirement['details']['events'] = o.method === 'agent'
       ? [
           { id: `e-${stamp}-c`, type: 'collection', title: 'Collection Created', description: `${o.name} collection ${how} for ${req.name} requirement.`, date: dispDate, actor: 'sourcing.agent@ai.liquidspace.com' },
           { id: `e-${stamp}-a`, type: 'collection', title: 'Collection Assessed', description: o.assessment?.summary ?? `${o.name} was assessed against the requirement.`, date: dispDate, actor: 'assessment.agent@ai.liquidspace.com' },
         ]
-      : [{ id: `e-${stamp}-l`, type: 'collection', title: 'Collection Linked', description: `${o.name} collection ${how} for ${req.name} requirement.`, date: dispDate, actor: CURRENT_USER_EMAIL }];
+      : [{ id: `e-${stamp}-l`, type: 'collection', title: o.method === 'manual' ? 'Collection Created' : 'Collection Linked', description: `${o.name} collection ${how} for ${req.name} requirement.`, date: dispDate, actor: CURRENT_USER_EMAIL }];
     const createNote = o.method === 'agent'
       ? `I created “${o.name}” with ${o.spaces} space${o.spaces === 1 ? '' : 's'} from LiquidSpace inventory.\n${o.url}`
-      : `${o.method === 'manual' ? 'Collection built in LiquidSpace and linked by Sales' : 'Existing LiquidSpace Collection linked by Sales'}: “${o.name}”.\n${o.url}`;
+      : (o.method === 'manual'
+        ? `Collection “${o.name}” created in LiquidSpace by Sales and linked to this requirement. Spaces are added in LiquidSpace.\n${o.url}`
+        : `Existing LiquidSpace Collection “${o.name}” linked by Sales.\n${o.url}`);
     const assessNote = o.assessment ? [o.assessment.summary, ...o.assessment.gaps.map((g) => `• ${g}`)].join('\n') : '';
     setRows((rs) => rs.map((r) => r.id !== req.id ? r : {
       ...r,
@@ -487,7 +489,7 @@ export function RequirementsHome() {
         }),
       },
     }));
-    toast.success(o.method === 'agent' ? `“${o.name}” created and assessed.` : `“${o.name}” linked.`);
+    toast.success(o.method === 'agent' ? `“${o.name}” created and assessed.` : o.method === 'manual' ? `“${o.name}” created in LiquidSpace.` : `“${o.name}” linked.`);
   };
 
   const handleAction = (req: MvpRequirement, action: string) => {
