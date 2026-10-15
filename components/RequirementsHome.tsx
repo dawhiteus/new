@@ -17,6 +17,8 @@ import {
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
+import { useSearchParams } from 'react-router-dom';
+import { readHubOrigin, formatVerdict, formatPurpose, formatUsd } from './hubOrigin';
 import { useRequirements } from './data/requirementsStore';
 import { EMPTY_DETAILS, defaultTasks, defaultTeam, CURRENT_USER_EMAIL, type MvpRequirement } from './data/mvpRequirements';
 
@@ -241,7 +243,92 @@ export function RequirementsHome() {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [detailId, setDetailIdRaw] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+
+  const setDetailId = (id: string | null) => {
+    setDetailIdRaw(id);
+    if (id) setRows((rs) => rs.map((r) => (r.id === id && r.origin && !r.origin.seen ? { ...r, origin: { ...r.origin, seen: true } } : r)));
+  };
+
+  // Keep hub-originated requirements (and their seen state/edits) for the browser session.
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (!hydrated.current) return;
+    try { window.sessionStorage.setItem('tm.originatedRequirements', JSON.stringify(rows.filter((r) => r.origin))); } catch { /* ignore */ }
+  }, [rows]);
+
+  // Restore hub-originated requirements from this browser session, then ingest any new one from the URL.
+  useEffect(() => {
+    const KEY = 'tm.originatedRequirements';
+    const load = (): MvpRequirement[] => {
+      try { const v = JSON.parse(window.sessionStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+    };
+    const save = (list: MvpRequirement[]) => { try { window.sessionStorage.setItem(KEY, JSON.stringify(list)); } catch { /* ignore */ } };
+
+    let incoming: MvpRequirement | null = null;
+    if (searchParams.get('newReq') === '1') {
+      const p = searchParams;
+      const o = readHubOrigin(p);
+      const reqId = p.get('reqId') ?? `REQ-${Math.floor(1000 + Math.random() * 9000)}`;
+      const company = p.get('company') ?? 'Unknown';
+      const city = p.get('city') ?? 'Unknown';
+      const state = p.get('state') ?? '';
+      const monthly = Number.isFinite(parseInt(p.get('estMonthly') ?? '', 10))
+        ? parseInt(p.get('estMonthly') as string, 10)
+        : Math.round((parseInt(p.get('estValue') ?? '', 10) || 0) / 12);
+      const seats = parseInt(p.get('seats') ?? '', 10) || 0;
+      const today = new Date().toISOString().slice(0, 10);
+      const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const summary = [
+        o.verdict && `Verdict: ${formatVerdict(o.verdict)}`,
+        o.hubPurpose && `Hub purpose: ${formatPurpose(o.hubPurpose)}`,
+        o.hvsScore != null && `HVS score: ${o.hvsScore}`,
+        o.annualNetSaving != null && `Net saving: ${formatUsd(o.annualNetSaving)}/yr`,
+        o.paybackMonths != null && `Payback: ${o.paybackMonths} months`,
+      ].filter(Boolean) as string[];
+      incoming = {
+        id: `hub-${reqId}`,
+        name: `${city} Hub`,
+        company,
+        status: 'Active',
+        stage: 'Intake',
+        budget: monthly,
+        city,
+        lastUpdated: today,
+        agentTasks: 0,
+        collection: {
+          name: `${city} Hub Collection`, totalSpaces: 0, location: `In ${city}${state ? `, ${state}` : ''}`, locationSpaces: 0,
+          budgetLabel: `Within ${money(monthly)}/mo`, budgetSpaces: 0, peopleLabel: `For ${seats} people`, peopleSpaces: 0,
+          saved: 0, shortlisted: 0, updated: dispDate,
+        },
+        details: {
+          ...EMPTY_DETAILS,
+          dealId: reqId,
+          createdDate: today,
+          location: `${city}${state ? `, ${state}` : ''}`,
+          capacity: seats ? String(seats) : '',
+          size: seats ? String(seats * 75) : '',
+          workspaceType: p.get('workspaceType') ?? '',
+          configuration: o.configuration === 'Collection of spaces' ? 'Collection of spaces' : 'Single space',
+          tasks: defaultTasks('Intake'),
+          team: defaultTeam(),
+          events: [{ id: `e-${Date.now()}`, type: 'created', title: 'Requirement Created', description: `${city} Hub requirement originated from Workplace Strategist (Hub Locator) for ${company}.`, date: dispDate, actor: CURRENT_USER_EMAIL }],
+          notes: summary.length ? [{ author: 'Workplace Strategist', date: dispDate, text: summary.join(' · ') }] : [],
+        },
+        origin: { source: o.source, reqId, backUrl: o.backUrl, seen: false, summary },
+      };
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    const stored = load().filter((r) => r.id !== incoming?.id);
+    const merged = incoming ? [incoming, ...stored] : stored;
+    if (incoming) save(merged);
+    setRows((rs) => [...merged.filter((m) => !rs.some((r) => r.id === m.id)), ...rs]);
+    hydrated.current = true;
+    if (incoming) toast.success(`Requirement ${incoming.origin!.reqId} created from Hub Locator.`);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const uniq = (f: (r: MvpRequirement) => string) => Array.from(new Set(rows.map(f)));
 
@@ -421,8 +508,13 @@ export function RequirementsHome() {
                   </tr>
                 ) : (
                   visible.map((r, i) => (
-                    <tr key={r.id} onClick={() => setDetailId(r.id)} style={{ borderTop: '1px solid #E5E7EB', background: i % 2 ? '#F9FAFB' : '#fff', cursor: 'pointer' }}>
-                      <td style={td}>{r.name}</td>
+                    <tr key={r.id} onClick={() => setDetailId(r.id)} style={{ borderTop: '1px solid #E5E7EB', background: r.origin && !r.origin.seen ? '#E8F4FD' : i % 2 ? '#F9FAFB' : '#fff', boxShadow: r.origin && !r.origin.seen ? 'inset 4px 0 0 #0D619B' : undefined, cursor: 'pointer' }}>
+                      <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                        {r.name}
+                        {r.origin && !r.origin.seen && (
+                          <span style={{ display: 'inline-block', marginLeft: 8, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: '#0D619B', color: '#fff', verticalAlign: 'middle' }}>NEW</span>
+                        )}
+                      </td>
                       <td style={td}>{r.company}</td>
                       <td style={td}><Pill label={r.status} {...(({ bg, color }) => ({ bg, color }))(STATUS_STYLE[r.status])} /></td>
                       <td style={td}><Pill label={r.stage} bg="#E8A91C" color="#fff" /></td>

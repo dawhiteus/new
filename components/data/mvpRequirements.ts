@@ -159,6 +159,17 @@ export interface MvpRequirement {
   agentTasks: number;
   collection: MvpCollection;
   details: RequirementDetails;
+  /** Set when the requirement was created by Workplace Strategist (Hub Locator). */
+  origin?: RequirementOrigin;
+}
+
+export interface RequirementOrigin {
+  source: string;
+  reqId: string;
+  backUrl?: string;
+  /** False until the user opens the requirement; drives the "new" highlight. */
+  seen: boolean;
+  summary: string[];
 }
 
 export const MVP_REQUIREMENTS: MvpRequirement[] = [

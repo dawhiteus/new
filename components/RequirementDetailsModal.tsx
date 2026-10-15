@@ -253,6 +253,19 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
             </div>
           ) : (
             <>
+              {requirement.origin && (
+                <div style={{ background: '#ECFDF3', border: '1px solid #A7E3BE', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#166534' }}>
+                    {requirement.origin.reqId} · Originated in Workplace Strategist (Hub Locator)
+                  </div>
+                  {requirement.origin.summary.length > 0 && (
+                    <div style={{ fontSize: 13, color: '#166534', marginTop: 4 }}>{requirement.origin.summary.join(' · ')}</div>
+                  )}
+                  {requirement.origin.backUrl && (
+                    <a href={requirement.origin.backUrl} style={{ display: 'inline-block', marginTop: 6, fontSize: 13, fontWeight: 600, color: BLUE }}>← Back to Hub Locator</a>
+                  )}
+                </div>
+              )}
               <div style={{ fontSize: 20, fontWeight: 700, color: INK, fontFamily: FONT }}>Requirement Details</div>
               <div style={{ fontSize: 14, color: '#6B7280', margin: '4px 0 16px', fontFamily: FONT }}>
                 Authoritative summary of client requirements and deal parameters
