@@ -463,33 +463,29 @@ export function RequirementsHome() {
       : o.method === 'manual' ? 'created in LiquidSpace by Sales' : 'linked by Sales';
     const stamp = Date.now();
     const events: MvpRequirement['details']['events'] = o.method === 'agent'
-      ? [
-          { id: `e-${stamp}-c`, type: 'collection', title: 'Collection Created', description: `${o.name} collection ${how} for ${req.name} requirement.`, date: dispDate, actor: 'sourcing.agent@ai.liquidspace.com' },
-          { id: `e-${stamp}-a`, type: 'collection', title: 'Collection Assessed', description: o.assessment?.summary ?? `${o.name} was assessed against the requirement.`, date: dispDate, actor: 'assessment.agent@ai.liquidspace.com' },
-        ]
+      ? [{ id: `e-${stamp}-c`, type: 'collection', title: 'Collection Created', description: `${o.name} collection ${how} for ${req.name} requirement.`, date: dispDate, actor: 'sourcing.agent@ai.liquidspace.com' }]
       : [{ id: `e-${stamp}-l`, type: 'collection', title: o.method === 'manual' ? 'Collection Created' : 'Collection Linked', description: `${o.name} collection ${how} for ${req.name} requirement.`, date: dispDate, actor: CURRENT_USER_EMAIL }];
+    const observations = o.assessment && o.assessment.gaps.length ? `\n\nObservations:\n${o.assessment.gaps.map((g) => `• ${g}`).join('\n')}` : '';
     const createNote = o.method === 'agent'
-      ? (o.spaces === 0 ? `I created an empty “${o.name}” Collection because no suitable LiquidSpace inventory was found.\n${o.url}` : `I created “${o.name}” with ${o.spaces} space${o.spaces === 1 ? '' : 's'} from LiquidSpace inventory.\n${o.url}`)
+      ? (o.spaces === 0 ? `I created an empty “${o.name}” Collection because no suitable LiquidSpace inventory was found.\n${o.url}` : `I created “${o.name}” with ${o.spaces} space${o.spaces === 1 ? '' : 's'} from LiquidSpace inventory.\n${o.url}${observations}`)
       : (o.method === 'manual'
         ? `Collection “${o.name}” created in LiquidSpace by Sales and linked to this requirement. Spaces are added in LiquidSpace.\n${o.url}`
         : `Existing LiquidSpace Collection “${o.name}” linked by Sales.\n${o.url}`);
-    const assessNote = o.assessment ? [o.assessment.summary, ...o.assessment.gaps.map((g) => `• ${g}`)].join('\n') : '';
-    setRows((rs) => rs.map((r) => r.id !== req.id ? r : {
+        setRows((rs) => rs.map((r) => r.id !== req.id ? r : {
       ...r,
       collection,
       lastUpdated: new Date().toISOString().slice(0, 10),
-      agentTasks: r.agentTasks + (o.method === 'agent' ? 2 : 0),
+      agentTasks: r.agentTasks + (o.method === 'agent' ? 1 : 0),
       details: {
         ...r.details,
         events: [...r.details.events, ...events],
         tasks: r.details.tasks.map((t) => {
           if (t.stage === 'Evaluation' && t.name === 'Create Collection') return { ...t, status: 'Completed' as const, assignee: o.method === 'agent' ? 'Market Sourcing Agent' : t.assignee, output: createNote };
-          if (o.method === 'agent' && t.stage === 'Evaluation' && t.name === 'Assess Collection') return { ...t, status: 'Completed' as const, assignee: 'Collection Assessment Agent', output: assessNote };
           return t;
         }),
       },
     }));
-    toast.success(o.method === 'agent' ? `“${o.name}” created and assessed.` : o.method === 'manual' ? `“${o.name}” created in LiquidSpace.` : `“${o.name}” linked.`);
+    toast.success(o.method === 'agent' ? `“${o.name}” created.` : o.method === 'manual' ? `“${o.name}” created in LiquidSpace.` : `“${o.name}” linked.`);
   };
 
   const handleAction = (req: MvpRequirement, action: string) => {

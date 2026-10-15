@@ -187,14 +187,13 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
   if (!c.workspaceType) missingInputs.push('workspace type');
   if (!c.startDate) missingInputs.push('start date');
 
-  if (counts.strong === 0) gaps.push({ label: 'Overall', text: 'No strong matches. Every space has at least one trade-off.', severity: 'high' });
   if (c.budget != null) {
     const cheapest = [...scored].sort((a, b) => a.monthlyPrice - b.monthlyPrice)[0];
     gaps.push({
       label: 'Budget',
       text: withinBudget === 0
         ? `None are within ${money(c.budget)}/mo. The lowest is ${money(cheapest.monthlyPrice)}/mo (${cheapest.name}).`
-        : `${withinBudget} of ${scored.length} ${withinBudget === 1 ? 'is' : 'are'} within ${money(c.budget)}/mo${withinBudget < scored.length ? `. The lowest-priced over budget is ${money(cheapest.monthlyPrice)}/mo.` : '.'}`,
+        : `${withinBudget} of ${scored.length} ${withinBudget === 1 ? 'is' : 'are'} within ${money(c.budget)}/mo${withinBudget < scored.length ? `. The lowest-priced over budget is ${money(Math.min(...scored.filter((s) => s.monthlyPrice > c.budget!).map((s) => s.monthlyPrice)))}/mo.` : '.'}`,
       severity: withinBudget === 0 ? 'high' : withinBudget < scored.length / 2 ? 'medium' : 'info',
     });
   }
@@ -210,10 +209,9 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
     const late = scored.filter((s) => s.availableFrom > c.startDate);
     if (late.length) gaps.push({ label: 'Availability', text: `${late.length} of ${scored.length} ${late.length === 1 ? "isn't" : "aren't"} available by ${fmtLong(c.startDate)}. The earliest opens ${fmtLong(late.map((s) => s.availableFrom).sort()[0])}.`, severity: 'medium' });
   }
-  if (missingInputs.length) gaps.push({ label: 'Not assessed', text: `${cap(missingInputs.join(', '))} ${missingInputs.length === 1 ? 'was' : 'were'} not provided.`, severity: 'info' });
-  if (counts.strong === 0) gaps.push({ label: 'Next step', text: "If these gaps matter, additional supply may be worth sourcing. That's a separate process I don't start.", severity: 'info' });
+  if (missingInputs.length) gaps.push({ label: 'Not matched', text: `${cap(missingInputs.join(', '))} ${missingInputs.length === 1 ? 'was' : 'were'} not provided, so I couldn't match on ${missingInputs.length === 1 ? 'it' : 'them'}.`, severity: 'info' });
 
-  const summary = `I found ${scored.length} spaces in ${c.location.split(',')[0]} and added them to “${collectionName}”: ${counts.strong} strong, ${counts.partial} partial, ${counts.weak} weak.`;
+  const summary = `Found ${scored.length} space${scored.length === 1 ? '' : 's'} in ${c.location.split(',')[0]} and added ${scored.length === 1 ? 'it' : 'them'} to “${collectionName}”.`;
   const headline = `Added ${scored.length} space${scored.length === 1 ? '' : 's'} in ${c.location.split(',')[0]} to “${collectionName}”.`;
   return { found: scored.length, spaces: scored, counts, headline, inMarket: scored.length, withinBudget, fitsPeople, summary, gaps, missingInputs };
 }
