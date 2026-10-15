@@ -373,13 +373,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
           </div>
           {area('otherCommercial', 'Any other commercial terms')}
 
-          {incompleteDrafts.length > 0 && (
-            <div style={{ fontSize: 13, color: '#6B7280', fontFamily: FONT, marginTop: 20, textAlign: 'right' }}>
-              {incompleteDrafts.map((d) => `${drafts.length > 1 ? `${d.label}: ` : ''}${missingFor(d).map((k) => FIELD_LABEL[k]).join(', ')} not provided`).join(' · ')}.
-              {' '}Incomplete requirements are saved as Drafts.
-            </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 28 }}>
             <button type="button" onClick={close} style={{ padding: '10px 16px', borderRadius: 8, border: `1px solid ${BLUE}`, background: '#fff', color: BLUE, fontSize: 15, fontWeight: 500, fontFamily: FONT, cursor: 'pointer' }}>Cancel</button>
             <button type="submit" style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: BLUE, color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>
               {drafts.length > 1 ? `Create ${drafts.length} Requirements` : incompleteDrafts.length ? 'Save as Draft' : 'Create Requirement'}
