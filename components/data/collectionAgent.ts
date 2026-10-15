@@ -74,9 +74,14 @@ export const SAMPLE_INVENTORY: Record<string, Venue[]> = {
 
 export type Tier = 'Strong' | 'Partial' | 'Weak';
 
+export type Severity = 'high' | 'medium' | 'info';
+
+export interface Flag { text: string; severity: Severity }
+export interface Gap { label: string; text: string; severity: Severity }
+
 export interface ScoredVenue extends Venue {
   tier: Tier;
-  notes: string[]; // short, honest reasons for any gap
+  notes: Flag[]; // short, honest reasons for any gap
   withinBudget: boolean | null;
   fitsPeople: boolean | null;
 }
@@ -103,6 +108,7 @@ export function criteriaFor(r: MvpRequirement): SourcingCriteria {
 }
 
 const money = (n: number) => `$${n.toLocaleString('en-US')}`;
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const fmtLong = (iso: string) => {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -116,7 +122,7 @@ export interface SourcingResult {
   withinBudget: number;
   fitsPeople: number;
   summary: string;
-  gaps: string[];
+  gaps: Gap[];
   missingInputs: string[];
 }
 
@@ -130,31 +136,31 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
     let pts = 0;
     let known = 0;
     let fails = 0;
-    const notes: string[] = [];
+    const notes: Flag[] = [];
     let fits: boolean | null = null;
     let within: boolean | null = null;
 
     if (c.capacity != null) {
       known++;
       if (v.desks >= c.capacity && v.desks <= c.capacity * 2.5) { pts += 1; fits = true; }
-      else if (v.desks >= c.capacity) { pts += 0.5; fits = true; notes.push(`Larger than needed (${v.desks} desks)`); }
-      else { fails++; fits = false; notes.push(`Holds ${v.desks}, below ${c.capacity}`); }
+      else if (v.desks >= c.capacity) { pts += 0.5; fits = true; notes.push({ text: `Larger than needed (${v.desks} desks)`, severity: 'medium' }); }
+      else { fails++; fits = false; notes.push({ text: `Holds ${v.desks} of ${c.capacity}`, severity: 'high' }); }
     }
     if (c.budget != null) {
       known++;
       if (v.monthlyPrice <= c.budget) { pts += 1; within = true; }
-      else if (v.monthlyPrice <= c.budget * 1.15) { pts += 0.5; within = false; notes.push(`${money(v.monthlyPrice - c.budget)}/mo over budget`); }
-      else { fails++; within = false; notes.push(`${money(v.monthlyPrice - c.budget)}/mo over budget`); }
+      else if (v.monthlyPrice <= c.budget * 1.15) { pts += 0.5; within = false; notes.push({ text: `${money(v.monthlyPrice - c.budget)}/mo over budget`, severity: 'medium' }); }
+      else { fails++; within = false; notes.push({ text: `${money(v.monthlyPrice - c.budget)}/mo over budget`, severity: 'high' }); }
     }
     if (c.workspaceType) {
       known++;
       if (v.type === c.workspaceType) pts += 1;
-      else { pts += 0.5; notes.push(`${v.type}, not ${c.workspaceType}`); }
+      else { pts += 0.5; notes.push({ text: `Not ${c.workspaceType}`, severity: 'medium' }); }
     }
     if (c.startDate) {
       known++;
       if (v.availableFrom <= c.startDate) pts += 1;
-      else { fails++; notes.push(`Available ${fmtLong(v.availableFrom)}, after the start date`); }
+      else { fails++; notes.push({ text: `Available ${fmtLong(v.availableFrom)}`, severity: 'high' }); }
     }
     const ratio = known ? pts / known : 0.6;
     const tier: Tier = fails === 0 && ratio >= 0.9 ? 'Strong' : ratio >= 0.6 ? 'Partial' : 'Weak';
@@ -172,34 +178,38 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
   const withinBudget = scored.filter((s) => s.withinBudget).length;
   const fitsPeople = scored.filter((s) => s.fitsPeople).length;
 
-  const gaps: string[] = [];
+  const gaps: Gap[] = [];
   const missingInputs: string[] = [];
   if (c.capacity == null) missingInputs.push('headcount');
   if (c.budget == null) missingInputs.push('budget');
   if (!c.workspaceType) missingInputs.push('workspace type');
   if (!c.startDate) missingInputs.push('start date');
 
-  if (counts.strong === 0) gaps.push('No strong matches. Every space has at least one trade-off.');
+  if (counts.strong === 0) gaps.push({ label: 'Overall', text: 'No strong matches. Every space has at least one trade-off.', severity: 'high' });
   if (c.budget != null) {
     const cheapest = [...scored].sort((a, b) => a.monthlyPrice - b.monthlyPrice)[0];
-    gaps.push(withinBudget === 0
-      ? `None are within ${money(c.budget)}/mo. The lowest is ${money(cheapest.monthlyPrice)}/mo (${cheapest.name}).`
-      : `${withinBudget} of ${scored.length} are within ${money(c.budget)}/mo.`);
+    gaps.push({
+      label: 'Budget',
+      text: withinBudget === 0
+        ? `None are within ${money(c.budget)}/mo. The lowest is ${money(cheapest.monthlyPrice)}/mo (${cheapest.name}).`
+        : `${withinBudget} of ${scored.length} ${withinBudget === 1 ? 'is' : 'are'} within ${money(c.budget)}/mo${withinBudget < scored.length ? `. The lowest-priced over budget is ${money(cheapest.monthlyPrice)}/mo.` : '.'}`,
+      severity: withinBudget === 0 ? 'high' : withinBudget < scored.length / 2 ? 'medium' : 'info',
+    });
   }
   if (c.capacity != null) {
     const small = scored.filter((s) => s.fitsPeople === false).length;
-    if (small) gaps.push(`${small} can't hold ${c.capacity} people. The largest holds ${Math.max(...scored.map((s) => s.desks))}.`);
+    if (small) gaps.push({ label: 'Capacity', text: `${small} of ${scored.length} can't hold ${c.capacity} people. The largest holds ${Math.max(...scored.map((s) => s.desks))}.`, severity: small === scored.length ? 'high' : 'medium' });
   }
   if (c.workspaceType) {
     const off = scored.filter((s) => s.type !== c.workspaceType).length;
-    if (off) gaps.push(`${off} of ${scored.length} are not ${c.workspaceType}.`);
+    if (off) gaps.push({ label: 'Workspace type', text: `${off} of ${scored.length} ${off === 1 ? 'is' : 'are'} not ${c.workspaceType}.`, severity: off === scored.length ? 'high' : 'medium' });
   }
   if (c.startDate) {
     const late = scored.filter((s) => s.availableFrom > c.startDate);
-    if (late.length) gaps.push(`${late.length} aren't available by ${fmtLong(c.startDate)}. The earliest of those opens ${fmtLong(late.map((s) => s.availableFrom).sort()[0])}.`);
+    if (late.length) gaps.push({ label: 'Availability', text: `${late.length} of ${scored.length} ${late.length === 1 ? "isn't" : "aren't"} available by ${fmtLong(c.startDate)}. The earliest opens ${fmtLong(late.map((s) => s.availableFrom).sort()[0])}.`, severity: 'medium' });
   }
-  if (missingInputs.length) gaps.push(`I couldn't assess ${missingInputs.join(', ')} because ${missingInputs.length === 1 ? 'it was' : 'they were'} not provided.`);
-  if (counts.strong === 0) gaps.push('If these gaps matter, additional supply may be worth sourcing. That is a separate process I don\'t start.');
+  if (missingInputs.length) gaps.push({ label: 'Not assessed', text: `${cap(missingInputs.join(', '))} ${missingInputs.length === 1 ? 'was' : 'were'} not provided.`, severity: 'info' });
+  if (counts.strong === 0) gaps.push({ label: 'Next step', text: "If these gaps matter, additional supply may be worth sourcing. That's a separate process I don't start.", severity: 'info' });
 
   const summary = `I found ${scored.length} spaces in ${c.location.split(',')[0]} and added them to “${collectionName}”: ${counts.strong} strong, ${counts.partial} partial, ${counts.weak} weak.`;
   return { found: scored.length, spaces: scored, counts, inMarket: scored.length, withinBudget, fitsPeople, summary, gaps, missingInputs };

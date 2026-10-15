@@ -193,7 +193,7 @@ function CollectionPill({ req, onOpen }: { req: MvpRequirement & { collection: N
       <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9CA3AF' }}>
         <Icon size={13} /> {label}
       </span>
-      <span style={{ fontWeight: 700, color: '#0F2A3D' }}>{n} spaces</span>
+      <span style={{ fontWeight: 700, color: '#0F2A3D' }}>{n} {n === 1 ? 'space' : 'spaces'}</span>
     </div>
   );
   return (

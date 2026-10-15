@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, Link2, Bot, ExternalLink, ChevronLeft, Loader2, Sparkles, Check } from 'lucide-react';
+import { X, Link2, Bot, ExternalLink, ChevronLeft, Loader2, Sparkles, Check, MapPin, DollarSign, Users } from 'lucide-react';
 import {
   COLLECTION_AGENT, criteriaFor, sourceCollection, resolveCollectionUrl, newCollectionUrl,
   type SourcingResult,
@@ -106,7 +106,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
       const o: CollectionOutcome = {
         method: 'agent', name: name.trim(), url: collectionUrl, spaces: r.found, saved: 0, shortlisted: 0,
         locationSpaces: r.inMarket, budgetSpaces: r.withinBudget, peopleSpaces: r.fitsPeople,
-        assessment: { summary: r.summary, gaps: r.gaps },
+        assessment: { summary: r.summary, gaps: r.gaps.map((g) => `${g.label}: ${g.text}`) },
       };
       setResult(r);
       setOutcome(o);
@@ -250,27 +250,52 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
 
               {stage === 'done' && result && outcome && (
                 <>
-                  <div style={{ margin: '16px 0 6px', fontSize: 14, fontWeight: 700, color: INK, fontFamily: FONT }}>Spaces added</div>
-                  <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden' }}>
-                    {result.spaces.map((s, i) => (
-                      <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderTop: i ? '1px solid #F1F3F5' : undefined, fontFamily: FONT }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>{s.name} <span style={{ fontWeight: 400, color: '#6B7280' }}>· {s.area}</span></div>
-                          <div style={{ fontSize: 12, color: '#6B7280' }}>{s.type} · {s.desks} desks · ${s.monthlyPrice.toLocaleString('en-US')}/mo{s.notes.length ? ` · ${s.notes.join('; ')}` : ''}</div>
+                  <div style={{ border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden', marginTop: 16, fontFamily: FONT }}>
+                    <div style={{ padding: '14px 16px 10px' }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>{outcome.name}</div>
+                      <div style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{result.found} space{result.found === 1 ? '' : 's'} total</div>
+                    </div>
+                    <div style={{ borderTop: '1px solid #E5E7EB', padding: '8px 16px' }}>
+                      {[
+                        { icon: <MapPin size={13} />, label: `In ${criteria.location}`, n: outcome.locationSpaces },
+                        { icon: <DollarSign size={13} />, label: criteria.budget ? `Within $${criteria.budget.toLocaleString('en-US')}/mo` : 'Budget not provided', n: outcome.budgetSpaces, off: !criteria.budget },
+                        { icon: <Users size={13} />, label: criteria.capacity ? `For ${criteria.capacity} people` : 'Headcount not provided', n: outcome.peopleSpaces, off: !criteria.capacity },
+                      ].map((r) => (
+                        <div key={r.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 14, padding: '4px 0' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9CA3AF' }}>{r.icon} {r.label}</span>
+                          {r.off ? <span style={{ color: '#9CA3AF' }}>—</span> : <span style={{ fontWeight: 700, color: INK }}>{r.n} {r.n === 1 ? 'space' : 'spaces'}</span>}
                         </div>
-                        <span style={{ ...TIER_STYLE[s.tier], fontSize: 12, fontWeight: 600, padding: '2px 10px', borderRadius: 999 }}>{s.tier}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    <div style={{ borderTop: '1px solid #E5E7EB', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
+                      {([['Strong', result.counts.strong], ['Partial', result.counts.partial], ['Weak', result.counts.weak]] as const).map(([label, n], i) => (
+                        <div key={label} style={{ padding: '10px 16px', borderLeft: i ? '1px solid #E5E7EB' : undefined }}>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: INK, lineHeight: 1.1 }}>{n}</div>
+                          <div style={{ fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: TIER_STYLE[label].bg }} /> {label} match{n === 1 ? '' : 'es'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   {result.gaps.length > 0 && (
                     <>
-                      <div style={{ margin: '16px 0 6px', fontSize: 14, fontWeight: 700, color: INK, fontFamily: FONT }}>Gaps and trade-offs</div>
-                      <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.7, fontFamily: FONT }}>
-                        {result.gaps.map((g) => <li key={g}>{g}</li>)}
-                      </ul>
+                      <div style={{ margin: '20px 0 8px', fontSize: 14, fontWeight: 700, color: INK, fontFamily: FONT }}>Gaps and trade-offs</div>
+                      <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden' }}>
+                        {result.gaps.map((g, i) => {
+                          const dot = g.severity === 'high' ? '#DC2626' : g.severity === 'medium' ? '#E8A91C' : '#9CA3AF';
+                          return (
+                            <div key={g.label + i} style={{ display: 'flex', gap: 12, padding: '10px 14px', borderTop: i ? '1px solid #F1F3F5' : undefined, fontFamily: FONT, alignItems: 'flex-start' }}>
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot, marginTop: 7, flexShrink: 0 }} />
+                              <div style={{ width: 112, flexShrink: 0, fontSize: 13.5, fontWeight: 600, color: INK }}>{g.label}</div>
+                              <div style={{ flex: 1, fontSize: 13.5, color: '#374151', lineHeight: 1.5 }}>{g.text}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </>
                   )}
-                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 12, fontFamily: FONT }}>Prototype: simulated sourcing from fictitious sample inventory. The assessment is saved to this requirement's sourcing tasks.</div>
+                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 12, fontFamily: FONT }}>Prototype: simulated sourcing from fictitious sample inventory. Browse the individual spaces in LiquidSpace. The assessment is saved to this requirement's sourcing tasks.</div>
                 </>
               )}
 
