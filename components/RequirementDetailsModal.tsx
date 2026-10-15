@@ -1,0 +1,274 @@
+import React, { useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+import { X, ChevronsUpDown } from 'lucide-react';
+import { toast } from './ui/toast';
+import type { MvpRequirement, RequirementDetails } from './data/mvpRequirements';
+
+const FONT = 'Inter, sans-serif';
+const BLUE = '#0D619B';
+const INK = '#0F2A3D';
+const STATUSES = ['Active', 'Draft', 'Executed', 'Archived'];
+const STAGES = ['Intake', 'Evaluation', 'Proposal', 'Negotiation', 'Contracting', 'Execution'];
+const WORKSPACE_TYPES = ['Office Suite', 'Private Office', 'Team Office', 'Coworking', 'Meeting Space'];
+const CONFIGURATIONS = ['Single space', 'Collection of spaces'];
+const TABS = ['Overview', 'Workflow', 'Team', 'Documents', 'Timeline'] as const;
+type Tab = (typeof TABS)[number];
+
+const STATUS_BG: Record<string, string> = { Active: '#2E9D4A', Draft: '#9CA3AF', Executed: '#005B94', Archived: '#6B7280' };
+
+const input: React.CSSProperties = {
+  width: '100%', border: '1px solid #D1D5DB', borderRadius: 8, padding: '9px 12px', fontSize: 15,
+  fontFamily: FONT, color: INK, background: '#fff', outline: 'none',
+};
+const disabledInput: React.CSSProperties = { ...input, background: '#E5E7EB', color: '#6B7280', cursor: 'not-allowed' };
+const label: React.CSSProperties = { display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 8, fontFamily: FONT };
+const section: React.CSSProperties = {
+  fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', color: BLUE, textTransform: 'uppercase',
+  borderBottom: '1px solid #E5E7EB', paddingBottom: 6, margin: '8px 0 16px', fontFamily: FONT,
+};
+const primaryBtn: React.CSSProperties = {
+  background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 15,
+  fontWeight: 600, fontFamily: FONT, cursor: 'pointer',
+};
+
+interface FormState extends RequirementDetails {
+  company: string;
+  status: string;
+  stage: string;
+  name: string;
+  budget: string;
+}
+
+const toForm = (r: MvpRequirement): FormState => ({
+  ...r.details,
+  company: r.company,
+  status: r.status,
+  stage: r.stage,
+  name: r.name,
+  budget: String(r.budget),
+});
+
+const fmtDate = (iso: string) => {
+  const [y, m, d] = iso.split('-');
+  return iso ? `${m}/${d}/${y}` : '';
+};
+
+function Select({ value, onChange, options, disabled }: { value: string; onChange?: (v: string) => void; options: string[]; disabled?: boolean }) {
+  return (
+    <div style={{ position: 'relative' }}>
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange?.(e.target.value)}
+        style={{ ...(disabled ? disabledInput : input), appearance: 'none', WebkitAppearance: 'none', paddingRight: 30 }}
+      >
+        {options.map((o) => <option key={o}>{o}</option>)}
+      </select>
+      <ChevronsUpDown size={13} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: disabled ? '#6B7280' : '#374151' }} />
+    </div>
+  );
+}
+
+interface Props {
+  requirement: MvpRequirement | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (updated: MvpRequirement) => void;
+}
+
+export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }: Props) {
+  const [tab, setTab] = useState<Tab>('Overview');
+  const [f, setF] = useState<FormState | null>(null);
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    if (isOpen && requirement) {
+      setF(toForm(requirement));
+      setTab('Overview');
+      setNote('');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, requirement?.id]);
+
+  if (!requirement || !f) return null;
+
+  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setF((p) => (p ? { ...p, [k]: e.target.value } : p));
+  const setVal = (k: keyof FormState, v: string) => setF((p) => (p ? { ...p, [k]: v } : p));
+
+  const buildUpdated = (notes = f.notes): MvpRequirement => {
+    const { company, status, stage, name, budget, ...details } = f;
+    return {
+      ...requirement,
+      company,
+      name,
+      status: status as MvpRequirement['status'],
+      stage,
+      budget: Number(budget) || 0,
+      city: details.location || requirement.city,
+      lastUpdated: new Date().toISOString().slice(0, 10),
+      details: { ...details, notes },
+    };
+  };
+
+  const save = () => {
+    onSave(buildUpdated());
+    toast.success('Requirement updated.');
+  };
+
+  const addNote = () => {
+    if (!note.trim()) return;
+    const notes = [
+      ...f.notes,
+      { author: 'You', date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), text: note.trim() },
+    ];
+    setF({ ...f, notes });
+    onSave(buildUpdated(notes));
+    setNote('');
+  };
+
+  const text = (k: keyof FormState, opts: { type?: string; disabled?: boolean } = {}) => (
+    <input type={opts.type || 'text'} value={String(f[k] ?? '')} onChange={set(k)} disabled={opts.disabled} style={opts.disabled ? disabledInput : input} />
+  );
+  const field = (l: string, node: React.ReactNode) => (
+    <div><label style={label}>{l}</label>{node}</div>
+  );
+  const area = (l: string, k: keyof FormState, ph: string) => (
+    <div style={{ marginBottom: 18 }}>
+      <label style={label}>{l}</label>
+      <textarea value={String(f[k] ?? '')} onChange={set(k)} placeholder={ph} rows={3} style={{ ...input, resize: 'vertical' }} />
+    </div>
+  );
+  const chip = (selected: boolean, l: string, onClick: () => void, grow = false) => (
+    <button
+      key={l}
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: grow ? 1 : undefined, padding: grow ? '11px' : '8px 14px', borderRadius: grow ? 8 : 999,
+        border: `1px solid ${selected ? BLUE : '#D1D5DB'}`, background: selected ? '#EAF3FB' : '#fff',
+        color: selected ? BLUE : INK, fontSize: 14, fontWeight: selected ? 600 : 500, fontFamily: FONT, cursor: 'pointer',
+      }}
+    >
+      {l}
+    </button>
+  );
+  const grid3: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 20, marginBottom: 20 };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent
+        className="sm:max-w-[820px] p-0 overflow-hidden [&>button]:hidden flex flex-col gap-0"
+        style={{ borderRadius: 24, border: 'none', maxHeight: '94vh' }}
+      >
+        <DialogDescription className="sr-only">Requirement details</DialogDescription>
+        <div style={{ background: BLUE, padding: '16px 16px 16px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <DialogTitle style={{ color: '#fff', fontSize: 24, fontWeight: 700, fontFamily: FONT }}>Requirement Details</DialogTitle>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ background: STATUS_BG[requirement.status], color: '#fff', fontSize: 13, fontWeight: 600, padding: '3px 12px', borderRadius: 999 }}>{requirement.status}</span>
+            <button type="button" onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer' }}>
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 32, padding: '0 20px', borderBottom: '1px solid #E5E7EB', flexShrink: 0 }}>
+          {TABS.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: '22px 0 12px', fontFamily: FONT, fontSize: 16,
+                fontWeight: tab === t ? 600 : 500, color: tab === t ? BLUE : '#6B7280',
+                borderBottom: `2px solid ${tab === t ? BLUE : 'transparent'}`, marginBottom: -1,
+              }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ overflowY: 'auto', padding: '20px 20px 28px', background: '#fff' }}>
+          {tab !== 'Overview' ? (
+            <div style={{ padding: '60px 0', textAlign: 'center', color: '#9CA3AF', fontFamily: FONT, fontSize: 15 }}>
+              {tab} tab coming next.
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: 20, fontWeight: 700, color: INK, fontFamily: FONT }}>Requirement Details</div>
+              <div style={{ fontSize: 14, color: '#6B7280', margin: '4px 0 16px', fontFamily: FONT }}>
+                Authoritative summary of client requirements and deal parameters
+              </div>
+
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: 16, padding: '16px 24px 24px' }}>
+                <div style={section}>Deal Details</div>
+                <div style={grid3}>
+                  {field('Company', text('company'))}
+                  {field('Deal ID', text('dealId'))}
+                  {field('Status', <Select value={f.status} onChange={(v) => setVal('status', v)} options={STATUSES} />)}
+                  {field('Current Stage', <Select value={f.stage} options={STAGES} disabled />)}
+                  {field('Created Date', <input value={fmtDate(f.createdDate)} disabled style={disabledInput} />)}
+                </div>
+
+                <div style={section}>Business Requirements</div>
+                <div style={{ marginBottom: 20 }}>{field('Requirement Name', text('name'))}</div>
+                <div style={grid3}>
+                  {field('Location', text('location'))}
+                  {field('Capacity / Headcount', text('capacity', { type: 'number' }))}
+                  {field('Size (sq ft)', text('size', { type: 'number' }))}
+                </div>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={label}>Workspace Type</label>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {WORKSPACE_TYPES.map((t) => chip(f.workspaceType === t, t, () => setVal('workspaceType', f.workspaceType === t ? '' : t)))}
+                  </div>
+                </div>
+                {area('Program Needs', 'programNeeds', 'Open workstations, 3 meeting rooms, 2 team rooms, and a kitchen/pantry.')}
+                {area('Amenity Needs', 'amenityNeeds', 'On-site staffed reception, secure badge access, and bookable phone booths.')}
+                <div style={{ marginBottom: 20 }}>
+                  <label style={label}>Configuration</label>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    {CONFIGURATIONS.map((c) => chip(f.configuration === c, c, () => setVal('configuration', f.configuration === c ? '' : c), true))}
+                  </div>
+                </div>
+                {area('Other Functional Requirements', 'otherFunctional', 'Any other functional needs')}
+
+                <div style={section}>Commercial Terms</div>
+                <div style={grid3}>
+                  {field('Start Date', text('startDate', { type: 'date' }))}
+                  {field('Term Length (mos)', text('termLength', { type: 'number' }))}
+                  {field('Expected Close Date', text('closeDate', { type: 'date' }))}
+                </div>
+                <div style={{ ...grid3, marginBottom: 20 }}>
+                  {field(
+                    'Budget',
+                    <div style={{ display: 'flex' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', padding: '0 12px', background: '#E5E7EB', border: '1px solid #D1D5DB', borderRight: 'none', borderRadius: '8px 0 0 8px', color: '#374151', fontSize: 15 }}>$</span>
+                      <input type="number" value={f.budget} onChange={set('budget')} style={{ ...input, borderRadius: '0 8px 8px 0' }} />
+                    </div>,
+                  )}
+                </div>
+                {area('Other Commercial Requirements', 'otherCommercial', 'Any other commercial terms')}
+                <button onClick={save} style={primaryBtn}>Save Changes</button>
+              </div>
+
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: 16, padding: 24, marginTop: 24 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: INK, fontFamily: FONT, marginBottom: 16 }}>Requirement notes</div>
+                {f.notes.map((n, i) => (
+                  <div key={i} style={{ background: '#F8F9FA', borderRadius: 4, padding: '12px 12px', marginBottom: 12, fontFamily: FONT }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280', marginBottom: 6 }}>
+                      <span>{n.author}</span><span>{n.date}</span>
+                    </div>
+                    <div style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{n.text}</div>
+                  </div>
+                ))}
+                <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Enter note" rows={3} style={{ ...input, resize: 'vertical', marginBottom: 14 }} />
+                <button onClick={addNote} style={primaryBtn}>Add Note</button>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

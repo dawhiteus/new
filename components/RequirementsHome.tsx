@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
-import { MVP_REQUIREMENTS, type MvpRequirement } from './data/mvpRequirements';
+import { RequirementDetailsModal } from './RequirementDetailsModal';
+import { MVP_REQUIREMENTS, EMPTY_DETAILS, type MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const NAVY = '#0B4F7F';
@@ -239,6 +240,7 @@ export function RequirementsHome() {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const uniq = (f: (r: MvpRequirement) => string) => Array.from(new Set(rows.map(f)));
 
@@ -294,6 +296,22 @@ export function RequirementsHome() {
         saved: 0, shortlisted: 0,
         updated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       },
+      details: {
+        ...EMPTY_DETAILS,
+        createdDate: today,
+        location: d.location,
+        capacity: d.capacity,
+        size: d.size,
+        workspaceType: d.workspaceType,
+        configuration: d.configuration,
+        programNeeds: d.programNeeds,
+        amenityNeeds: d.amenityNeeds,
+        otherFunctional: d.otherFunctional,
+        startDate: d.startDate,
+        termLength: d.termLength,
+        closeDate: d.closeDate,
+        otherCommercial: d.otherCommercial,
+      },
     };
     setRows((rs) => [fresh, ...rs]);
     toast.success(`Requirement "${d.name}" created.`);
@@ -308,6 +326,8 @@ export function RequirementsHome() {
         rs.map((r) => (r.id === req.id ? { ...r, collection: { ...r.collection, totalSpaces: 0, saved: 0, shortlisted: 0 } } : r)),
       );
       toast.success(`Collection for "${req.name}" removed.`);
+    } else if (action === 'View Requirement') {
+      setDetailId(req.id);
     } else {
       toast.info(`${action} is not available in the demo yet.`);
     }
@@ -442,6 +462,12 @@ export function RequirementsHome() {
         </div>
       </div>
 
+      <RequirementDetailsModal
+        requirement={rows.find((r) => r.id === detailId) ?? null}
+        isOpen={detailId !== null}
+        onClose={() => setDetailId(null)}
+        onSave={(u) => setRows((rs) => rs.map((r) => (r.id === u.id ? u : r)))}
+      />
       <NewRequirementModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
     </div>
   );
