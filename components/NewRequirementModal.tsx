@@ -19,6 +19,8 @@ const CONFIGURATIONS = ['Single space', 'Collection of spaces'];
 export type NewRequirementData = IntakeFields & {
   /** Present when the Requirements Intake Agent drafted this requirement. */
   intake?: { sourceText: string; questions: string[]; licenseId?: string };
+  /** Fields the agent filled, with their sources. */
+  prov?: Partial<Record<FieldKey, Provenance>>;
 };
 
 const emptyFields = (): IntakeFields => ({
@@ -107,20 +109,23 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
       return { ...d, fields: { ...d.fields, [k]: v }, prov };
     }));
 
+  const missingFor = (d: IntakeDraft) => REQUIRED.filter((k) => k !== 'name' && !d.fields[k].trim());
+  const incompleteDrafts = drafts.filter((d) => missingFor(d).length > 0);
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Only a Requirement Name is needed to save. Anything else missing is saved as a Draft.
     for (let i = 0; i < drafts.length; i++) {
-      const missing = REQUIRED.filter((k) => !drafts[i].fields[k].trim());
-      if (missing.length) {
+      if (!drafts[i].fields.name.trim()) {
         setActive(i);
-        const who = drafts.length > 1 ? `${drafts[i].label}: ` : '';
-        toast.error(`${who}please fill ${missing.map((k) => FIELD_LABEL[k]).join(', ')}.`);
+        toast.error(`${drafts.length > 1 ? `${drafts[i].label}: ` : ''}Requirement Name is required.`);
         return;
       }
     }
     onCreate?.(
       drafts.map((d) => ({
         ...d.fields,
+        prov: Object.keys(d.prov).length ? d.prov : undefined,
         intake: agentRun && result ? { sourceText: result.sourceText, questions: d.questions, licenseId: result.license?.licenseId } : undefined,
       })),
     );
@@ -132,23 +137,23 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
     if (!p) return null;
     const m = MARK[p.kind];
     return (
-      <span title={`${m.text}: ${p.note}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 600, color: m.color, background: '#F0FAF4', border: `1px solid ${m.color}33`, borderRadius: 999, padding: '1px 7px', cursor: 'help' }}>
-        <Sparkles size={10} /> {p.kind === 'suggested' ? 'Suggested' : 'Agent'}
+      <span title={`${m.text}: ${p.note}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: m.color, background: '#F0FAF4', border: `1px solid ${m.color}33`, borderRadius: 999, padding: '2px 6px', cursor: 'help' }}>
+        <Sparkles size={11} />
       </span>
     );
   };
-  const missingFlag = (k: FieldKey) => agentRun && REQUIRED.includes(k) && !draft.fields[k];
+  const missingFlag = (k: FieldKey) => agentRun && REQUIRED.includes(k) && k !== 'name' && !draft.fields[k];
 
   const field = (k: FieldKey, type = 'text') => (
     <div>
-      <label style={labelStyle}>{FIELD_LABEL[k]}{REQUIRED.includes(k) ? ' *' : ''}{marker(k)}</label>
+      <label style={labelStyle}>{FIELD_LABEL[k]}{k === 'name' ? ' *' : ''}{marker(k)}</label>
       <input
         type={type}
         value={draft.fields[k]}
         onChange={(e) => setField(k, e.target.value)}
         style={{ ...inputStyle, borderColor: draft.prov[k] ? `${MARK[draft.prov[k]!.kind].color}66` : missingFlag(k) ? '#F5C27A' : '#D1D5DB' }}
       />
-      {missingFlag(k) && <div style={{ fontSize: 12, color: '#B45309', marginTop: 5, fontFamily: FONT }}>Not stated. Add it or ask the customer.</div>}
+      {missingFlag(k) && <div style={{ fontSize: 12, color: '#B45309', marginTop: 5, fontFamily: FONT }}>Not provided</div>}
     </div>
   );
   const area = (k: FieldKey, placeholder: string) => (
@@ -214,7 +219,6 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
                 <div style={{ flex: 1, minWidth: 0, fontFamily: FONT }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                     <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{AGENT_NAME}</span>
-                    <span style={{ background: '#2E9D4A', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999 }}>Agent</span>
                     <span style={{ flex: 1 }} />
                     {phase === 'open' && (
                       <button type="button" onClick={startOver} aria-label="Close agent" title="Close"
@@ -265,9 +269,6 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
                         </div>
                       )}
                       {result.licenseError && <div style={{ fontSize: 13, color: '#B45309', marginTop: 6 }}>{result.licenseError}</div>}
-                      <button type="button" onClick={startOver} style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', padding: 0, marginTop: 8 }}>
-                        Start over
-                      </button>
                     </div>
                   )}
                 </div>
@@ -372,10 +373,16 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
           </div>
           {area('otherCommercial', 'Any other commercial terms')}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 28 }}>
+          {incompleteDrafts.length > 0 && (
+            <div style={{ fontSize: 13, color: '#6B7280', fontFamily: FONT, marginTop: 20, textAlign: 'right' }}>
+              {incompleteDrafts.map((d) => `${drafts.length > 1 ? `${d.label}: ` : ''}${missingFor(d).map((k) => FIELD_LABEL[k]).join(', ')} not provided`).join(' · ')}.
+              {' '}Incomplete requirements are saved as Drafts.
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 14 }}>
             <button type="button" onClick={close} style={{ padding: '10px 16px', borderRadius: 8, border: `1px solid ${BLUE}`, background: '#fff', color: BLUE, fontSize: 15, fontWeight: 500, fontFamily: FONT, cursor: 'pointer' }}>Cancel</button>
             <button type="submit" style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: BLUE, color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>
-              {drafts.length > 1 ? `Create ${drafts.length} Requirements` : 'Create Requirement'}
+              {drafts.length > 1 ? `Create ${drafts.length} Requirements` : incompleteDrafts.length ? 'Save as Draft' : 'Create Requirement'}
             </button>
           </div>
         </form>

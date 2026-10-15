@@ -257,6 +257,8 @@ export function runIntake(text: string, licenseIdRaw: string): IntakeResult {
     }
     if (company) { f.company = company.value; prov.company = { kind: 'source', note: company.quote }; }
 
+    if (!f.name && f.company) { f.name = `${f.company} requirement`; prov.name = { kind: 'suggested', note: 'Named after the company. Please edit.' }; }
+
     // License record: facts help, terms are reference only.
     if (license && (!city || city.toLowerCase() === license.city.toLowerCase())) {
       if (!f.location) { f.location = license.city; prov.location = { kind: 'license', note: `License ${license.licenseId}: ${license.city}, ${license.state}` }; }

@@ -119,6 +119,18 @@ export interface TimelineEvent {
 
 export const CURRENT_USER_EMAIL = 'david@liquidspace.com';
 
+export interface FieldProvenance {
+  kind: 'source' | 'license' | 'suggested';
+  note: string;
+}
+
+/** Fields required before a requirement can be Active. A Draft only needs a name. */
+export const ACTIVE_REQUIRED = ['company', 'name', 'location', 'capacity', 'startDate', 'termLength', 'budget'] as const;
+export const ACTIVE_REQUIRED_LABEL: Record<string, string> = {
+  company: 'Company', name: 'Requirement Name', location: 'Location', capacity: 'Capacity / Headcount',
+  startDate: 'Start Date', termLength: 'Term Length', budget: 'Budget',
+};
+
 export interface RequirementDetails {
   dealId: string;
   createdDate: string; // ISO
@@ -139,6 +151,10 @@ export interface RequirementDetails {
   team: TeamMember[];
   documents: RequirementDocument[];
   events: TimelineEvent[];
+  /** Which fields the Requirements Intake Agent filled, and where from. Cleared per field when Sales edits it. */
+  provenance?: Record<string, FieldProvenance>;
+  /** The original customer input and the agent's follow-up questions, kept with the requirement. */
+  intake?: { sourceText: string; questions: string[]; licenseId?: string };
 }
 
 export const EMPTY_DETAILS: RequirementDetails = {
@@ -153,7 +169,8 @@ export interface MvpRequirement {
   company: string;
   status: 'Active' | 'Draft' | 'Executed' | 'Archived';
   stage: string;
-  budget: number;
+  /** null = not provided (e.g. an incomplete Draft). */
+  budget: number | null;
   city: string;
   lastUpdated: string; // ISO date
   agentTasks: number;

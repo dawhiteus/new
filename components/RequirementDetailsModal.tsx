@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, ChevronsUpDown } from 'lucide-react';
+import { X, ChevronsUpDown, Sparkles, Copy } from 'lucide-react';
 import { toast } from './ui/toast';
 import { RequirementTimelineTab } from './RequirementTimelineTab';
 import { RequirementDocumentsTab } from './RequirementDocumentsTab';
 import { RequirementTeamTab } from './RequirementTeamTab';
 import { RequirementWorkflowTab } from './RequirementWorkflowTab';
-import { STAGES, type MvpRequirement, type RequirementDetails, type WorkflowTask, type TeamMember, type RequirementDocument, type TimelineEvent, CURRENT_USER_EMAIL } from './data/mvpRequirements';
+import { STAGES, ACTIVE_REQUIRED, ACTIVE_REQUIRED_LABEL, type MvpRequirement, type RequirementDetails, type WorkflowTask, type TeamMember, type RequirementDocument, type TimelineEvent, CURRENT_USER_EMAIL } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const BLUE = '#0D619B';
@@ -48,7 +48,7 @@ const toForm = (r: MvpRequirement): FormState => ({
   status: r.status,
   stage: r.stage,
   name: r.name,
-  budget: String(r.budget),
+  budget: r.budget == null ? '' : String(r.budget),
 });
 
 const fmtDate = (iso: string) => {
@@ -95,9 +95,15 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
 
   if (!requirement || !f) return null;
 
+  const withoutMark = (p: FormState, k: keyof FormState): FormState['provenance'] => {
+    if (!p.provenance || !(k in p.provenance)) return p.provenance;
+    const next = { ...p.provenance };
+    delete next[k as string];
+    return next;
+  };
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setF((p) => (p ? { ...p, [k]: e.target.value } : p));
-  const setVal = (k: keyof FormState, v: string) => setF((p) => (p ? { ...p, [k]: v } : p));
+    setF((p) => (p ? { ...p, [k]: e.target.value, provenance: withoutMark(p, k) } : p));
+  const setVal = (k: keyof FormState, v: string) => setF((p) => (p ? { ...p, [k]: v, provenance: withoutMark(p, k) } : p));
 
   const buildUpdated = (form: FormState = f): MvpRequirement => {
     const { company, status, stage, name, budget, ...details } = form;
@@ -107,8 +113,8 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
       name,
       status: status as MvpRequirement['status'],
       stage,
-      budget: Number(budget) || 0,
-      city: details.location || requirement.city,
+      budget: budget.trim() === '' ? null : Number(budget),
+      city: details.location.trim(),
       lastUpdated: new Date().toISOString().slice(0, 10),
       details,
     };
@@ -125,9 +131,21 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
     onSave(buildUpdated(next));
   };
 
+  const missingActive = (form: FormState) => ACTIVE_REQUIRED.filter((k) => !String(form[k] ?? '').trim());
+
   const save = () => {
-    commit({}, [ev('update', 'Requirement Updated', `${f.name} requirement details were updated.`)]);
-    toast.success('Requirement updated.');
+    // Saving progress never loses anything. If required details are still missing, the requirement stays (or becomes) a Draft.
+    const missing = missingActive(f);
+    const forcedDraft = missing.length > 0 && f.status !== 'Draft';
+    commit(
+      forcedDraft ? { status: 'Draft' } : {},
+      [ev('update', 'Requirement Updated', `${f.name} requirement details were updated.`)],
+    );
+    toast.success(
+      missing.length
+        ? `Progress saved. ${forcedDraft ? 'Kept as a Draft: ' : 'Not provided yet: '}${missing.map((k) => ACTIVE_REQUIRED_LABEL[k]).join(', ')}.`
+        : 'Requirement updated.',
+    );
   };
 
   const addNote = () => {
@@ -168,12 +186,27 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
   const text = (k: keyof FormState, opts: { type?: string; disabled?: boolean } = {}) => (
     <input type={opts.type || 'text'} value={String(f[k] ?? '')} onChange={set(k)} disabled={opts.disabled} style={opts.disabled ? disabledInput : input} />
   );
-  const field = (l: string, node: React.ReactNode) => (
-    <div><label style={label}>{l}</label>{node}</div>
+  const mark = (k: keyof FormState) => {
+    const p = f.provenance?.[k as string];
+    if (!p) return null;
+    const color = p.kind === 'source' ? '#0F7B4F' : p.kind === 'license' ? BLUE : '#B45309';
+    const what = p.kind === 'source' ? 'from the customer input' : p.kind === 'license' ? 'from the license' : 'suggested, please confirm';
+    return (
+      <span title={`${what}: ${p.note}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color, background: '#F0FAF4', border: `1px solid ${color}33`, borderRadius: 999, padding: '2px 6px', marginLeft: 8, cursor: 'help', verticalAlign: 'middle' }}>
+        <Sparkles size={11} />
+      </span>
+    );
+  };
+  const notProvided = (k: keyof FormState) =>
+    (ACTIVE_REQUIRED as readonly string[]).includes(k as string) && k !== 'name' && !String(f[k] ?? '').trim() ? (
+      <div style={{ fontSize: 12, color: '#B45309', marginTop: 5, fontFamily: FONT }}>Not provided</div>
+    ) : null;
+  const field = (l: string, node: React.ReactNode, k?: keyof FormState) => (
+    <div><label style={label}>{l}{k === 'name' ? ' *' : ''}{k && mark(k)}</label>{node}{k && notProvided(k)}</div>
   );
   const area = (l: string, k: keyof FormState, ph: string) => (
     <div style={{ marginBottom: 18 }}>
-      <label style={label}>{l}</label>
+      <label style={label}>{l}{mark(k)}</label>
       <textarea value={String(f[k] ?? '')} onChange={set(k)} placeholder={ph} rows={3} style={{ ...input, resize: 'vertical' }} />
     </div>
   );
@@ -271,10 +304,25 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                 Authoritative summary of client requirements and deal parameters
               </div>
 
+              {f.intake && f.intake.questions.length > 0 && requirement.status === 'Draft' && (
+                <div style={{ border: '1px solid #F5C27A', background: '#FFF9ED', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>Questions for the customer</div>
+                    <button type="button" onClick={() => { navigator.clipboard?.writeText(f.intake!.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')); toast.success('Questions copied.'); }}
+                      style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Copy size={13} /> Copy
+                    </button>
+                  </div>
+                  <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
+                    {f.intake.questions.map((q) => <li key={q}>{q}</li>)}
+                  </ol>
+                </div>
+              )}
+
               <div style={{ border: '1px solid #E5E7EB', borderRadius: 16, padding: '16px 24px 24px' }}>
                 <div style={section}>Deal Details</div>
                 <div style={grid3}>
-                  {field('Company', text('company'))}
+                  {field('Company', text('company'), 'company')}
                   {field('Deal ID', text('dealId'))}
                   {field('Status', <Select value={f.status} onChange={(v) => setVal('status', v)} options={STATUSES} />)}
                   {field('Current Stage', <Select value={f.stage} options={[...STAGES]} disabled />)}
@@ -282,14 +330,14 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                 </div>
 
                 <div style={section}>Business Requirements</div>
-                <div style={{ marginBottom: 20 }}>{field('Requirement Name', text('name'))}</div>
+                <div style={{ marginBottom: 20 }}>{field('Requirement Name', text('name'), 'name')}</div>
                 <div style={grid3}>
-                  {field('Location', text('location'))}
-                  {field('Capacity / Headcount', text('capacity', { type: 'number' }))}
-                  {field('Size (sq ft)', text('size', { type: 'number' }))}
+                  {field('Location', text('location'), 'location')}
+                  {field('Capacity / Headcount', text('capacity', { type: 'number' }), 'capacity')}
+                  {field('Size (sq ft)', text('size', { type: 'number' }), 'size')}
                 </div>
                 <div style={{ marginBottom: 20 }}>
-                  <label style={label}>Workspace Type</label>
+                  <label style={label}>Workspace Type{mark('workspaceType')}</label>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {WORKSPACE_TYPES.map((t) => chip(f.workspaceType === t, t, () => setVal('workspaceType', f.workspaceType === t ? '' : t)))}
                   </div>
@@ -297,7 +345,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                 {area('Program Needs', 'programNeeds', 'Open workstations, 3 meeting rooms, 2 team rooms, and a kitchen/pantry.')}
                 {area('Amenity Needs', 'amenityNeeds', 'On-site staffed reception, secure badge access, and bookable phone booths.')}
                 <div style={{ marginBottom: 20 }}>
-                  <label style={label}>Configuration</label>
+                  <label style={label}>Configuration{mark('configuration')}</label>
                   <div style={{ display: 'flex', gap: 12 }}>
                     {CONFIGURATIONS.map((c) => chip(f.configuration === c, c, () => setVal('configuration', f.configuration === c ? '' : c), true))}
                   </div>
@@ -306,9 +354,9 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
 
                 <div style={section}>Commercial Terms</div>
                 <div style={grid3}>
-                  {field('Start Date', text('startDate', { type: 'date' }))}
-                  {field('Term Length (mos)', text('termLength', { type: 'number' }))}
-                  {field('Expected Close Date', text('closeDate', { type: 'date' }))}
+                  {field('Start Date', text('startDate', { type: 'date' }), 'startDate')}
+                  {field('Term Length (mos)', text('termLength', { type: 'number' }), 'termLength')}
+                  {field('Expected Close Date', text('closeDate', { type: 'date' }), 'closeDate')}
                 </div>
                 <div style={{ ...grid3, marginBottom: 20 }}>
                   {field(
@@ -317,6 +365,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                       <span style={{ display: 'flex', alignItems: 'center', padding: '0 12px', background: '#E5E7EB', border: '1px solid #D1D5DB', borderRight: 'none', borderRadius: '8px 0 0 8px', color: '#374151', fontSize: 15 }}>$</span>
                       <input type="number" value={f.budget} onChange={set('budget')} style={{ ...input, borderRadius: '0 8px 8px 0' }} />
                     </div>,
+                    'budget',
                   )}
                 </div>
                 {area('Other Commercial Requirements', 'otherCommercial', 'Any other commercial terms')}

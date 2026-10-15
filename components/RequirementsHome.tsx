@@ -21,7 +21,7 @@ import { RequirementDetailsModal } from './RequirementDetailsModal';
 import { useSearchParams } from 'react-router-dom';
 import { readHubOrigin, formatVerdict, formatPurpose, formatUsd } from './hubOrigin';
 import { useRequirements } from './data/requirementsStore';
-import { EMPTY_DETAILS, defaultTasks, defaultTeam, CURRENT_USER_EMAIL, type MvpRequirement } from './data/mvpRequirements';
+import { ACTIVE_REQUIRED, type FieldProvenance, EMPTY_DETAILS, defaultTasks, defaultTeam, CURRENT_USER_EMAIL, type MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
 const NAVY = '#0B4F7F';
@@ -39,6 +39,7 @@ const COLUMNS: { key: SortKey; label: string; width: string }[] = [
 ];
 
 const money = (n: number) => `$${n.toLocaleString('en-US')}`;
+const NotProvided = () => <span style={{ color: '#9CA3AF', fontStyle: 'italic' }}>Not provided</span>;
 const fmtDate = (iso: string) => {
   const [y, m, d] = iso.split('-');
   return `${m}/${d}/${y}`;
@@ -341,7 +342,7 @@ export function RequirementsHome() {
         (!cityFilter || r.city === cityFilter),
     );
     const val = (r: MvpRequirement): string | number =>
-      sort.key === 'collection' ? r.collection.totalSpaces : (r as any)[sort.key];
+      sort.key === 'collection' ? r.collection.totalSpaces : sort.key === 'budget' ? (r.budget ?? -1) : (r as any)[sort.key];
     out.sort((a, b) => {
       const x = val(a), y = val(b);
       const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y));
@@ -357,7 +358,7 @@ export function RequirementsHome() {
 
   const active = rows.filter((r) => r.status === 'Active');
   const metrics = [
-    { label: 'REQUIREMENT COSTS', value: money(active.reduce((s, r) => s + r.budget, 0)), sub: 'Total estimated value of active requirements', Icon: TrendingUp, color: '#10B981' },
+    { label: 'REQUIREMENT COSTS', value: money(active.reduce((s, r) => s + (r.budget ?? 0), 0)), sub: 'Total estimated value of active requirements', Icon: TrendingUp, color: '#10B981' },
     { label: 'ACTIVE REQUIREMENTS', value: String(active.length), sub: 'Number of requirements currently moving through workflow', Icon: FileText, color: '#0694A2' },
     { label: 'COLLECTIONS CREATED', value: String(rows.length), sub: 'Total collections generated for requirements', Icon: CircleDot, color: '#0369A1' },
     { label: 'AGENT TASKS COMPLETED', value: String(rows.reduce((s, r) => s + r.agentTasks, 0)), sub: 'Total tasks executed by agents', Icon: Zap, color: '#1E3A5F' },
@@ -369,9 +370,13 @@ export function RequirementsHome() {
   const buildRequirement = (d: NewRequirementData, seq: number): MvpRequirement => {
     const today = new Date().toISOString().slice(0, 10);
     const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const budget = Number(d.budget) || 0;
+    const budget = d.budget.trim() === '' ? null : Number(d.budget);
+    // Anything required for Active that's missing means this is saved as a Draft, whatever status was selected.
+    const missing = ACTIVE_REQUIRED.filter((k) => !String(d[k] ?? '').trim());
+    const status = (missing.length ? 'Draft' : d.status) as MvpRequirement['status'];
+    const company = d.company.trim();
     const events: MvpRequirement['details']['events'] = [
-      { id: `e-${Date.now()}-${seq}`, type: 'created', title: 'Requirement Created', description: `${d.name} requirement created for ${d.company}`, date: dispDate, actor: CURRENT_USER_EMAIL },
+      { id: `e-${Date.now()}-${seq}`, type: 'created', title: missing.length ? 'Draft Created' : 'Requirement Created', description: company ? `${d.name} ${missing.length ? 'draft' : 'requirement'} created for ${company}` : `${d.name} ${missing.length ? 'draft' : 'requirement'} created`, date: dispDate, actor: CURRENT_USER_EMAIL },
     ];
     const notes: MvpRequirement['details']['notes'] = [];
     if (d.intake) {
@@ -382,23 +387,26 @@ export function RequirementsHome() {
       }
       events.push({
         id: `e-${Date.now()}-${seq}-agent`, type: 'note', title: 'Draft Prepared',
-        description: `${AGENT_NAME} drafted this requirement from pasted text${d.intake.licenseId ? ` and license ${d.intake.licenseId}` : ''}. Reviewed and created by Sales.`,
+        description: `${AGENT_NAME} drafted this requirement from pasted text${d.intake.licenseId ? ` and license ${d.intake.licenseId}` : ''}. Reviewed and saved by Sales.`,
         date: dispDate, actor: AGENT_EMAIL,
       });
     }
+    const loc = d.location.trim();
     return {
       id: `req-${Date.now()}-${seq}`,
       name: d.name,
-      company: d.company,
-      status: d.status as MvpRequirement['status'],
+      company,
+      status,
       stage: 'Intake',
       budget,
-      city: d.location,
+      city: loc,
       lastUpdated: today,
       agentTasks: d.intake ? 1 : 0,
       collection: {
-        name: `${d.name} Collection`, totalSpaces: 0, location: `In ${d.location}`, locationSpaces: 0,
-        budgetLabel: `Within ${money(budget)}/mo`, budgetSpaces: 0, peopleLabel: `For ${d.capacity} people`, peopleSpaces: 0,
+        name: `${d.name} Collection`, totalSpaces: 0,
+        location: loc ? `In ${loc}` : 'Location not provided', locationSpaces: 0,
+        budgetLabel: budget == null ? 'Budget not provided' : `Within ${money(budget)}/mo`, budgetSpaces: 0,
+        peopleLabel: d.capacity ? `For ${d.capacity} people` : 'Headcount not provided', peopleSpaces: 0,
         saved: 0, shortlisted: 0, updated: dispDate,
       },
       details: {
@@ -408,6 +416,8 @@ export function RequirementsHome() {
         team: defaultTeam(),
         events,
         notes,
+        provenance: d.prov ? Object.fromEntries(Object.entries(d.prov).map(([k, v]) => [k, v as FieldProvenance])) : undefined,
+        intake: d.intake,
         location: d.location,
         capacity: d.capacity,
         size: d.size,
@@ -427,7 +437,9 @@ export function RequirementsHome() {
   const handleCreate = (items: NewRequirementData[]) => {
     const created = items.map((d, i) => buildRequirement(d, i));
     setRows((rs) => [...created, ...rs]);
-    toast.success(created.length === 1 ? `Requirement "${created[0].name}" created.` : `${created.length} requirements created: ${created.map((c) => c.name).join(', ')}.`);
+    const drafts = created.filter((c, i) => c.status === 'Draft' && items[i].status !== 'Draft');
+    const base = created.length === 1 ? `Requirement "${created[0].name}" ${created[0].status === 'Draft' ? 'saved as a Draft' : 'created'}.` : `${created.length} requirements created: ${created.map((c) => c.name).join(', ')}.`;
+    toast.success(drafts.length ? `${base} ${drafts.length === 1 && created.length === 1 ? 'Some details are not provided yet.' : `${drafts.length} saved as Drafts: some details are not provided yet.`}` : base);
   };
 
   const handleAction = (req: MvpRequirement, action: string) => {
@@ -495,7 +507,7 @@ export function RequirementsHome() {
               <div style={{ display: 'flex', gap: 8 }}>
                 <FilterButton value={statusFilter} onChange={(v) => { setStatusFilter(v); setPage(1); }} allLabel="All Statuses" options={uniq((r) => r.status)} />
                 <FilterButton value={stageFilter} onChange={(v) => { setStageFilter(v); setPage(1); }} allLabel="All Stages" options={uniq((r) => r.stage)} />
-                <FilterButton value={cityFilter} onChange={(v) => { setCityFilter(v); setPage(1); }} allLabel="All Cities" options={uniq((r) => r.city)} />
+                <FilterButton value={cityFilter} onChange={(v) => { setCityFilter(v); setPage(1); }} allLabel="All Cities" options={uniq((r) => r.city).filter(Boolean)} />
               </div>
               <button
                 onClick={() => setCreateOpen(true)}
@@ -537,10 +549,10 @@ export function RequirementsHome() {
                           <span style={{ display: 'inline-block', marginLeft: 8, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: '#0D619B', color: '#fff', verticalAlign: 'middle' }}>NEW</span>
                         )}
                       </td>
-                      <td style={td}>{r.company}</td>
+                      <td style={td}>{r.company || <NotProvided />}</td>
                       <td style={td}><Pill label={r.status} {...(({ bg, color }) => ({ bg, color }))(STATUS_STYLE[r.status])} /></td>
                       <td style={td}><Pill label={r.stage} bg="#E8A91C" color="#fff" /></td>
-                      <td style={td}>{money(r.budget)}</td>
+                      <td style={td}>{r.budget == null ? <NotProvided /> : money(r.budget)}</td>
                       <td style={td} onClick={(e) => e.stopPropagation()}><CollectionPill req={r} /></td>
                       <td style={td}>{fmtDate(r.lastUpdated)}</td>
                       <td style={{ ...td, textAlign: 'right', padding: '14px 12px 14px 0' }} onClick={(e) => e.stopPropagation()}>
