@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, ChevronsUpDown, Bot, Loader2, Sparkles, Copy, KeyRound, RotateCcw } from 'lucide-react';
+import { X, ChevronsUpDown, Bot, Loader2, Sparkles, Copy, ArrowUp } from 'lucide-react';
 import { toast } from './ui/toast';
 import {
-  AGENT_NAME, REQUIRED, FIELD_LABEL, SAMPLE_EMAIL, SAMPLE_RENEWAL, SAMPLE_RENEWAL_LICENSE,
+  AGENT_NAME, REQUIRED, FIELD_LABEL,
   runIntake, licenseTermsReference,
   type IntakeDraft, type IntakeFields, type IntakeResult, type FieldKey, type Provenance,
 } from './data/intakeAgent';
@@ -43,10 +43,11 @@ const MARK: Record<Provenance['kind'], { color: string; text: string }> = {
   suggested: { color: '#B45309', text: 'suggested, please confirm' },
 };
 
-function AgentAvatar({ spinning }: { spinning?: boolean }) {
+function AgentAvatar({ spinning, small }: { spinning?: boolean; small?: boolean }) {
+  const size = small ? 34 : 40;
   return (
-    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-      {spinning ? <Loader2 size={22} color="#059669" className="animate-spin" /> : <Bot size={24} color="#059669" />}
+    <div style={{ width: size, height: size, borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      {spinning ? <Loader2 size={22} color="#059669" className="animate-spin" /> : <Bot size={small ? 20 : 24} color="#059669" />}
     </div>
   );
 }
@@ -57,13 +58,12 @@ interface Props {
   onCreate?: (items: NewRequirementData[]) => void;
 }
 
-type Phase = 'start' | 'working' | 'review';
+type Phase = 'closed' | 'open' | 'working' | 'review';
 
 export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
-  const [phase, setPhase] = useState<Phase>('start');
+  const [phase, setPhase] = useState<Phase>('closed');
   const [text, setText] = useState('');
   const [licenseId, setLicenseId] = useState('');
-  const [showLicense, setShowLicense] = useState(false);
   const [workMsg, setWorkMsg] = useState('');
   const [result, setResult] = useState<IntakeResult | null>(null);
   const [drafts, setDrafts] = useState<IntakeDraft[]>([manualDraft()]);
@@ -71,7 +71,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
 
   useEffect(() => {
     if (!isOpen) return;
-    setPhase('start'); setText(''); setLicenseId(''); setShowLicense(false); setResult(null); setDrafts([manualDraft()]); setActive(0);
+    setPhase('closed'); setText(''); setLicenseId(''); setResult(null); setDrafts([manualDraft()]); setActive(0);
   }, [isOpen]);
 
   const close = () => onClose();
@@ -97,7 +97,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
     }, steps.length * 700);
   };
 
-  const startOver = () => { setPhase('start'); setResult(null); setDrafts([manualDraft()]); setActive(0); };
+  const startOver = () => { setPhase('closed'); setResult(null); setDrafts([manualDraft()]); setActive(0); setText(''); setLicenseId(''); };
 
   const setField = (k: FieldKey, v: string) =>
     setDrafts((ds) => ds.map((d, i) => {
@@ -181,9 +181,6 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
 
   const f = draft.fields;
   const canDraft = !!(text.trim() || licenseId.trim());
-  const sampleBtn = (label: string, onClick: () => void) => (
-    <button type="button" onClick={onClick} style={{ background: '#fff', border: '1px solid #BFE5CC', color: GREEN, borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>{label}</button>
-  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) close(); }}>
@@ -195,83 +192,88 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
         </div>
 
         <form onSubmit={submit} style={{ padding: '16px 20px 28px', overflowY: 'auto', maxHeight: 'calc(92vh - 72px)' }}>
-          {/* ── Requirements Intake Agent ── */}
-          <div style={{ border: '1.5px solid #BFE5CC', background: '#F0FAF4', borderRadius: 16, padding: 16, marginBottom: 20 }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <AgentAvatar spinning={phase === 'working'} />
+          {/* ── Requirements Intake Agent (optional) ── */}
+          {phase === 'closed' && (
+            <div style={{ border: '1px solid #BFE5CC', background: '#F0FAF4', borderRadius: 14, padding: '10px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <AgentAvatar small />
               <div style={{ flex: 1, minWidth: 0, fontFamily: FONT }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{AGENT_NAME}</span>
-                  <span style={{ background: '#2E9D4A', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999 }}>Agent</span>
-                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{AGENT_NAME}</div>
+                <div style={{ fontSize: 13, color: '#6B7280' }}>I can draft this from a pasted email, a description, or a license ID.</div>
+              </div>
+              <button type="button" onClick={() => setPhase('open')}
+                style={{ background: '#fff', border: `1px solid ${GREEN}`, color: GREEN, borderRadius: 8, padding: '8px 14px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={14} /> Use Requirement Intake Agent
+              </button>
+            </div>
+          )}
 
-                {phase === 'start' && (
-                  <>
-                    <div style={{ fontSize: 14, color: '#374151', marginBottom: 10, lineHeight: 1.5 }}>
-                      Hi, I'm the Requirements Intake Agent. Paste a customer email, notes from a document, or just describe what they need, and I'll draft the requirement for you to review.
-                    </div>
-                    <textarea
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                      placeholder="Paste the customer's email here…"
-                      rows={5}
-                      style={{ ...inputStyle, resize: 'vertical', background: '#fff' }}
-                    />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '10px 0 4px' }}>
-                      <span style={{ fontSize: 12, color: '#6B7280' }}>Try a sample:</span>
-                      {sampleBtn('Customer email', () => { setText(SAMPLE_EMAIL); setShowLicense(false); setLicenseId(''); })}
-                      {sampleBtn('Renewal from a license', () => { setText(SAMPLE_RENEWAL); setShowLicense(true); setLicenseId(SAMPLE_RENEWAL_LICENSE); })}
-                    </div>
-                    {showLicense ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                        <KeyRound size={16} color="#6B7280" />
-                        <input value={licenseId} onChange={(e) => setLicenseId(e.target.value)} placeholder="License ID, e.g. SLA-2024-014" style={{ ...inputStyle, maxWidth: 280, background: '#fff', padding: '8px 12px' }} />
-                      </div>
-                    ) : (
-                      <button type="button" onClick={() => setShowLicense(true)} style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', padding: 0, marginTop: 8 }}>
-                        Starting from a license? Add License ID
+          {phase !== 'closed' && (
+            <div style={{ border: '1.5px solid #BFE5CC', background: '#F0FAF4', borderRadius: 16, padding: 16, marginBottom: 20 }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <AgentAvatar spinning={phase === 'working'} />
+                <div style={{ flex: 1, minWidth: 0, fontFamily: FONT }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{AGENT_NAME}</span>
+                    <span style={{ background: '#2E9D4A', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999 }}>Agent</span>
+                    <span style={{ flex: 1 }} />
+                    {phase === 'open' && (
+                      <button type="button" onClick={startOver} aria-label="Close agent" title="Close"
+                        style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', display: 'inline-flex', padding: 2 }}>
+                        <X size={16} />
                       </button>
                     )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 14 }}>
-                      <button
-                        type="button"
-                        onClick={startAgent}
-                        disabled={!canDraft}
-                        style={{ background: canDraft ? BLUE : '#9CC3E0', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontSize: 15, fontWeight: 600, fontFamily: FONT, cursor: canDraft ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                      >
-                        <Sparkles size={16} /> Draft requirement
-                      </button>
-                      <span style={{ fontSize: 13, color: '#6B7280' }}>or fill in the form below yourself</span>
-                    </div>
-                  </>
-                )}
+                  </div>
 
-                {phase === 'working' && (
-                  <div style={{ fontSize: 14, color: '#374151', padding: '8px 0' }}>{workMsg}</div>
-                )}
+                  {phase === 'open' && (
+                    <>
+                      <div style={{ position: 'relative' }}>
+                        <textarea
+                          autoFocus
+                          value={text}
+                          onChange={(e) => setText(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); startAgent(); } }}
+                          placeholder="Paste or type requirements here."
+                          rows={4}
+                          style={{ ...inputStyle, resize: 'vertical', background: '#fff', paddingRight: 52 }}
+                        />
+                        <button type="button" onClick={startAgent} disabled={!canDraft} aria-label="Draft requirement" title="Draft requirement (Ctrl/Cmd + Enter)"
+                          style={{ position: 'absolute', right: 10, bottom: 10, width: 32, height: 32, borderRadius: '50%', border: 'none', background: canDraft ? GREEN : '#C7D9CF', color: '#fff', cursor: canDraft ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <ArrowUp size={18} />
+                        </button>
+                      </div>
+                      <input
+                        value={licenseId}
+                        onChange={(e) => setLicenseId(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); startAgent(); } }}
+                        placeholder="License ID (optional, for renewals)"
+                        style={{ ...inputStyle, background: '#fff', marginTop: 10, padding: '8px 12px', maxWidth: 300 }}
+                      />
+                    </>
+                  )}
 
-                {phase === 'review' && result && (
-                  <>
+                  {phase === 'working' && <div style={{ fontSize: 14, color: '#374151', padding: '6px 0' }}>{workMsg}</div>}
+
+                  {phase === 'review' && result && (
                     <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.55 }}>
                       {result.drafts.length > 1
-                        ? <>I drafted <b>{result.drafts.length} requirements</b> ({result.drafts.map((d) => d.label).join(' and ')}) from what you pasted. </>
+                        ? <>I drafted <b>{result.drafts.length} requirements</b> ({result.drafts.map((d) => d.label).join(' and ')}). </>
                         : <>I've drafted your requirement. </>}
-                      I filled <b>{result.filledCount} of {result.totalCount}</b> fields. Anything I filled is marked <span style={{ color: GREEN, fontWeight: 600 }}>✦</span>; hover to see where it came from. I left blank anything the source didn't say, and I wrote questions you can send the customer. Review everything, edit freely, then create.
+                      I filled <b>{result.filledCount} of {result.totalCount}</b> fields, marked <span style={{ color: GREEN, fontWeight: 600 }}>✦</span>. Review and edit anything, then create.
+                      {result.license && (
+                        <div style={{ fontSize: 13, color: '#6B7280', marginTop: 6 }}>
+                          I used the location, seats and size from license <b>{result.license.licenseId}</b>, but not its commercial terms.
+                        </div>
+                      )}
+                      {result.licenseError && <div style={{ fontSize: 13, color: '#B45309', marginTop: 6 }}>{result.licenseError}</div>}
+                      <button type="button" onClick={startOver} style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', padding: 0, marginTop: 8 }}>
+                        Start over
+                      </button>
                     </div>
-                    {result.license && (
-                      <div style={{ fontSize: 13, color: '#374151', marginTop: 8, lineHeight: 1.5 }}>
-                        I pulled the facts from license <b>{result.license.licenseId}</b> (location, seats, size). I did <b>not</b> apply its commercial terms, since a renewal may change them. They're shown below for reference.
-                      </div>
-                    )}
-                    {result.licenseError && <div style={{ fontSize: 13, color: '#B45309', marginTop: 8 }}>{result.licenseError}</div>}
-                    <button type="button" onClick={startOver} style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', padding: 0, marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <RotateCcw size={13} /> Start over
-                    </button>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Draft switcher (multiple locations) */}
           {agentRun && drafts.length > 1 && (
