@@ -226,6 +226,12 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
 // ── Linking an existing Collection by URL ──────────────────────────────────
 
 const KNOWN: Record<string, { name: string; spaces: number; saved: number; shortlisted: number }> = {
+  // Real collections in the demo LiquidSpace account.
+  '573e59b5-7b3f-43cb-a0f1-e8d341902c4c': { name: 'Lisbon Collection', spaces: 6, saved: 2, shortlisted: 4 },
+  '7d10724b-d1b0-41ce-8840-dff497cddae0': { name: 'Chicago Spaces', spaces: 2, saved: 2, shortlisted: 0 },
+  '5a3c1c41-0645-46b3-9aec-bbc314c9b748': { name: 'Test', spaces: 5, saved: 4, shortlisted: 1 },
+  '6ee8a26f-6fbf-4c3e-aad7-04b2a20a6a16': { name: 'Test Collection 5', spaces: 5, saved: 5, shortlisted: 0 },
+  '30857d7f-f151-48ee-97b1-100e2cd20b92': { name: 'Test Collection', spaces: 0, saved: 0, shortlisted: 0 },
   'lisbon-private-offices-a1b2c3': { name: 'Lisbon Private Offices', spaces: 7, saved: 2, shortlisted: 3 },
   'manhattan-private-offices-abc123': { name: 'Manhattan Private Offices', spaces: 12, saved: 3, shortlisted: 4 },
   'austin-flex-options-d4e5f6': { name: 'Austin Flex Options', spaces: 9, saved: 1, shortlisted: 2 },

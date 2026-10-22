@@ -207,7 +207,7 @@ export const MVP_REQUIREMENTS: MvpRequirement[] = [
     agentTasks: 1,
     collection: {
       name: 'Lisbon Collection',
-      url: 'https://liquidspace.com/collections/lisbon-private-offices-a1b2c3',
+      url: 'https://liquidspace.com/collections/573e59b5-7b3f-43cb-a0f1-e8d341902c4c',
       totalSpaces: 6,
       location: 'In Lisbon, Portugal',
       locationSpaces: 0,
