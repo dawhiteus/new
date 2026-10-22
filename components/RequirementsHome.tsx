@@ -18,6 +18,7 @@ import {
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
 import { AGENT_NAME, AGENT_EMAIL } from './data/intakeAgent';
+import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
 import { useSearchParams } from 'react-router-dom';
@@ -247,6 +248,16 @@ function CollectionPill({ req, onOpen }: { req: MvpRequirement & { collection: N
 }
 
 
+
+/** A collection that is really in LiquidSpace always links to its real address, even if an older session saved a placeholder. */
+function withRealCollectionUrl(r: MvpRequirement): MvpRequirement {
+  const real = r.collection ? realCollectionFor(r.details.location || r.city) : undefined;
+  if (r.collection && real && r.collection.name === real.name && r.collection.url !== real.url) {
+    return { ...r, collection: { ...r.collection, url: real.url } };
+  }
+  return r;
+}
+
 export function RequirementsHome() {
   const [rows, setRows] = useRequirements();
   const [statusFilter, setStatusFilter] = useState('');
@@ -331,7 +342,7 @@ export function RequirementsHome() {
       window.history.replaceState({}, '', window.location.pathname);
     }
 
-    const stored = load().filter((r) => r.id !== incoming?.id);
+    const stored = load().map(withRealCollectionUrl).filter((r) => r.id !== incoming?.id);
     const merged = incoming ? [incoming, ...stored] : stored;
     if (incoming) save(merged);
     setRows((rs) => [...merged.filter((m) => !rs.some((r) => r.id === m.id)), ...rs]);
@@ -445,7 +456,7 @@ export function RequirementsHome() {
   };
 
   const openCollection = (req: MvpRequirement) => {
-    const url = req.collection?.url;
+    const url = withRealCollectionUrl(req).collection?.url;
     if (url) window.open(url, '_blank', 'noopener');
     else toast.info('This collection has no LiquidSpace link in the demo.');
   };
