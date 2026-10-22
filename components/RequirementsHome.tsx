@@ -246,6 +246,7 @@ function CollectionPill({ req, onOpen }: { req: MvpRequirement & { collection: N
   );
 }
 
+
 export function RequirementsHome() {
   const [rows, setRows] = useRequirements();
   const [statusFilter, setStatusFilter] = useState('');

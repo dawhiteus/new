@@ -15,11 +15,11 @@ export interface Venue {
   area: string;
   type: string;
   desks: number; // maximum capacity of the offering
-  monthlyPrice: number; // USD, total per month for the offering
-  availableFrom: string; // ISO
+  monthlyPrice: number | null; // USD per month; null when the workspace is not priced monthly
+  availableFrom: string | null; // ISO; null when not known
 }
 
-const V = (id: string, name: string, operator: string, area: string, type: string, desks: number, monthlyPrice: number, availableFrom: string): Venue =>
+const V = (id: string, name: string, operator: string, area: string, type: string, desks: number, monthlyPrice: number | null, availableFrom: string | null): Venue =>
   ({ id, name, operator, area, type, desks, monthlyPrice, availableFrom });
 
 export const SAMPLE_INVENTORY: Record<string, Venue[]> = {
@@ -44,12 +44,13 @@ export const SAMPLE_INVENTORY: Record<string, Venue[]> = {
     V('aus4', 'East Sixth Team Office', 'Eastside Spaces', 'East Austin', 'Team Office', 30, 15600, '2027-03-01'),
     V('aus5', 'Rainey Street Floor', 'Rainey Offices', 'Rainey Street', 'Office Suite', 10, 8900, '2026-12-01'),
   ],
+  // Denver: REAL workspaces at the four venues the Hub Locator analysis lists, as read from LiquidSpace.
   denver: [
-    V('den1', 'LoDo Workspace', 'Platte Offices', 'LoDo', 'Private Office', 6, 4300, '2026-10-01'),
-    V('den2', 'Uptown Suites', 'Uptown Works', 'Uptown', 'Office Suite', 8, 5600, '2026-11-15'),
-    V('den3', 'Cherry Creek Cowork', 'Creek Collective', 'Cherry Creek', 'Coworking', 20, 5400, '2026-09-01'),
-    V('den4', 'RiNo Team Office', 'RiNo Spaces', 'RiNo', 'Team Office', 12, 7800, '2027-01-01'),
-    V('den5', 'Union Station Floor', 'Rail Offices', 'Union Station', 'Office Suite', 5, 4900, '2026-10-15'),
+    V('den-circa', 'Coworking Desk', 'WeWork | The Circa Building', 'Platte Street', 'Coworking', 35, null, null),
+    V('den-uptown', 'Dedicated Desk', 'Venture X | Denver - Uptown', '16th Street Mall', 'Dedicated Desk', 10, 299, null),
+    V('den-lodo', 'Dedicated Desk 1', 'Venture X | LoDo', 'LoDo', 'Dedicated Desk', 6, 599, null),
+    V('den-lohi136', 'DenLoHi136', 'Industrious - LoHi', 'LoHi', 'Private Office', 5, 4784, null),
+    V('den-lohi210', 'DenLoHi210', 'Industrious - LoHi', 'LoHi', 'Private Office', 5, 5115, null),
   ],
   minneapolis: [
     V('msp1', 'North Loop Offices', 'Mill City Works', 'North Loop', 'Private Office', 20, 6900, '2027-01-01'),
@@ -71,6 +72,12 @@ export const SAMPLE_INVENTORY: Record<string, Venue[]> = {
     V('dal4', 'Preston Center Offices', 'Preston Offices', 'Preston Center', 'Private Office', 20, 22000, '2027-01-15'),
   ],
 };
+
+/** Cities where the simulated agent run resolves to a real, pre-built LiquidSpace collection. */
+export const REAL_COLLECTIONS: Record<string, { name: string; url: string }> = {
+  denver: { name: 'Denver Hub Collection', url: 'https://liquidspace.com/collections/44f4f9b4-9e80-4abc-a97a-cec2baa5ea99' },
+};
+export const realCollectionFor = (location: string) => REAL_COLLECTIONS[location.toLowerCase().split(',')[0].trim()];
 
 export type Tier = 'Strong' | 'Partial' | 'Weak';
 
@@ -150,7 +157,7 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
       else if (v.desks >= c.capacity) { pts += 0.5; fits = true; notes.push({ text: `Larger than needed (${v.desks} desks)`, severity: 'medium' }); }
       else { fails++; fits = false; notes.push({ text: `Holds ${v.desks} of ${c.capacity}`, severity: 'high' }); }
     }
-    if (c.budget != null) {
+    if (c.budget != null && v.monthlyPrice != null) {
       known++;
       if (v.monthlyPrice <= c.budget) { pts += 1; within = true; }
       else if (v.monthlyPrice <= c.budget * 1.15) { pts += 0.5; within = false; notes.push({ text: `${money(v.monthlyPrice - c.budget)}/mo over budget`, severity: 'medium' }); }
@@ -161,7 +168,7 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
       if (v.type === c.workspaceType) pts += 1;
       else { pts += 0.5; notes.push({ text: `Not ${c.workspaceType}`, severity: 'medium' }); }
     }
-    if (c.startDate) {
+    if (c.startDate && v.availableFrom != null) {
       known++;
       if (v.availableFrom <= c.startDate) pts += 1;
       else { fails++; notes.push({ text: `Available ${fmtLong(v.availableFrom)}`, severity: 'high' }); }
@@ -191,14 +198,23 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
 
   if (counts.strong === 0) gaps.push({ label: 'Overall', text: 'No strong matches. Every space has at least one trade-off.', severity: 'high' });
   if (c.budget != null) {
-    const cheapest = [...scored].sort((a, b) => a.monthlyPrice - b.monthlyPrice)[0];
-    gaps.push({
-      label: 'Budget',
-      text: withinBudget === 0
-        ? `None are within ${money(c.budget)}/mo. The lowest is ${money(cheapest.monthlyPrice)}/mo (${cheapest.name}).`
-        : `${withinBudget} of ${scored.length} ${withinBudget === 1 ? 'is' : 'are'} within ${money(c.budget)}/mo${withinBudget < scored.length ? `. The lowest-priced over budget is ${money(Math.min(...scored.filter((s) => s.monthlyPrice > c.budget!).map((s) => s.monthlyPrice)))}/mo.` : '.'}`,
-      severity: withinBudget === 0 ? 'high' : withinBudget < scored.length / 2 ? 'medium' : 'info',
-    });
+    const priced = scored.filter((s) => s.monthlyPrice != null);
+    const unpriced = scored.length - priced.length;
+    if (priced.length) {
+      const over = priced.filter((s) => s.monthlyPrice! > c.budget!);
+      const lowestOver = over.length ? Math.min(...over.map((s) => s.monthlyPrice!)) : null;
+      const lowest = [...priced].sort((a, b) => a.monthlyPrice! - b.monthlyPrice!)[0];
+      gaps.push({
+        label: 'Budget',
+        text: (withinBudget === 0
+          ? `None are within ${money(c.budget)}/mo. The lowest is ${money(lowest.monthlyPrice!)}/mo (${lowest.name}).`
+          : `${withinBudget} of ${priced.length} ${withinBudget === 1 ? 'is' : 'are'} within ${money(c.budget)}/mo${lowestOver != null ? `. The lowest-priced over budget is ${money(lowestOver)}/mo.` : '.'}`)
+          + (unpriced ? ` ${unpriced} ${unpriced === 1 ? 'is' : 'are'} not priced monthly.` : ''),
+        severity: withinBudget === 0 ? 'high' : withinBudget < priced.length / 2 ? 'medium' : 'info',
+      });
+    } else {
+      gaps.push({ label: 'Budget', text: 'None are priced monthly, so budget could not be compared.', severity: 'info' });
+    }
   }
   if (c.capacity != null) {
     const small = scored.filter((s) => s.fitsPeople === false).length;
@@ -209,8 +225,8 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
     if (off) gaps.push({ label: 'Workspace type', text: `${off} of ${scored.length} ${off === 1 ? 'is' : 'are'} not ${c.workspaceType}.`, severity: off === scored.length ? 'high' : 'medium' });
   }
   if (c.startDate) {
-    const late = scored.filter((s) => s.availableFrom > c.startDate);
-    if (late.length) gaps.push({ label: 'Availability', text: `${late.length} of ${scored.length} ${late.length === 1 ? "isn't" : "aren't"} available by ${fmtLong(c.startDate)}. The earliest opens ${fmtLong(late.map((s) => s.availableFrom).sort()[0])}.`, severity: 'medium' });
+    const late = scored.filter((s) => s.availableFrom != null && s.availableFrom > c.startDate);
+    if (late.length) gaps.push({ label: 'Availability', text: `${late.length} of ${scored.length} ${late.length === 1 ? "isn't" : "aren't"} available by ${fmtLong(c.startDate)}. The earliest opens ${fmtLong(late.map((s) => s.availableFrom as string).sort()[0])}.`, severity: 'medium' });
   }
   const unsupported = [c.termLength ? 'term length' : '', c.amenityNeeds ? 'program and amenity needs' : ''].filter(Boolean);
   const notAssessed: string[] = [];
@@ -226,6 +242,7 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string): S
 // ── Linking an existing Collection by URL ──────────────────────────────────
 
 const KNOWN: Record<string, { name: string; spaces: number; saved: number; shortlisted: number }> = {
+  '44f4f9b4-9e80-4abc-a97a-cec2baa5ea99': { name: 'Denver Hub Collection', spaces: 5, saved: 5, shortlisted: 0 },
   // Real collections in the demo LiquidSpace account.
   '573e59b5-7b3f-43cb-a0f1-e8d341902c4c': { name: 'Lisbon Collection', spaces: 6, saved: 2, shortlisted: 4 },
   '7d10724b-d1b0-41ce-8840-dff497cddae0': { name: 'Chicago Spaces', spaces: 2, saved: 2, shortlisted: 0 },

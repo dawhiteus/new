@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, Link2, Bot, ExternalLink, ChevronLeft, Loader2, Sparkles, Check, MapPin, DollarSign, Users } from 'lucide-react';
 import {
-  COLLECTION_AGENT, criteriaFor, sourceCollection, resolveCollectionUrl, newCollectionUrl,
+  COLLECTION_AGENT, criteriaFor, sourceCollection, resolveCollectionUrl, newCollectionUrl, realCollectionFor,
   type SourcingResult,
 } from './data/collectionAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
@@ -100,7 +100,8 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
     setWorkMsg(steps[0]);
     steps.forEach((s, i) => setTimeout(() => setWorkMsg(s), i * 650));
     setTimeout(() => {
-      const r = sourceCollection(criteria, name.trim());
+      const realC = realCollectionFor(criteria.location);
+      const r = sourceCollection(criteria, realC ? realC.name : name.trim());
       if (!r) {
         // No suitable inventory: still create an empty Collection and explain the result.
         const empty: CollectionOutcome = {
@@ -114,9 +115,10 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
         setStage('none');
         return;
       }
-      const collectionUrl = newCollectionUrl(name.trim());
+      const real = realCollectionFor(criteria.location);
+      const collectionUrl = real ? real.url : newCollectionUrl(name.trim());
       const o: CollectionOutcome = {
-        method: 'agent', name: name.trim(), url: collectionUrl, spaces: r.found, saved: 0, shortlisted: 0,
+        method: 'agent', name: real ? real.name : name.trim(), url: collectionUrl, spaces: r.found, saved: 0, shortlisted: 0,
         locationSpaces: r.inMarket, budgetSpaces: r.withinBudget, peopleSpaces: r.fitsPeople,
         assessment: { summary: r.summary, gaps: r.gaps.map((g) => `${g.label}: ${g.text}`) },
       };
@@ -240,7 +242,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                           {criteriaRow('Start date / term', [criteria.startDate, criteria.termLength && `${criteria.termLength} mos`].filter(Boolean).join(' · '))}
                         </div>
                         <label style={lbl}>Collection name</label>
-                        <input value={name} onChange={(e) => setName(e.target.value)} style={{ ...input, background: '#fff' }} />
+                        <input value={realCollectionFor(criteria.location)?.name ?? name} disabled={!!realCollectionFor(criteria.location)} onChange={(e) => setName(e.target.value)} style={{ ...input, background: '#fff' }} />
                       </>
                     )}
 
@@ -304,7 +306,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                       </div>
                     </>
                   )}
-                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 12, fontFamily: FONT }}>Prototype: simulated sourcing from fictitious sample inventory. Browse the individual spaces in LiquidSpace. The assessment is saved to this requirement's sourcing tasks.</div>
+                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 12, fontFamily: FONT }}>{realCollectionFor(criteria.location) ? 'Prototype: the agent run is simulated; the Collection and its spaces are real and open in LiquidSpace. ' : 'Prototype: simulated sourcing from fictitious sample inventory. '}Browse the individual spaces in LiquidSpace. The assessment is saved to this requirement's sourcing tasks.</div>
                 </>
               )}
 
