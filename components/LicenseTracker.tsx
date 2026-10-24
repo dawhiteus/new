@@ -43,6 +43,7 @@ const mockLicenses = [
     address: 'Tel Tech Campus, 12920 SE 38th St',
     size: '485,000 sq ft',
     cost: 34448,
+    seats: 139,
     marketRateComparison: '-8%',
     startDate: '2022-04-01',
     endDate: inDays(62),
@@ -85,6 +86,7 @@ const mockLicenses = [
     address: 'WeWork Peachtree, 3424 Peachtree Rd NE',
     size: '180,000 sq ft',
     cost: 4241,
+    seats: 11,
     marketRateComparison: '+12%',
     startDate: '2022-06-01',
     endDate: 'autorenew',
@@ -124,6 +126,7 @@ const mockLicenses = [
     address: 'Industrious 101 Avenue of the Americas',
     size: '95,000 sq ft',
     cost: 11241,
+    seats: 22,
     marketRateComparison: '-3%',
     startDate: '2023-07-01',
     endDate: inDays(0),
@@ -164,6 +167,7 @@ const mockLicenses = [
     address: 'Tel Tech Partnership Center, 15010 NE 36th St',
     size: '125,000 sq ft',
     cost: 3334,
+    seats: 10,
     marketRateComparison: '-15%',
     startDate: '2023-09-01',
     endDate: inDays(420),
@@ -203,6 +207,7 @@ const mockLicenses = [
     address: 'One Canada Square, Canary Wharf',
     size: '200,000 sq ft',
     cost: 9420,
+    seats: 20,
     marketRateComparison: '+5%',
     startDate: '2022-11-01',
     endDate: inDays(-75),
@@ -243,6 +248,7 @@ const mockLicenses = [
     address: 'Regus 2600 Commerce St',
     size: '68,000 sq ft',
     cost: 2711,
+    seats: 15,
     marketRateComparison: '-22%',
     startDate: '2023-01-01',
     endDate: inDays(-200),
@@ -277,18 +283,6 @@ const mockLicenses = [
   },
 ];
 mockLicenses.forEach((l: any) => { l.daysUntilExpiration = isISODate(l.endDate) ? daysFromNow(l.endDate) : null; });
-
-const licenseTypeData = [
-  { name: 'Flex (Hourly)',          value: 38, color: '#B3D9FF', percentage: 24.7 },
-  { name: 'Dedicated (External)',   value: 72, color: '#80C7FF', percentage: 46.8 },
-  { name: 'Dedicated (LiquidSpace)', value: 44, color: '#005B94', percentage: 28.6 },
-];
-
-const COLORS = {
-  'Flex (Hourly)': '#B3D9FF',
-  'Dedicated (External)': '#80C7FF',
-  'Dedicated (LiquidSpace)': '#005B94'
-};
 
 const MARKET_RATE_DETAILS: Record<number, { costPerSeat: number; marketMedian: number; confidence: number; comparables: number; suggestion: string }> = {
   1: { costPerSeat: 247.83, marketMedian: 269.38, confidence: 4, comparables: 31, suggestion: 'Well-positioned for renewal; strong negotiating position.' },
@@ -513,6 +507,7 @@ export function LicenseTracker({
         address: [newLicense.address1, newLicense.address2].filter(Boolean).join(', ') || '—',
         size: newLicense.size || '—',
         cost: monthlyCost,
+        seats: Number(newLicense.seats) || 0,
         marketRateComparison: '0%',
         startDate: newLicense.termStart || '',
         endDate: newLicense.termEnd || '',
@@ -718,10 +713,20 @@ export function LicenseTracker({
     return baseSpaces;
   };
 
-  const totalLicenses = 223;
-  const totalMonthlyCost = 1376000; // 223 licenses at ~$6.2K/month average (from actual license costs)
-  const totalSeats = 4200; // ~19 seats per license on average
-  const costPerSeat = totalMonthlyCost / totalSeats;
+  // Summary cards are computed from the licenses in the table.
+  const currentLicenses = licenses.filter((l) => ['Active', 'Expiring Soon'].includes(getStatusLabel(l)));
+  const totalLicenses = licenses.length;
+  const totalMonthlyCost = currentLicenses.reduce((sum, l) => sum + (l.cost || 0), 0);
+  const totalSeats = currentLicenses.reduce((sum, l) => sum + (l.seats || 0), 0);
+  const costPerSeat = totalSeats ? totalMonthlyCost / totalSeats : 0;
+  const TYPE_COLORS: Record<string, string> = {
+    'Traditional Lease': '#B3D9FF',
+    'Dedicated (External License)': '#80C7FF',
+    'Dedicated (LiquidSpace License)': '#005B94',
+  };
+  const licenseTypeData = LICENSE_TYPES
+    .map((name) => ({ name, value: licenses.filter((l) => l.type === name).length, color: TYPE_COLORS[name] }))
+    .map((d) => ({ ...d, percentage: totalLicenses ? (d.value / totalLicenses) * 100 : 0 }));
 
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
     const RADIAN = Math.PI / 180;
@@ -810,24 +815,9 @@ export function LicenseTracker({
               </div>
               
               <div className="space-y-3">
-                <ProgressBar 
-                  value={38} 
-                  max={totalLicenses} 
-                  color="#B3D9FF" 
-                  label="Flex (Hourly)" 
-                />
-                <ProgressBar 
-                  value={72} 
-                  max={totalLicenses} 
-                  color="#80C7FF" 
-                  label="Dedicated (External)" 
-                />
-                <ProgressBar 
-                  value={44} 
-                  max={totalLicenses} 
-                  color="#005B94" 
-                  label="Dedicated (LiquidSpace)" 
-                />
+                {licenseTypeData.map((t) => (
+                  <ProgressBar key={t.name} value={t.value} max={totalLicenses} color={t.color} label={t.name} />
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -848,7 +838,7 @@ export function LicenseTracker({
                       Total Monthly Cost
                     </div>
                     <div style={{ fontSize: '12px', fontWeight: 400, color: '#6b7280', fontFamily: 'Inter, sans-serif' }}>
-                      All workspace expenses
+                      Active and expiring licenses
                     </div>
                   </div>
                 </div>
@@ -904,7 +894,7 @@ export function LicenseTracker({
                     License Distribution
                   </div>
                   <div style={{ fontSize: '12px', fontWeight: 400, color: '#6b7280', fontFamily: 'Inter, sans-serif' }}>
-                    By workspace type
+                    By license type
                   </div>
                 </div>
               </div>
@@ -913,7 +903,7 @@ export function LicenseTracker({
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                     <Pie
-                      data={licenseTypeData}
+                      data={licenseTypeData.filter((d) => d.value > 0)}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
@@ -925,7 +915,7 @@ export function LicenseTracker({
                       strokeWidth={2}
                       stroke="#ffffff"
                     >
-                      {licenseTypeData.map((entry, index) => (
+                      {licenseTypeData.filter((d) => d.value > 0).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -1041,9 +1031,6 @@ export function LicenseTracker({
                     Operator
                   </TableHead>
                   <TableHead className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Payment Info
-                  </TableHead>
-                  <TableHead className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Actions
                   </TableHead>
                 </TableRow>
@@ -1051,7 +1038,7 @@ export function LicenseTracker({
               <TableBody>
                 {filteredLicenses.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-12 text-center" style={{ color: '#9CA3AF', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
+                    <TableCell colSpan={8} className="py-12 text-center" style={{ color: '#9CA3AF', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
                       No licenses match your filters.
                     </TableCell>
                   </TableRow>
@@ -1102,9 +1089,6 @@ export function LicenseTracker({
                     </TableCell>
                     <TableCell className="py-4 px-6" style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>
                       {license.operator}
-                    </TableCell>
-                    <TableCell className="py-4 px-6" style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                      {license.paymentInfo}
                     </TableCell>
                     <TableCell className="py-4 px-6">
                       <LicenseActionsDropdown 
