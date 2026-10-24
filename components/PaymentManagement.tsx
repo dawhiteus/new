@@ -156,12 +156,23 @@ export function PaymentManagement({
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showLicenseModal, setShowLicenseModal] = useState(false);
 
+  // Filter options come from the rows actually in the table, and matching is exact.
+  const uniqueSorted = (xs: string[]) => Array.from(new Set(xs.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  const cityOptions = uniqueSorted(payments.map((p) => p.city));
+  const typeOptions = uniqueSorted(payments.map((p) => p.type));
+  const operatorOptions = uniqueSorted(payments.map((p) => p.operator));
+  // Term end comes from the property's license (same days-to-expiry as the License Tracker).
+  const TERM_DAYS_BY_CITY: Record<string, number> = { Bellevue: 89, Atlanta: 156, 'New York': 245, Seattle: 298, London: 398, Dallas: 456, Dublin: 340, Toronto: 520 };
+  const TERM_WINDOWS: Record<string, number> = { '30days': 30, '90days': 90, '1year': 365 };
+
   const filteredPayments = payments.filter(payment => {
-    const matchesCity = cityFilter === 'all' || payment.city.toLowerCase().includes(cityFilter.toLowerCase());
-    const matchesType = typeFilter === 'all' || payment.type.toLowerCase().includes(typeFilter.toLowerCase());
-    const matchesOperator = operatorFilter === 'all' || payment.operator.toLowerCase().includes(operatorFilter.toLowerCase());
+    const matchesCity = cityFilter === 'all' || payment.city === cityFilter;
+    const matchesType = typeFilter === 'all' || payment.type === typeFilter;
+    const matchesOperator = operatorFilter === 'all' || payment.operator === operatorFilter;
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
-    return matchesCity && matchesType && matchesOperator && matchesStatus;
+    const days = TERM_DAYS_BY_CITY[payment.city];
+    const matchesTerm = termEndFilter === 'all' || (days != null && days >= 0 && days <= TERM_WINDOWS[termEndFilter]);
+    return matchesCity && matchesType && matchesOperator && matchesStatus && matchesTerm;
   });
 
   // Calculate metrics
@@ -454,12 +465,7 @@ export function PaymentManagement({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Cities</SelectItem>
-                      <SelectItem value="seattle">Seattle</SelectItem>
-                      <SelectItem value="austin">Austin</SelectItem>
-                      <SelectItem value="newyork">New York</SelectItem>
-                      <SelectItem value="sanfrancisco">San Francisco</SelectItem>
-                      <SelectItem value="chicago">Chicago</SelectItem>
-                      <SelectItem value="denver">Denver</SelectItem>
+                      {cityOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                     </SelectContent>
                   </Select>
 
@@ -469,9 +475,7 @@ export function PaymentManagement({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="flex">Flex (Hourly)</SelectItem>
-                      <SelectItem value="dedicated-external">Dedicated (External)</SelectItem>
-                      <SelectItem value="dedicated-liquidspace">Dedicated (LiquidSpace)</SelectItem>
+                      {typeOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                     </SelectContent>
                   </Select>
 
@@ -481,11 +485,7 @@ export function PaymentManagement({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Operators</SelectItem>
-                      <SelectItem value="wework">WeWork</SelectItem>
-                      <SelectItem value="regus">Regus</SelectItem>
-                      <SelectItem value="spaces">Spaces</SelectItem>
-                      <SelectItem value="cloudflare">Cloudflare Office</SelectItem>
-                      <SelectItem value="ifs">IFS Workspace</SelectItem>
+                      {operatorOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                     </SelectContent>
                   </Select>
 
@@ -495,9 +495,9 @@ export function PaymentManagement({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Terms</SelectItem>
-                      <SelectItem value="30days">30 days</SelectItem>
-                      <SelectItem value="90days">90 days</SelectItem>
-                      <SelectItem value="1year">1 year</SelectItem>
+                      <SelectItem value="30days">Ends within 30 days</SelectItem>
+                      <SelectItem value="90days">Ends within 90 days</SelectItem>
+                      <SelectItem value="1year">Ends within 1 year</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -601,6 +601,13 @@ export function PaymentManagement({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {filteredPayments.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={11} className="py-12 text-center" style={{ color: '#9CA3AF', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
+                        No payments match your filters.
+                      </TableCell>
+                    </TableRow>
+                  )}
                   {filteredPayments.map((payment, index) => (
                     <TableRow 
                       key={payment.id}

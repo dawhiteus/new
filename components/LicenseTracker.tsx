@@ -371,6 +371,10 @@ export function LicenseTracker({
   const [licenses, setLicenses] = useState(mockLicenses);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [cityFilter, setCityFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [operatorFilter, setOperatorFilter] = useState('all');
+  const [termFilter, setTermFilter] = useState('all');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showAddLicenseModal, setShowAddLicenseModal] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState<any>(null);
@@ -380,41 +384,49 @@ export function LicenseTracker({
   const [currentLicenseForCollection, setCurrentLicenseForCollection] = useState<any>(null);
   const [tooltipState, setTooltipState] = useState<{ id: number; x: number; y: number } | null>(null);
 
+  // The status shown in the table. Filters use exactly this value so they always match what's on screen.
+  const getStatusLabel = (license: any): string => {
+    if (['Pending', 'Expired', 'Cancelled', 'Terminated'].includes(license.status)) return license.status;
+    if (license.daysUntilExpiration <= 30) return 'Expiring Soon';
+    if (license.daysUntilExpiration <= 90) return 'Renewal Due';
+    return 'Active';
+  };
+
+  const STATUS_ORDER = ['Active', 'Renewal Due', 'Expiring Soon', 'Pending', 'Expired', 'Cancelled', 'Terminated'];
+  const uniqueSorted = (xs: string[]) => Array.from(new Set(xs.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  const cityOptions = uniqueSorted(licenses.map((l) => l.city));
+  const typeOptions = uniqueSorted(licenses.map((l) => l.type));
+  const operatorOptions = uniqueSorted(licenses.map((l) => l.operator));
+  const statusOptions = STATUS_ORDER.filter((st) => licenses.some((l) => getStatusLabel(l) === st));
+
+  const TERM_WINDOWS: Record<string, number> = { '30days': 30, '90days': 90, '1year': 365 };
+
   const filteredLicenses = licenses.filter(license => {
-    const matchesSearch = license.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         license.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         license.operator.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || license.status.toLowerCase().includes(statusFilter.toLowerCase());
-    return matchesSearch && matchesStatus;
+    const q = searchTerm.toLowerCase();
+    const matchesSearch = !q || license.address.toLowerCase().includes(q) ||
+                         license.city.toLowerCase().includes(q) ||
+                         license.operator.toLowerCase().includes(q);
+    const matchesStatus = statusFilter === 'all' || getStatusLabel(license) === statusFilter;
+    const matchesCity = cityFilter === 'all' || license.city === cityFilter;
+    const matchesType = typeFilter === 'all' || license.type === typeFilter;
+    const matchesOperator = operatorFilter === 'all' || license.operator === operatorFilter;
+    const window = TERM_WINDOWS[termFilter];
+    const matchesTerm = termFilter === 'all' || (license.daysUntilExpiration >= 0 && license.daysUntilExpiration <= window);
+    return matchesSearch && matchesStatus && matchesCity && matchesType && matchesOperator && matchesTerm;
   });
 
-  const getStatusBadge = (status: string, daysUntilExpiration: number) => {
-    if (daysUntilExpiration <= 30) {
-      return (
-        <Badge 
-          className="text-white rounded-full px-3 py-1 border-0" 
-          style={{ backgroundColor: '#FFA500', fontSize: '12px', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}
-        >
-          Expiring Soon
-        </Badge>
-      );
-    }
-    if (daysUntilExpiration <= 90) {
-      return (
-        <Badge 
-          className="text-white rounded-full px-3 py-1 border-0" 
-          style={{ backgroundColor: '#FFA500', fontSize: '12px', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}
-        >
-          Renewal Due
-        </Badge>
-      );
-    }
+  const getStatusBadge = (license: any) => {
+    const label = getStatusLabel(license);
+    const color: Record<string, string> = {
+      'Active': '#28A745', 'Renewal Due': '#FFA500', 'Expiring Soon': '#FFA500',
+      'Pending': '#005B94', 'Expired': '#DC3545', 'Cancelled': '#6B7280', 'Terminated': '#6B7280',
+    };
     return (
-      <Badge 
-        className="text-white rounded-full px-3 py-1 border-0" 
-        style={{ backgroundColor: '#28A745', fontSize: '12px', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}
+      <Badge
+        className="text-white rounded-full px-3 py-1 border-0"
+        style={{ backgroundColor: color[label] ?? '#6B7280', fontSize: '12px', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}
       >
-        Active
+        {label}
       </Badge>
     );
   };
@@ -919,63 +931,55 @@ export function LicenseTracker({
           {/* Filter Section */}
           <div className="p-6 border-b" style={{ borderColor: '#e5e7eb' }}>
             <div className="flex flex-wrap gap-3">
-              <Select>
-                <SelectTrigger className="w-32 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+              <Select value={cityFilter === 'all' ? '' : cityFilter} onValueChange={setCityFilter}>
+                <SelectTrigger className="h-9 bg-white border rounded" style={{ minWidth: 128, borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                   <SelectValue placeholder="City" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Cities</SelectItem>
-                  <SelectItem value="seattle">Seattle</SelectItem>
-                  <SelectItem value="austin">Austin</SelectItem>
-                  <SelectItem value="newyork">New York</SelectItem>
-                  <SelectItem value="sanfrancisco">San Francisco</SelectItem>
+                  {cityOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                 </SelectContent>
               </Select>
 
-              <Select>
-                <SelectTrigger className="w-32 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+              <Select value={typeFilter === 'all' ? '' : typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="h-9 bg-white border rounded" style={{ minWidth: 128, borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="flex">Flex (Hourly)</SelectItem>
-                  <SelectItem value="dedicated-external">Dedicated (External)</SelectItem>
-                  <SelectItem value="dedicated-liquidspace">Dedicated (LiquidSpace)</SelectItem>
+                  {typeOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                 </SelectContent>
               </Select>
 
-              <Select>
-                <SelectTrigger className="w-32 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+              <Select value={operatorFilter === 'all' ? '' : operatorFilter} onValueChange={setOperatorFilter}>
+                <SelectTrigger className="h-9 bg-white border rounded" style={{ minWidth: 128, borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                   <SelectValue placeholder="Operator" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Operators</SelectItem>
-                  <SelectItem value="wework">WeWork</SelectItem>
-                  <SelectItem value="regus">Regus</SelectItem>
-                  <SelectItem value="spaces">Spaces</SelectItem>
+                  {operatorOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                 </SelectContent>
               </Select>
 
-              <Select>
-                <SelectTrigger className="w-32 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+              <Select value={termFilter === 'all' ? '' : termFilter} onValueChange={setTermFilter}>
+                <SelectTrigger className="h-9 bg-white border rounded" style={{ minWidth: 128, borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                   <SelectValue placeholder="Term End" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Terms</SelectItem>
-                  <SelectItem value="30days">30 days</SelectItem>
-                  <SelectItem value="90days">90 days</SelectItem>
-                  <SelectItem value="1year">1 year</SelectItem>
+                  <SelectItem value="30days">Ends within 30 days</SelectItem>
+                  <SelectItem value="90days">Ends within 90 days</SelectItem>
+                  <SelectItem value="1year">Ends within 1 year</SelectItem>
                 </SelectContent>
               </Select>
 
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                  <SelectValue placeholder="Status" />
+              <Select value={statusFilter === 'all' ? '' : statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-9 bg-white border rounded" style={{ minWidth: 128, borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+                  <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="expiring">Expiring</SelectItem>
+                  {statusOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                 </SelectContent>
               </Select>
 
@@ -1038,6 +1042,13 @@ export function LicenseTracker({
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {filteredLicenses.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={11} className="py-12 text-center" style={{ color: '#9CA3AF', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
+                      No licenses match your filters.
+                    </TableCell>
+                  </TableRow>
+                )}
                 {filteredLicenses.map((license) => (
                   <TableRow 
                     key={license.id} 
@@ -1045,7 +1056,7 @@ export function LicenseTracker({
                     style={{ borderColor: '#e5e7eb' }}
                   >
                     <TableCell className="py-4 px-6">
-                      {getStatusBadge(license.status, license.daysUntilExpiration)}
+                      {getStatusBadge(license)}
                     </TableCell>
                     <TableCell className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
                       {license.city}
