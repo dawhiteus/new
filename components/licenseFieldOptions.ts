@@ -10,7 +10,7 @@
 // Dedicated-LiquidSpace).
 export const WORKSPACE_TYPES = ['Flex (Hourly)', 'Dedicated (External)', 'Dedicated (LiquidSpace)'];
 
-export const LICENSE_STATUS_OPTIONS = ['Active', 'Pending', 'Expired', 'Cancelled'];
+export const LICENSE_STATUS_OPTIONS = ['Active', 'Expired', 'Archived'];
 
 // Contract Type — structure of the current term only. No duration or
 // renewal concepts. Annual/Multi-Year are represented via Term Start/End,

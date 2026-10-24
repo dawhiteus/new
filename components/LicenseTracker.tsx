@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Upload, Search, Filter, Plus, MoreHorizontal, MapPin, Calendar, FileText, Building2, DollarSign, Users, TrendingUp, Clock } from 'lucide-react';
+import { ChevronsUpDown, Upload, Search, Filter, Plus, MoreHorizontal, MapPin, Calendar, FileText, Building2, DollarSign, Users, TrendingUp, Clock } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { UploadLicenseModal } from './UploadLicenseModal';
 import { LicenseDetailModal } from './LicenseDetailModal';
@@ -20,19 +20,34 @@ interface LicenseTrackerProps {
   isAIDrawerOpen?: boolean;
 }
 
+// Dates are relative to today so the term-end filters always have something to show in the demo.
+const DAY_MS = 86400000;
+const toISO = (d: Date) => d.toISOString().slice(0, 10);
+const inDays = (n: number) => toISO(new Date(Date.now() + n * DAY_MS));
+const isISODate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+const daysFromNow = (iso: string) => Math.round((new Date(iso + 'T00:00:00').getTime() - new Date(new Date().toDateString()).getTime()) / DAY_MS);
+const formatTermEnd = (v: string) => (isISODate(v) ? `${v.slice(5, 7)}/${v.slice(8, 10)}/${v.slice(0, 4)}` : v || '—');
+
+// License Type values as used in production.
+const LICENSE_TYPES = ['Dedicated (LiquidSpace License)', 'Dedicated (External License)', 'Traditional Lease'];
+const toLicenseType = (workspaceType: string) =>
+  workspaceType === 'Dedicated (LiquidSpace)' ? 'Dedicated (LiquidSpace License)'
+  : workspaceType === 'Traditional Lease' || LICENSE_TYPES.includes(workspaceType) ? workspaceType
+  : 'Dedicated (External License)';
+
 const mockLicenses = [
   {
     id: 1,
     city: 'Bellevue',
-    type: 'Headquarters Campus',
+    type: 'Traditional Lease',
     address: 'Tel Tech Campus, 12920 SE 38th St',
     size: '485,000 sq ft',
     cost: 34448,
     marketRateComparison: '-8%',
     startDate: '2022-04-01',
-    endDate: '2025-03-31',
+    endDate: inDays(62),
     operator: 'Tel Tech Corporation',
-    status: 'Critical Renewal',
+    status: 'Active',
     paymentInfo: 'Quarterly Wire Transfer',
     daysUntilExpiration: 89,
     hasContract: true,
@@ -66,15 +81,15 @@ const mockLicenses = [
   {
     id: 2,
     city: 'Atlanta',
-    type: 'Regional Hub',
+    type: 'Dedicated (External License)',
     address: 'WeWork Peachtree, 3424 Peachtree Rd NE',
     size: '180,000 sq ft',
     cost: 4241,
     marketRateComparison: '+12%',
     startDate: '2022-06-01',
-    endDate: '2025-05-31',
+    endDate: 'autorenew',
     operator: 'WeWork',
-    status: 'High Priority Renewal',
+    status: 'Active',
     paymentInfo: 'Monthly ACH Auto-Pay',
     daysUntilExpiration: 156,
     hasContract: true,
@@ -105,15 +120,15 @@ const mockLicenses = [
   {
     id: 3,
     city: 'New York',
-    type: 'Engineering Center',
+    type: 'Dedicated (LiquidSpace License)',
     address: 'Industrious 101 Avenue of the Americas',
     size: '95,000 sq ft',
     cost: 11241,
     marketRateComparison: '-3%',
     startDate: '2023-07-01',
-    endDate: '2025-06-30',
+    endDate: inDays(0),
     operator: 'Industrious',
-    status: 'Recently Renewed',
+    status: 'Active',
     paymentInfo: 'Monthly Auto-Pay',
     daysUntilExpiration: 245,
     hasContract: true,
@@ -145,15 +160,15 @@ const mockLicenses = [
   {
     id: 4,
     city: 'Seattle',
-    type: 'Partnership Hub',
+    type: 'Traditional Lease',
     address: 'Tel Tech Partnership Center, 15010 NE 36th St',
     size: '125,000 sq ft',
     cost: 3334,
     marketRateComparison: '-15%',
     startDate: '2023-09-01',
-    endDate: '2025-08-31',
+    endDate: inDays(420),
     operator: 'Tel Tech Corporation',
-    status: 'Under Evaluation',
+    status: 'Active',
     paymentInfo: 'Quarterly Invoice',
     daysUntilExpiration: 298,
     hasContract: true,
@@ -184,15 +199,15 @@ const mockLicenses = [
   {
     id: 5,
     city: 'London',
-    type: 'Global Finance Center',
+    type: 'Traditional Lease',
     address: 'One Canada Square, Canary Wharf',
     size: '200,000 sq ft',
     cost: 9420,
     marketRateComparison: '+5%',
     startDate: '2022-11-01',
-    endDate: '2025-10-31',
+    endDate: inDays(-75),
     operator: 'Canary Wharf Group',
-    status: 'Pre-Negotiation',
+    status: 'Active',
     paymentInfo: 'Monthly Sterling Transfer',
     daysUntilExpiration: 398,
     hasContract: true,
@@ -224,15 +239,15 @@ const mockLicenses = [
   {
     id: 6,
     city: 'Dallas',
-    type: 'Innovation Lab',
+    type: 'Dedicated (LiquidSpace License)',
     address: 'Regus 2600 Commerce St',
     size: '68,000 sq ft',
     cost: 2711,
     marketRateComparison: '-22%',
     startDate: '2023-01-01',
-    endDate: '2025-12-31',
+    endDate: inDays(-200),
     operator: 'Regus / IWG',
-    status: 'Performing Well',
+    status: 'Archived',
     paymentInfo: 'Monthly Invoice',
     daysUntilExpiration: 456,
     hasContract: true,
@@ -261,6 +276,7 @@ const mockLicenses = [
     }
   },
 ];
+mockLicenses.forEach((l: any) => { l.daysUntilExpiration = isISODate(l.endDate) ? daysFromNow(l.endDate) : null; });
 
 const licenseTypeData = [
   { name: 'Flex (Hourly)',          value: 38, color: '#B3D9FF', percentage: 24.7 },
@@ -371,7 +387,6 @@ export function LicenseTracker({
   const [licenses, setLicenses] = useState(mockLicenses);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [cityFilter, setCityFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [operatorFilter, setOperatorFilter] = useState('all');
   const [termFilter, setTermFilter] = useState('all');
@@ -384,43 +399,49 @@ export function LicenseTracker({
   const [currentLicenseForCollection, setCurrentLicenseForCollection] = useState<any>(null);
   const [tooltipState, setTooltipState] = useState<{ id: number; x: number; y: number } | null>(null);
 
-  // The status shown in the table. Filters use exactly this value so they always match what's on screen.
+  // The status shown in the table (production values). Filters use exactly this value.
   const getStatusLabel = (license: any): string => {
-    if (['Pending', 'Expired', 'Cancelled', 'Terminated'].includes(license.status)) return license.status;
-    if (license.daysUntilExpiration <= 30) return 'Expiring Soon';
-    if (license.daysUntilExpiration <= 90) return 'Renewal Due';
+    if (license.status === 'Archived') return 'Archived';
+    const d = license.daysUntilExpiration;
+    if (license.status === 'Expired' || (typeof d === 'number' && d < 0)) return 'Expired';
+    if (typeof d === 'number' && d <= 90) return 'Expiring Soon';
     return 'Active';
   };
 
-  const STATUS_ORDER = ['Active', 'Renewal Due', 'Expiring Soon', 'Pending', 'Expired', 'Cancelled', 'Terminated'];
-  const uniqueSorted = (xs: string[]) => Array.from(new Set(xs.filter(Boolean))).sort((a, b) => a.localeCompare(b));
-  const cityOptions = uniqueSorted(licenses.map((l) => l.city));
-  const typeOptions = uniqueSorted(licenses.map((l) => l.type));
-  const operatorOptions = uniqueSorted(licenses.map((l) => l.operator));
-  const statusOptions = STATUS_ORDER.filter((st) => licenses.some((l) => getStatusLabel(l) === st));
+  const STATUS_OPTIONS = ['Active', 'Expired', 'Archived', 'Expiring Soon'];
+  const TERM_END_OPTIONS = [
+    { value: 'month', label: 'Current month' },
+    { value: '30', label: 'Last 30 days' },
+    { value: '90', label: 'Last 90 days' },
+    { value: '365', label: 'Last year' },
+  ];
+  const operatorOptions = Array.from(new Set(licenses.map((l) => l.operator).filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
-  const TERM_WINDOWS: Record<string, number> = { '30days': 30, '90days': 90, '1year': 365 };
+  const matchesTermEnd = (license: any) => {
+    if (termFilter === 'all') return true;
+    if (!isISODate(license.endDate)) return false;
+    const end = new Date(license.endDate + 'T00:00:00');
+    const now = new Date();
+    if (termFilter === 'month') return end.getFullYear() === now.getFullYear() && end.getMonth() === now.getMonth();
+    const days = daysFromNow(license.endDate);
+    return days <= 0 && days >= -Number(termFilter);
+  };
 
   const filteredLicenses = licenses.filter(license => {
     const q = searchTerm.toLowerCase();
-    const matchesSearch = !q || license.address.toLowerCase().includes(q) ||
+    const matchesSearch = !q || (license.address || '').toLowerCase().includes(q) ||
                          license.city.toLowerCase().includes(q) ||
                          license.operator.toLowerCase().includes(q);
-    const matchesStatus = statusFilter === 'all' || getStatusLabel(license) === statusFilter;
-    const matchesCity = cityFilter === 'all' || license.city === cityFilter;
-    const matchesType = typeFilter === 'all' || license.type === typeFilter;
-    const matchesOperator = operatorFilter === 'all' || license.operator === operatorFilter;
-    const window = TERM_WINDOWS[termFilter];
-    const matchesTerm = termFilter === 'all' || (license.daysUntilExpiration >= 0 && license.daysUntilExpiration <= window);
-    return matchesSearch && matchesStatus && matchesCity && matchesType && matchesOperator && matchesTerm;
+    return matchesSearch
+      && (statusFilter === 'all' || getStatusLabel(license) === statusFilter)
+      && (typeFilter === 'all' || license.type === typeFilter)
+      && matchesTermEnd(license)
+      && (operatorFilter === 'all' || license.operator === operatorFilter);
   });
 
   const getStatusBadge = (license: any) => {
     const label = getStatusLabel(license);
-    const color: Record<string, string> = {
-      'Active': '#28A745', 'Renewal Due': '#FFA500', 'Expiring Soon': '#FFA500',
-      'Pending': '#005B94', 'Expired': '#DC3545', 'Cancelled': '#6B7280', 'Terminated': '#6B7280',
-    };
+    const color: Record<string, string> = { 'Active': '#28A745', 'Expiring Soon': '#FFA500', 'Expired': '#DC3545', 'Archived': '#6B7280' };
     return (
       <Badge
         className="text-white rounded-full px-3 py-1 border-0"
@@ -488,7 +509,7 @@ export function LicenseTracker({
       {
         id: nextId,
         city: newLicense.city || '—',
-        type: newLicense.workspaceType || 'Dedicated (External)',
+        type: toLicenseType(newLicense.workspaceType),
         address: [newLicense.address1, newLicense.address2].filter(Boolean).join(', ') || '—',
         size: newLicense.size || '—',
         cost: monthlyCost,
@@ -551,7 +572,7 @@ export function LicenseTracker({
     if (confirmTerminate) {
       setLicenses(prev => prev.map(l => 
         l.id === license.id 
-          ? { ...l, status: 'Terminated', isActive: false }
+          ? { ...l, status: 'Archived', isActive: false }
           : l
       ));
     }
@@ -930,59 +951,51 @@ export function LicenseTracker({
         <Card className="bg-white rounded-xl shadow-sm border-0">
           {/* Filter Section */}
           <div className="p-6 border-b" style={{ borderColor: '#e5e7eb' }}>
-            <div className="flex flex-wrap gap-3">
-              <Select value={cityFilter === 'all' ? '' : cityFilter} onValueChange={setCityFilter}>
-                <SelectTrigger className="w-36 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                  <SelectValue placeholder="City" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Cities</SelectItem>
-                  {cityOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                </SelectContent>
-              </Select>
-
-              <Select value={typeFilter === 'all' ? '' : typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-36 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {typeOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                </SelectContent>
-              </Select>
-
-              <Select value={operatorFilter === 'all' ? '' : operatorFilter} onValueChange={setOperatorFilter}>
-                <SelectTrigger className="w-36 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                  <SelectValue placeholder="Operator" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Operators</SelectItem>
-                  {operatorOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                </SelectContent>
-              </Select>
-
-              <Select value={termFilter === 'all' ? '' : termFilter} onValueChange={setTermFilter}>
-                <SelectTrigger className="w-36 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                  <SelectValue placeholder="Term End" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Terms</SelectItem>
-                  <SelectItem value="30days">Ends within 30 days</SelectItem>
-                  <SelectItem value="90days">Ends within 90 days</SelectItem>
-                  <SelectItem value="1year">Ends within 1 year</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={statusFilter === 'all' ? '' : statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-36 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  {statusOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                </SelectContent>
-              </Select>
-
+            <div className="flex flex-wrap gap-3 items-center">
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  style={{ appearance: 'none', WebkitAppearance: 'none', fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#0F2A3D', background: '#fff', border: '1.5px solid #0F2A3D', borderRadius: 4, padding: '8px 34px 8px 9px', cursor: 'pointer', outline: 'none' }}
+                >
+                  <option value="all">All Statuses</option>
+                  {STATUS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+                <ChevronsUpDown size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#0F2A3D' }} />
+              </div>
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  style={{ appearance: 'none', WebkitAppearance: 'none', fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#0F2A3D', background: '#fff', border: '1.5px solid #0F2A3D', borderRadius: 4, padding: '8px 34px 8px 9px', cursor: 'pointer', outline: 'none' }}
+                >
+                  <option value="all">All Types</option>
+                  {LICENSE_TYPES.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+                <ChevronsUpDown size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#0F2A3D' }} />
+              </div>
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={termFilter}
+                  onChange={(e) => setTermFilter(e.target.value)}
+                  style={{ appearance: 'none', WebkitAppearance: 'none', fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#0F2A3D', background: '#fff', border: '1.5px solid #0F2A3D', borderRadius: 4, padding: '8px 34px 8px 9px', cursor: 'pointer', outline: 'none' }}
+                >
+                  <option value="all">All Term Ends</option>
+                  {TERM_END_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <ChevronsUpDown size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#0F2A3D' }} />
+              </div>
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={operatorFilter}
+                  onChange={(e) => setOperatorFilter(e.target.value)}
+                  style={{ appearance: 'none', WebkitAppearance: 'none', fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#0F2A3D', background: '#fff', border: '1.5px solid #0F2A3D', borderRadius: 4, padding: '8px 34px 8px 9px', cursor: 'pointer', outline: 'none' }}
+                >
+                  <option value="all">All Operators</option>
+                  {operatorOptions.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+                <ChevronsUpDown size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#0F2A3D' }} />
+              </div>
               <Button
                 onClick={() => setShowUploadModal(true)}
                 variant="outline"
@@ -1010,13 +1023,10 @@ export function LicenseTracker({
                     Status
                   </TableHead>
                   <TableHead className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    City
+                    Location
                   </TableHead>
                   <TableHead className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Type
-                  </TableHead>
-                  <TableHead className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Address
                   </TableHead>
                   <TableHead className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Cost/Month
@@ -1041,7 +1051,7 @@ export function LicenseTracker({
               <TableBody>
                 {filteredLicenses.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} className="py-12 text-center" style={{ color: '#9CA3AF', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
+                    <TableCell colSpan={9} className="py-12 text-center" style={{ color: '#9CA3AF', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
                       No licenses match your filters.
                     </TableCell>
                   </TableRow>
@@ -1056,13 +1066,10 @@ export function LicenseTracker({
                       {getStatusBadge(license)}
                     </TableCell>
                     <TableCell className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                      {license.city}
+                      {license.location || license.city}
                     </TableCell>
                     <TableCell className="py-4 px-6" style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>
                       {license.type}
-                    </TableCell>
-                    <TableCell className="py-4 px-6" style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                      {license.address}
                     </TableCell>
                     <TableCell className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
                       {formatCurrency(license.cost)}
@@ -1091,7 +1098,7 @@ export function LicenseTracker({
                       </div>
                     </TableCell>
                     <TableCell className="py-4 px-6" style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                      {license.endDate}
+                      {formatTermEnd(license.endDate)}
                     </TableCell>
                     <TableCell className="py-4 px-6" style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>
                       {license.operator}
