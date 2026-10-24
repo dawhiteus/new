@@ -27,7 +27,7 @@ const mockLicenses = [
     type: 'Headquarters Campus',
     address: 'Tel Tech Campus, 12920 SE 38th St',
     size: '485,000 sq ft',
-    cost: 1950000,
+    cost: 34448,
     marketRateComparison: '-8%',
     startDate: '2022-04-01',
     endDate: '2025-03-31',
@@ -42,7 +42,7 @@ const mockLicenses = [
     name: 'Tel Tech Engineering Campus',
     property: 'Tel Tech Campus',
     location: 'Bellevue, WA',
-    monthlyRent: 1950000,
+    monthlyRent: 34448,
     squareFootage: 485000,
     renewalStatus: 'Under Negotiation',
     lastModified: '2024-09-15',
@@ -52,10 +52,10 @@ const mockLicenses = [
       { name: 'Zoning Compliance Certificate', type: 'PDF', size: '1.8 MB', uploadDate: '2024-01-10' }
     ],
     financials: {
-      monthlyRent: 1950000,
-      securityDeposit: 5850000,
-      brokerFee: 3900000,
-      totalFirstYear: 27300000
+      monthlyRent: 34448,
+      securityDeposit: 103344,
+      brokerFee: 68896,
+      totalFirstYear: 482272
     },
     contacts: {
       landlord: { name: 'Tel Tech Properties LLC', phone: '(425) 555-0200', email: 'facilities@teltech.com' },
@@ -69,7 +69,7 @@ const mockLicenses = [
     type: 'Regional Hub',
     address: 'WeWork Peachtree, 3424 Peachtree Rd NE',
     size: '180,000 sq ft',
-    cost: 685000,
+    cost: 4241,
     marketRateComparison: '+12%',
     startDate: '2022-06-01',
     endDate: '2025-05-31',
@@ -83,7 +83,7 @@ const mockLicenses = [
     name: 'Tel Tech Atlanta Regional Hub',
     property: 'WeWork Peachtree Center',
     location: 'Atlanta, GA',
-    monthlyRent: 685000,
+    monthlyRent: 4241,
     squareFootage: 180000,
     renewalStatus: 'Renewal Notice Sent',
     lastModified: '2024-08-20',
@@ -92,10 +92,10 @@ const mockLicenses = [
       { name: 'Telecommunications Infrastructure Plan', type: 'PDF', size: '2.2 MB', uploadDate: '2022-05-15' }
     ],
     financials: {
-      monthlyRent: 685000,
-      securityDeposit: 1370000,
-      brokerFee: 685000,
-      totalFirstYear: 9590000
+      monthlyRent: 4241,
+      securityDeposit: 8482,
+      brokerFee: 4241,
+      totalFirstYear: 59374
     },
     contacts: {
       landlord: { name: 'WeWork Enterprise Sales', phone: '(404) 555-0198', email: 'enterprise@wework.com' },
@@ -108,7 +108,7 @@ const mockLicenses = [
     type: 'Engineering Center',
     address: 'Industrious 101 Avenue of the Americas',
     size: '95,000 sq ft',
-    cost: 485000,
+    cost: 11241,
     marketRateComparison: '-3%',
     startDate: '2023-07-01',
     endDate: '2025-06-30',
@@ -122,7 +122,7 @@ const mockLicenses = [
     name: 'Tel Tech NYC Engineering Center',
     property: 'Industrious 101 Avenue of the Americas',
     location: 'New York, NY',
-    monthlyRent: 485000,
+    monthlyRent: 11241,
     squareFootage: 95000,
     renewalStatus: 'Renewed',
     lastModified: '2024-06-15',
@@ -132,10 +132,10 @@ const mockLicenses = [
       { name: 'Renewed Agreement 2025-2027', type: 'PDF', size: '3.1 MB', uploadDate: '2024-06-15' }
     ],
     financials: {
-      monthlyRent: 485000,
-      securityDeposit: 970000,
-      brokerFee: 485000,
-      totalFirstYear: 6790000
+      monthlyRent: 11241,
+      securityDeposit: 22482,
+      brokerFee: 11241,
+      totalFirstYear: 157374
     },
     contacts: {
       landlord: { name: 'Industrious Enterprise Team', phone: '(212) 555-0174', email: 'enterprise@industrious.com' },
@@ -148,7 +148,7 @@ const mockLicenses = [
     type: 'Partnership Hub',
     address: 'Tel Tech Partnership Center, 15010 NE 36th St',
     size: '125,000 sq ft',
-    cost: 398000,
+    cost: 3334,
     marketRateComparison: '-15%',
     startDate: '2023-09-01',
     endDate: '2025-08-31',
@@ -162,7 +162,7 @@ const mockLicenses = [
     name: 'Tel Tech Partnership Center',
     property: 'Tel Tech Partnership Campus',
     location: 'Seattle, WA',
-    monthlyRent: 398000,
+    monthlyRent: 3334,
     squareFootage: 125000,
     renewalStatus: 'Evaluation Phase',
     lastModified: '2024-09-10',
@@ -171,10 +171,10 @@ const mockLicenses = [
       { name: 'Joint Venture Addendum', type: 'PDF', size: '2.8 MB', uploadDate: '2023-08-15' }
     ],
     financials: {
-      monthlyRent: 398000,
-      securityDeposit: 796000,
+      monthlyRent: 3334,
+      securityDeposit: 6668,
       brokerFee: 0,
-      totalFirstYear: 5572000
+      totalFirstYear: 46676
     },
     contacts: {
       landlord: { name: 'Tel Tech Real Estate', phone: '(425) 555-0300', email: 'realestate@teltech.com' },
@@ -187,7 +187,7 @@ const mockLicenses = [
     type: 'Global Finance Center',
     address: 'One Canada Square, Canary Wharf',
     size: '200,000 sq ft',
-    cost: 920000,
+    cost: 9420,
     marketRateComparison: '+5%',
     startDate: '2022-11-01',
     endDate: '2025-10-31',
@@ -201,7 +201,7 @@ const mockLicenses = [
     name: 'Tel Tech Global Finance Center',
     property: 'One Canada Square',
     location: 'London, UK',
-    monthlyRent: 920000,
+    monthlyRent: 9420,
     squareFootage: 200000,
     renewalStatus: 'Pre-Negotiation',
     lastModified: '2024-08-30',
@@ -211,10 +211,10 @@ const mockLicenses = [
       { name: 'Brexit Impact Assessment', type: 'PDF', size: '1.9 MB', uploadDate: '2023-03-10' }
     ],
     financials: {
-      monthlyRent: 920000,
-      securityDeposit: 2760000,
-      brokerFee: 920000,
-      totalFirstYear: 14720000
+      monthlyRent: 9420,
+      securityDeposit: 28260,
+      brokerFee: 9420,
+      totalFirstYear: 131880
     },
     contacts: {
       landlord: { name: 'Canary Wharf Group plc', phone: '+44 20 7555 0200', email: 'leasing@canarywharf.com' },
@@ -227,7 +227,7 @@ const mockLicenses = [
     type: 'Innovation Lab',
     address: 'Regus 2600 Commerce St',
     size: '68,000 sq ft',
-    cost: 198000,
+    cost: 2711,
     marketRateComparison: '-22%',
     startDate: '2023-01-01',
     endDate: '2025-12-31',
@@ -241,7 +241,7 @@ const mockLicenses = [
     name: 'Tel Tech Dallas Innovation Lab',
     property: 'Regus Deep Ellum',
     location: 'Dallas, TX',
-    monthlyRent: 198000,
+    monthlyRent: 2711,
     squareFootage: 68000,
     renewalStatus: 'Early Renewal Option',
     lastModified: '2024-07-22',
@@ -250,10 +250,10 @@ const mockLicenses = [
       { name: 'R&D Tax Incentive Agreement', type: 'PDF', size: '1.3 MB', uploadDate: '2023-01-15' }
     ],
     financials: {
-      monthlyRent: 198000,
-      securityDeposit: 396000,
-      brokerFee: 198000,
-      totalFirstYear: 3168000
+      monthlyRent: 2711,
+      securityDeposit: 5422,
+      brokerFee: 2711,
+      totalFirstYear: 37954
     },
     contacts: {
       landlord: { name: 'IWG / Regus Enterprise', phone: '(214) 555-0167', email: 'enterprise@iwgplc.com' },
@@ -275,12 +275,12 @@ const COLORS = {
 };
 
 const MARKET_RATE_DETAILS: Record<number, { costPerSeat: number; marketMedian: number; confidence: number; comparables: number; suggestion: string }> = {
-  1: { costPerSeat: 248.40, marketMedian: 270.00, confidence: 4, comparables: 31, suggestion: 'Well-positioned for renewal; strong negotiating position.' },
-  2: { costPerSeat: 386.13, marketMedian: 345.52, confidence: 4, comparables: 28, suggestion: 'Review at renewal; consider renegotiation.' },
-  3: { costPerSeat: 512.63, marketMedian: 528.49, confidence: 3, comparables: 45, suggestion: 'Near market rate; monitor closely ahead of renewal.' },
-  4: { costPerSeat: 318.40, marketMedian: 374.59, confidence: 5, comparables: 22, suggestion: 'Excellent value; prioritize long-term renewal.' },
-  5: { costPerSeat: 460.00, marketMedian: 438.10, confidence: 2, comparables:  8, suggestion: 'Limited comparables; verify rate with local broker before renewal.' },
-  6: { costPerSeat: 183.33, marketMedian: 235.04, confidence: 5, comparables: 37, suggestion: 'Significantly below market; excellent deal. Exercise renewal option early.' },
+  1: { costPerSeat: 247.83, marketMedian: 269.38, confidence: 4, comparables: 31, suggestion: 'Well-positioned for renewal; strong negotiating position.' },
+  2: { costPerSeat: 385.55, marketMedian: 344.24, confidence: 4, comparables: 28, suggestion: 'Review at renewal; consider renegotiation.' },
+  3: { costPerSeat: 510.95, marketMedian: 526.75, confidence: 3, comparables: 45, suggestion: 'Near market rate; monitor closely ahead of renewal.' },
+  4: { costPerSeat: 333.40, marketMedian: 392.24, confidence: 5, comparables: 22, suggestion: 'Excellent value; prioritize long-term renewal.' },
+  5: { costPerSeat: 471.00, marketMedian: 448.57, confidence: 2, comparables:  8, suggestion: 'Limited comparables; verify rate with local broker before renewal.' },
+  6: { costPerSeat: 180.73, marketMedian: 231.71, confidence: 5, comparables: 37, suggestion: 'Significantly below market; excellent deal. Exercise renewal option early.' },
 };
 
 function getMarketBadgeStyle(rate: string): React.CSSProperties {
@@ -698,8 +698,8 @@ export function LicenseTracker({
   };
 
   const totalLicenses = 223;
-  const totalMonthlyCost = 4636000; // Enterprise-scale monthly costs
-  const totalSeats = 58400; // Global workforce
+  const totalMonthlyCost = 1376000; // 223 licenses at ~$6.2K/month average (from actual license costs)
+  const totalSeats = 4200; // ~19 seats per license on average
   const costPerSeat = totalMonthlyCost / totalSeats;
 
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -932,7 +932,7 @@ export function LicenseTracker({
           <div className="p-6 border-b" style={{ borderColor: '#e5e7eb' }}>
             <div className="flex flex-wrap gap-3">
               <Select value={cityFilter === 'all' ? '' : cityFilter} onValueChange={setCityFilter}>
-                <SelectTrigger className="h-9 bg-white border rounded" style={{ minWidth: 128, borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+                <SelectTrigger className="w-36 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                   <SelectValue placeholder="City" />
                 </SelectTrigger>
                 <SelectContent>
@@ -942,7 +942,7 @@ export function LicenseTracker({
               </Select>
 
               <Select value={typeFilter === 'all' ? '' : typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="h-9 bg-white border rounded" style={{ minWidth: 128, borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+                <SelectTrigger className="w-36 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -952,7 +952,7 @@ export function LicenseTracker({
               </Select>
 
               <Select value={operatorFilter === 'all' ? '' : operatorFilter} onValueChange={setOperatorFilter}>
-                <SelectTrigger className="h-9 bg-white border rounded" style={{ minWidth: 128, borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+                <SelectTrigger className="w-36 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                   <SelectValue placeholder="Operator" />
                 </SelectTrigger>
                 <SelectContent>
@@ -962,7 +962,7 @@ export function LicenseTracker({
               </Select>
 
               <Select value={termFilter === 'all' ? '' : termFilter} onValueChange={setTermFilter}>
-                <SelectTrigger className="h-9 bg-white border rounded" style={{ minWidth: 128, borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+                <SelectTrigger className="w-36 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                   <SelectValue placeholder="Term End" />
                 </SelectTrigger>
                 <SelectContent>
@@ -974,7 +974,7 @@ export function LicenseTracker({
               </Select>
 
               <Select value={statusFilter === 'all' ? '' : statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9 bg-white border rounded" style={{ minWidth: 128, borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
+                <SelectTrigger className="w-36 h-9 bg-white border rounded" style={{ borderColor: '#e5e7eb', fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1019,9 +1019,6 @@ export function LicenseTracker({
                     Address
                   </TableHead>
                   <TableHead className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Size
-                  </TableHead>
-                  <TableHead className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Cost/Month
                   </TableHead>
                   <TableHead className="py-4 px-6 text-center" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -1044,7 +1041,7 @@ export function LicenseTracker({
               <TableBody>
                 {filteredLicenses.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={11} className="py-12 text-center" style={{ color: '#9CA3AF', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
+                    <TableCell colSpan={10} className="py-12 text-center" style={{ color: '#9CA3AF', fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
                       No licenses match your filters.
                     </TableCell>
                   </TableRow>
@@ -1066,9 +1063,6 @@ export function LicenseTracker({
                     </TableCell>
                     <TableCell className="py-4 px-6" style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>
                       {license.address}
-                    </TableCell>
-                    <TableCell className="py-4 px-6" style={{ fontSize: '14px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                      {license.size}
                     </TableCell>
                     <TableCell className="py-4 px-6" style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
                       {formatCurrency(license.cost)}
