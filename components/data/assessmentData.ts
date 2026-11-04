@@ -28,6 +28,7 @@ export const CENTERS: Record<string, { lat: number; lng: number; label: string }
   'new york': { lat: 40.758, lng: -73.9855, label: 'Midtown' },
   porto: { lat: 41.1579, lng: -8.6291, label: 'central Porto' },
   denver: { lat: 39.7508, lng: -104.9966, label: 'downtown Denver' },
+  lisbon: { lat: 38.7223, lng: -9.1393, label: 'central Lisbon' },
 };
 
 // Collection members: url (after "https://liquidspace.c") | lat | lng | modified | booking | venue response (min)
@@ -75,15 +76,33 @@ om/pt/porto/porto/vertical-coworking-dom-henrique/office-3|41.1523|-8.6072|2026-
 om/pt/porto/porto/regus-regus-porto-s-bento/team-office-ee24|41.1438|-8.6081|2026-10-08|Inquire Now|0
 om/pt/porto-district/porto/regus-porto-batalha/team-office-0582|41.1575|-8.6279|2026-10-08|Inquire Now|0`;
 
-// Denver collection: venue | title | lat | lng | modified | booking | type | desks | rate
+// Collections built outside the inventory table: url | venue | title | lat | lng | modified | booking | type | desks | rate | minimum term
 const DENVER_MEMBERS = `om/us/co/denver/wework-the-circa-building/coworking-desk|WeWork | The Circa Building|Coworking Desk|39.7579|-105.0080|2026-04-02|Request to Book|Coworking|35|
 om/us/co/denver/venture-x-denver-downtown-16th-street/dedicated-desk-1|Venture X | Denver - Uptown|Dedicated Desk|39.7415|-104.9878|2026-01-05|Request to Book|Dedicated Desk|10|299
 om/us/co/denver/venture-x-lodo/dedicated-desk-1|Venture X | LoDo|Dedicated Desk 1|39.7534|-104.9968|2026-10-05|Request to Book|Dedicated Desk|6|599
 om/us/co/denver/industrious-lohi/denlohi136|Industrious - LoHi|DenLoHi136|39.7619|-105.0127|2026-10-08|Inquire Now|Private Office|5|4783
 om/us/co/denver/industrious-lohi/denlohi210|Industrious - LoHi|DenLoHi210|39.7619|-105.0127|2026-10-08|Inquire Now|Private Office|5|5115`;
 
+const LISBON_MEMBERS = `om/pt/lisboa/lisboa/ladera-corporate-terrace/1-4-person-corner-window|LACS Conde d’Óbidos|1-5 person corner window|38.7033|-9.1625|2026-10-02|Request to Book|Private Office|5|1911|1 month
+om/pt/lisboa/lisboa/av-republic/office-17-6-person-office-copy|Avila Spaces REPUBLIC|Office 7.08|38.7351|-9.1454|2026-10-02|Request to Book|Team Office|6|2400|12 months
+om/pt/lisboa/lisboa/venture-x-portugal/office-4|Venture X | Portugal|Office 4|38.7226|-9.1470|2026-09-08|Request to Book|Private Office|3|1476|1 month
+om/pt/lisboa/lisboa/maleo-saldanha/office-suite-1|Maleo Saldanha|10-Person Office|38.7360|-9.1450|2026-08-17|Request to Book|Office Suite|10|4350|12 months
+om/pt/lisboa/lisboa/av-republic/office-1|Avila Spaces REPUBLIC|Office 17, 6 person office|38.7351|-9.1454|2026-10-02|Request to Book|Team Office|6|1890|6 months
+om/pt/lisboa/lisbon/regus-lisbon-parque-das-na231245es/private-office-05f8|Regus | LISBON, Parque das Nacoes|Private Office|38.7708|-9.0972|2026-10-08|Inquire Now|Private Office|3|1009|1 month`;
+
+const REAL_MEMBERS: Record<string, string> = { denver: DENVER_MEMBERS, lisbon: LISBON_MEMBERS };
+
 // Nearby public monthly listings (nearest first). Pool lines: url (after "https://liquidspace.co") | venue | title | type | desks | rate | lat | lng | modified
 const POOL: Record<string, string> = {
+  lisbon: `m/pt/lisbon/lisbon/regus-lisbon-avenida-da-liberdade/team-office-41c4|Regus | LISBON, Avenida da Liberdade|Team Office|Team Office|5|1128|38.719|-9.144|2026-10-08
+m/pt/lisbon/lisbon/regus-lisbon-avenida-da-liberdade/team-office-d10a|Regus | LISBON, Avenida da Liberdade|Team Office|Team Office|10|2386|38.719|-9.144|2026-10-08
+m/pt/lisbon/lisbon/regus-lisbon-avenida-da-liberdade/private-office-bcb8|Regus | LISBON, Avenida da Liberdade|Private Office|Private Office|4|948|38.719|-9.144|2026-10-08
+m/pt/lisboa/lisboa/venture-x-portugal/office-2|Venture X | Portugal|Office 2|Private Office|4|1600|38.723|-9.147|2026-09-08
+m/pt/lisboa/lisboa/venture-x-portugal/office-18-copy|Venture X | Portugal|Office 1|Team Office|6|2200|38.723|-9.147|2026-09-08
+m/pt/lisboa/lisboa/venture-x-portugal/office-23-caf1|Venture X | Portugal|Office 23|Private Office|6|2350|38.723|-9.147|2026-09-08
+m/pt/lisboa/lisboa/venture-x-portugal/office-3|Venture X | Portugal|Office 3|Private Office|4|1200|38.723|-9.147|2026-09-08
+m/pt/lisbon/lisbon/spaces-lisbon-marques-de-pombal/private-office-fe67|SPACES | LISBON, Marques de Pombal|Private Office|Private Office|4|1239|38.726|-9.149|2026-10-08
+m/pt/lisbon/lisbon/spaces-lisbon-marques-de-pombal/team-office|SPACES | LISBON, Marques de Pombal|Team Office|Team Office|5|1847|38.726|-9.149|2026-10-08`,
   chicago: `m/us/il/chicago/regus-111-w-jackson/team-office-bb83|Regus | 111 W. Jackson|Team Office|Team Office|15|4046|41.878|-87.631|2026-10-08
 m/us/il/chicago/regus-111-w-jackson/team-office-9d23|Regus | 111 W. Jackson|Team Office|Team Office|5|1438|41.878|-87.631|2026-10-08
 m/us/il/chicago/regus-111-w-jackson/private-office-1d56|Regus | 111 W. Jackson|Private Office|Private Office|4|1079|41.878|-87.631|2026-10-08
@@ -170,10 +189,10 @@ const urlPool = (suffix: string) => `https://liquidspace.co${suffix}`;
 /** Spaces in a city's real collection, with the recorded Pulse facts. */
 export function collectionSpaces(city: string): AssessSpace[] {
   const key = city.toLowerCase().split(',')[0].trim();
-  if (key === 'denver') {
-    return DENVER_MEMBERS.split('\n').map((l, i) => {
-      const [u, venue, title, lat, lng, modified, booking, type, desks, rate] = l.split('|');
-      return { id: `den-m${i}`, url: urlMember(u), venue, title, type, desks: +desks, rate: rate ? +rate : null, lat: +lat, lng: +lng, modified, booking, inCollection: true };
+  if (REAL_MEMBERS[key]) {
+    return REAL_MEMBERS[key].split('\n').map((l, i) => {
+      const [u, venue, title, lat, lng, modified, booking, type, desks, rate, minTerm] = l.split('|');
+      return { id: `${key}-m${i}`, url: urlMember(u), venue, title, type, desks: +desks, rate: rate ? +rate : null, lat: +lat, lng: +lng, modified, booking, minTerm: minTerm || undefined, inCollection: true };
     });
   }
   const inv: Venue[] = SAMPLE_INVENTORY[key] ?? [];

@@ -181,7 +181,7 @@ function run(c: AssessCriteria, members: AssessSpace[], pool: AssessSpace[]): As
   const tail = unconfirmedFits ? ` ${unconfirmedFits} more fit, but their listings are older than 90 days.` : '';
   const headline =
     status === 'None' ? `No space in this collection fits your ${list}.${tail}`
-    : status === 'Few' ? `Only ${confirmedFits} space${confirmedFits === 1 ? '' : 's'} fit your ${list}.${tail}`
+    : status === 'Few' ? `Only ${confirmedFits} space${confirmedFits === 1 ? ' fits' : 's fit'} your ${list}.${tail}`
     : `${confirmedFits} spaces fit your ${list}.${tail}`;
 
   const inArea = results.filter((x) => x.area === 'pass').length;
