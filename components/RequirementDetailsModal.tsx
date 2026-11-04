@@ -167,11 +167,11 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
   };
 
   const REPLY_FIELDS: FieldKey[] = ['workspaceType', 'capacity', 'size', 'programNeeds', 'amenityNeeds', 'configuration', 'otherFunctional', 'startDate', 'termLength', 'budget'];
-  const Q_FIELD: [RegExp, FieldKey][] = [[/budget/i, 'budget'], [/start/i, 'startDate'], [/term|long/i, 'termLength'], [/how many people/i, 'capacity'], [/type/i, 'workspaceType'], [/size|square/i, 'size']];
+  const Q_FIELD: [RegExp, FieldKey][] = [[/neighborhood|radius/i, 'otherFunctional'], [/budget/i, 'budget'], [/start/i, 'startDate'], [/term|long/i, 'termLength'], [/how many people/i, 'capacity'], [/type/i, 'workspaceType'], [/size|square/i, 'size']];
   const reviewReply = () => {
     const d = runIntake(replyText, '').drafts[0];
     const found = REPLY_FIELDS.filter((k) => d.fields[k] && String(d.fields[k]) !== String((f as any)[k] ?? ''))
-      .map((k) => ({ k, from: String((f as any)[k] ?? ''), to: String(d.fields[k]), note: d.prov[k]?.note ?? 'Stated in the text you pasted', accept: true }));
+      .map((k) => { const from0 = String((f as any)[k] ?? ''); return ({ k, from: from0, to: k === 'otherFunctional' && from0 ? `${from0}\n${d.fields[k]}` : String(d.fields[k]), note: d.prov[k]?.note ?? 'Stated in the text you pasted', accept: true }); });
     setProposals(found);
   };
   const applyReply = () => {

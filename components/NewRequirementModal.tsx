@@ -62,11 +62,14 @@ interface Props {
   onCreate?: (items: NewRequirementData[]) => void;
   /** When set, the Requirement Agent opens and drafts straight from this license. */
   initialLicenseId?: string;
+  /** Existing requirements, used to warn about likely duplicates. */
+  existing?: { name: string; company: string; city: string; capacity: string }[];
 }
 
 type Phase = 'closed' | 'open' | 'working' | 'review';
 
-export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseId }: Props) {
+export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseId, existing = [] }: Props) {
+  const [dupWarn, setDupWarn] = useState<string | null>(null);
   const [autoRun, setAutoRun] = useState(false);
   const [phase, setPhase] = useState<Phase>('closed');
   const [text, setText] = useState('');
@@ -85,7 +88,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
 
   useEffect(() => {
     if (!isOpen) return;
-    setPhase('closed'); setText(''); setLicenseId(''); setFileName(''); setFileText(''); setFileUnreadable(false); setReviewOnly(false); setResult(null); setDrafts([manualDraft()]); setActive(0);
+    setPhase('closed'); setText(''); setLicenseId(''); setFileName(''); setFileText(''); setFileUnreadable(false); setReviewOnly(false); setResult(null); setDrafts([manualDraft()]); setActive(0); setDupWarn(null);
     if (initialLicenseId) { setLicenseId(initialLicenseId); setPhase('open'); setAutoRun(true); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -147,6 +150,32 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
   const missingFor = (d: IntakeDraft) => REQUIRED.filter((k) => k !== 'name' && !d.fields[k].trim());
   const incompleteDrafts = drafts.filter((d) => missingFor(d).length > 0);
 
+  const cityOf = (v: string) => v.split(',')[0].trim().toLowerCase();
+  /** Same company, same city, capacity within 20%. */
+  const likelyDuplicates = () => drafts.flatMap((d) => {
+    const co = d.fields.company.trim().toLowerCase();
+    const city = cityOf(d.fields.location);
+    const cap = parseInt(d.fields.capacity, 10);
+    if (!co || !city) return [];
+    return existing.filter((r) => {
+      if (r.company.trim().toLowerCase() !== co || cityOf(r.city) !== city) return false;
+      const rc = parseInt(r.capacity, 10);
+      if (!Number.isFinite(cap) || !Number.isFinite(rc)) return true;
+      return Math.abs(rc - cap) <= Math.max(1, cap * 0.2);
+    });
+  });
+
+  const create = () => {
+    onCreate?.(
+      drafts.map((d) => ({
+        ...d.fields,
+        prov: Object.keys(d.prov).length ? d.prov : undefined,
+        intake: agentRun && result ? { sourceText: result.sourceText, sourceLabel, questions: d.questions, licenseId: result.license?.licenseId } : undefined,
+      })),
+    );
+    close();
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     // Only a Requirement Name is needed to save. Anything else missing is saved as a Draft.
@@ -157,14 +186,13 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
         return;
       }
     }
-    onCreate?.(
-      drafts.map((d) => ({
-        ...d.fields,
-        prov: Object.keys(d.prov).length ? d.prov : undefined,
-        intake: agentRun && result ? { sourceText: result.sourceText, sourceLabel, questions: d.questions, licenseId: result.license?.licenseId } : undefined,
-      })),
-    );
-    close();
+    const dupes = likelyDuplicates();
+    if (dupes.length && dupWarn === null) {
+      const r = dupes[0];
+      setDupWarn(`This looks like an existing requirement: ${r.name} (${r.company}${r.capacity ? `, ${r.capacity} seats` : ''}). Create it anyway?`);
+      return;
+    }
+    create();
   };
 
   const marker = (k: FieldKey) => {
@@ -464,7 +492,16 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
           </div>
           {vis('otherCommercial') && area('otherCommercial', 'Any other commercial terms')}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 28 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 12, marginTop: 28 }}>
+            {dupWarn && (
+              <div role="alert" style={{ flexBasis: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 10, padding: '10px 14px', fontSize: 14, color: '#374151', fontFamily: FONT, marginBottom: 12 }}>
+                <span>{dupWarn}</span>
+                <span style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button type="button" onClick={() => setDupWarn(null)} style={{ background: 'none', border: 'none', color: BLUE, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Review</button>
+                  <button type="button" onClick={create} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Create anyway</button>
+                </span>
+              </div>
+            )}
             <button type="button" onClick={close} style={{ padding: '10px 16px', borderRadius: 8, border: `1px solid ${BLUE}`, background: '#fff', color: BLUE, fontSize: 15, fontWeight: 500, fontFamily: FONT, cursor: 'pointer' }}>Cancel</button>
             <button type="submit" style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: BLUE, color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>
               {drafts.length > 1 ? `Create ${drafts.length} Requirements` : incompleteDrafts.length ? 'Save as Draft' : 'Create Requirement'}

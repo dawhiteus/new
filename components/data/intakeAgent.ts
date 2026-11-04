@@ -184,8 +184,18 @@ function parseSegment(seg: string, city: string) {
   if (prog.length) set('programNeeds', cap(prog.join(', ')) + '.', prog.join(', '));
   if (amen.length) set('amenityNeeds', cap(amen.join(', ').replace(/, ([^,]*)$/, ' and $1')) + '.', amen.join(', '));
 
-  const pref = seg.match(/(?:ideally|preferably|preferred)\s+in\s+([^.]+)/i);
-  if (pref) set('otherFunctional', `Preferred areas: ${pref[1].trim().replace(/\s+or\s+/i, ', ')}.`, pref[0]);
+  const sa = (() => {
+    const pref = seg.match(/(?:ideally|preferably|preferred)\s+in\s+([^.]+)/i);
+    if (pref) return { text: `Search area: ${pref[1].trim().replace(/\s+or\s+/i, ', ')}.`, quote: pref[0] };
+    const within = seg.match(/within\s+(?:about\s+)?\d+\s*(?:miles?|mi|km|minutes?)\s+(?:of|from)\s+([^.;,]+)/i);
+    if (within) return { text: `Search area: ${within[0].trim()}.`, quote: within[0] };
+    const near = seg.match(/\b(?:near|close to)\s+(?:the\s+)?([A-Z][\w'’ -]{2,40}?)(?=[.,;]|\s+(?:and|or|with|for)\b|$)/);
+    if (near) return { text: `Search area: ${near[0].trim()}.`, quote: near[0] };
+    const area = seg.match(/\bin\s+(?:the\s+)?([A-Z][\w'’ -]{2,30}?)\s+(?:area|district|neighborhood|submarket)\b/);
+    if (area) return { text: `Search area: ${area[1].trim()} area.`, quote: area[0] };
+    return null;
+  })();
+  if (sa) set('otherFunctional', sa.text, sa.quote);
 
   if (/\b(?:one|a single|single)\b[^.]*\b(?:office|space|location)\b/i.test(seg)) {
     const m = seg.match(/\b(?:one|a single|single)\b[^.]*\b(?:office|space|location)\b/i)!;
@@ -195,14 +205,15 @@ function parseSegment(seg: string, city: string) {
   return out;
 }
 
-function questionsFor(city: string, f: IntakeFields, hedged: boolean, startMonthOnly: string | null, multi: boolean): string[] {
+function questionsFor(city: string, f: IntakeFields, hedged: boolean, startMonthOnly: string | null, multi: boolean, termEndNote = '', hasCity = false): string[] {
   const where = multi ? ` for ${city}` : '';
   const q: string[] = [];
   if (!f.budget) q.push(`What monthly budget should we plan around${where}?`);
-  if (!f.startDate) q.push(startMonthOnly ? `Which day in ${startMonthOnly} do they need to start${where}?` : `What start date do they need${where}?`);
+  if (!f.startDate) q.push(startMonthOnly ? `Which day in ${startMonthOnly} do they need to start${where}?` : `What start date do they need${where}?${termEndNote ? ` (Current term ends ${termEndNote}.)` : ''}`);
   if (!f.termLength) q.push(`How long a term are they planning${where}?`);
   if (!f.capacity) q.push(`How many people will the space need to hold${where}?`);
   if (!f.workspaceType) q.push(`What type of space do they want${where} (office suite, private office, team office, coworking, or meeting space)?`);
+  if (!f.otherFunctional && hasCity && q.length < 5) q.push(`Which neighborhoods, or what radius, should we search in ${city}?`);
   if (!f.size && q.length < 5) q.push(`Do they have a size in mind${where} (sq ft)?`);
   return q.slice(0, 5);
 }
@@ -259,10 +270,15 @@ export function runIntake(text: string, licenseIdRaw: string): IntakeResult {
     // License record: facts help, terms are reference only.
     if (license && (!city || city.toLowerCase() === license.city.toLowerCase())) {
       if (!f.location) { f.location = license.city; prov.location = { kind: 'license', note: `License ${license.licenseId}: ${license.city}, ${license.state}` }; }
-      f.name = `${license.city} renewal`; prov.name = { kind: 'suggested', note: `Suggested from license ${license.licenseId}` };
       if (!f.capacity) { f.capacity = String(license.seats); prov.capacity = { kind: 'license', note: `License ${license.licenseId}: ${license.seats} seats` }; }
       if (!f.size) { f.size = String(license.sizeSf); prov.size = { kind: 'license', note: `License ${license.licenseId}: ${license.sizeSf.toLocaleString()} sq ft` }; }
-      if (!f.startDate && license.termEnd) { f.startDate = addDay(license.termEnd); prov.startDate = { kind: 'suggested', note: `Day after the current term ends (${fmtLong(license.termEnd)}). Please confirm.` }; }
+    }
+
+    // Name: Account - City - N seats (the pattern the sales team uses).
+    {
+      const parts = [f.company, city || f.location, f.capacity ? `${f.capacity} seats` : ''].filter(Boolean);
+      if (parts.length >= 2) { f.name = parts.join(' - '); prov.name = { kind: 'suggested', note: 'Named Account - City - Seats. Please edit.' }; }
+      else if (!f.name && license) { f.name = `${license.city} renewal`; prov.name = { kind: 'suggested', note: `Suggested from license ${license.licenseId}` }; }
     }
 
     // Month-only start dates are ambiguous: leave blank and ask.
@@ -278,7 +294,8 @@ export function runIntake(text: string, licenseIdRaw: string): IntakeResult {
       label: city || 'Requirement',
       fields: f,
       prov,
-      questions: questionsFor(city || 'this location', f, parsed.hedged, startMonthOnly, multi),
+      questions: questionsFor(city || 'this location', f, parsed.hedged, startMonthOnly, multi,
+        license && license.termEnd && (!city || city.toLowerCase() === license.city.toLowerCase()) ? fmtLong(license.termEnd) : '', !!(city || f.location)),
       _filled: filled,
     } as IntakeDraft & { _filled: number };
   });
