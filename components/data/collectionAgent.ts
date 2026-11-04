@@ -290,3 +290,6 @@ export function reasonsFor(v: ScoredVenue, c: SourcingCriteria): string[] {
   if (c.startDate && v.availableFrom != null && v.availableFrom <= c.startDate) out.push(`Available by ${fmtLong(c.startDate)}`);
   return out;
 }
+
+/** Capacity matches as a band around the headcount, as in production ("For 4-7 people" for 5). */
+export const capacityBand = (n: number): [number, number] => [Math.max(1, Math.floor(n * 0.8)), Math.ceil(n * 1.4)];

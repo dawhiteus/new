@@ -18,6 +18,7 @@ import {
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
 import { AGENT_NAME, AGENT_EMAIL } from './data/intakeAgent';
+import { capacityBand } from './data/collectionAgent';
 import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
@@ -215,6 +216,7 @@ function CollectionPill({ req, onOpen }: { req: MvpRequirement & { collection: N
         <div style={{ padding: '12px 12px 10px' }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2A3D' }}>{c.name}</div>
           <div style={{ fontSize: 13, color: '#6B7280' }}>{c.totalSpaces} spaces total</div>
+          {c.note && <div style={{ fontSize: 12.5, color: '#374151', marginTop: 6, lineHeight: 1.4 }}>{c.note}</div>}
         </div>
         <div style={{ borderTop: '1px solid #E5E7EB', padding: '8px 12px' }}>
           {row(MapPin, c.location, c.locationSpaces)}
@@ -472,15 +474,35 @@ export function RequirementsHome() {
     else toast.info('This collection has no LiquidSpace link in the demo.');
   };
 
-  /** All three creation paths end here: the Collection is associated with the requirement. */
+  const capLabel = (cap: string) => {
+    const n = parseInt(cap, 10);
+    if (!Number.isFinite(n) || n <= 0) return 'Headcount not provided';
+    const [lo, hi] = capacityBand(n);
+    return `For ${lo}-${hi} people`;
+  };
+  /** Say plainly when the fit is poor, instead of leaving silent zeros. */
+  const fitNote = (req: MvpRequirement, o: CollectionOutcome): string | undefined => {
+    if (o.method !== 'agent') return undefined;
+    const city = (req.details.location || req.city || '').split(',')[0];
+    if (o.spaces === 0) return city ? `No spaces were found in ${city}.` : undefined;
+    const none: string[] = [];
+    if (o.locationSpaces === 0 && city) none.push(`in ${city}`);
+    if (req.budget != null && o.budgetSpaces === 0) none.push('within budget');
+    if (req.details.capacity && o.peopleSpaces === 0) none.push('for the headcount');
+    if (!none.length) return undefined;
+    return `${o.spaces} space${o.spaces === 1 ? '' : 's'} added, none ${none.join(', none ')}.`;
+  };
+
+  /** All creation paths end here: the Collection is associated with the requirement. */
   const applyCollection = (req: MvpRequirement, o: CollectionOutcome) => {
     const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const collection = {
       name: o.name, url: o.url, totalSpaces: o.spaces,
       location: req.details.location || req.city ? `In ${req.details.location || req.city}` : 'Location not provided', locationSpaces: o.locationSpaces,
       budgetLabel: req.budget == null ? 'Budget not provided' : `Within ${money(req.budget)}/mo`, budgetSpaces: o.budgetSpaces,
-      peopleLabel: req.details.capacity ? `For ${req.details.capacity} people` : 'Headcount not provided', peopleSpaces: o.peopleSpaces,
+      peopleLabel: capLabel(req.details.capacity), peopleSpaces: o.peopleSpaces,
       saved: o.saved, shortlisted: o.shortlisted, updated: dispDate,
+      note: fitNote(req, o),
     };
     const how = o.method === 'agent' ? `created by the Collection Agent`
       : o.method === 'manual' ? 'created in LiquidSpace by Sales' : 'linked by Sales';

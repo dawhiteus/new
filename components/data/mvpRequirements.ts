@@ -10,6 +10,8 @@ export interface MvpCollection {
   budgetSpaces: number;
   peopleLabel: string;
   peopleSpaces: number;
+  /** One plain line when the fit is poor, e.g. "5 spaces added, none in Denver." */
+  note?: string;
   saved: number;
   shortlisted: number;
   updated: string;
