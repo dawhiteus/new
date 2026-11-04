@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, ChevronsUpDown, Sparkles, Copy } from 'lucide-react';
 import { toast } from './ui/toast';
+import { runIntake, FIELD_LABEL, type FieldKey } from './data/intakeAgent';
 import { RequirementTimelineTab } from './RequirementTimelineTab';
 import { RequirementDocumentsTab } from './RequirementDocumentsTab';
 import { RequirementTeamTab } from './RequirementTeamTab';
@@ -83,12 +84,16 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
   const [tab, setTab] = useState<Tab>('Overview');
   const [f, setF] = useState<FormState | null>(null);
   const [note, setNote] = useState('');
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [proposals, setProposals] = useState<{ k: FieldKey; from: string; to: string; note: string; accept: boolean }[] | null>(null);
 
   useEffect(() => {
     if (isOpen && requirement) {
       setF(toForm(requirement));
       setTab('Overview');
       setNote('');
+      setReplyOpen(false); setReplyText(''); setProposals(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, requirement?.id]);
@@ -155,6 +160,33 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
       [ev('note', 'Note Added', 'A note was added to the requirement.')],
     );
     setNote('');
+  };
+
+  const REPLY_FIELDS: FieldKey[] = ['workspaceType', 'capacity', 'size', 'programNeeds', 'amenityNeeds', 'configuration', 'otherFunctional', 'startDate', 'termLength', 'budget'];
+  const Q_FIELD: [RegExp, FieldKey][] = [[/budget/i, 'budget'], [/start/i, 'startDate'], [/term|long/i, 'termLength'], [/headcount|people|seats|capacity/i, 'capacity'], [/type/i, 'workspaceType'], [/size|square/i, 'size']];
+  const reviewReply = () => {
+    const d = runIntake(replyText, '').drafts[0];
+    const found = REPLY_FIELDS.filter((k) => d.fields[k] && String(d.fields[k]) !== String((f as any)[k] ?? ''))
+      .map((k) => ({ k, from: String((f as any)[k] ?? ''), to: String(d.fields[k]), note: d.prov[k]?.note ?? 'Stated in the reply', accept: true }));
+    setProposals(found);
+  };
+  const applyReply = () => {
+    const chosen = (proposals ?? []).filter((x) => x.accept);
+    const patch: any = {};
+    const prov = { ...(f.provenance ?? {}) } as any;
+    chosen.forEach((x) => { patch[x.k] = x.to; prov[x.k] = { kind: 'source', note: 'From the customer\u2019s reply' }; });
+    const next = { ...f, ...patch };
+    const stillOpen = (f.intake?.questions ?? []).filter((q) => {
+      const hit = Q_FIELD.find(([re]) => re.test(q));
+      return !(hit && String(next[hit[1]] ?? '').trim());
+    });
+    const answered = (f.intake?.questions.length ?? 0) - stillOpen.length;
+    commit(
+      { ...patch, provenance: prov, intake: f.intake ? { ...f.intake, questions: stillOpen } : f.intake },
+      chosen.length ? [ev('update', 'Requirement Updated', `${chosen.map((x) => FIELD_LABEL[x.k]).join(', ')} updated from the customer's reply.`)] : [],
+    );
+    toast.success(chosen.length ? `${chosen.length} field${chosen.length === 1 ? '' : 's'} updated. ${answered} question${answered === 1 ? '' : 's'} answered.` : 'No changes made.');
+    setProposals(null); setReplyText(''); setReplyOpen(false);
   };
 
   const onTasks = (tasks: WorkflowTask[]) => {
@@ -316,6 +348,45 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                   <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
                     {f.intake.questions.map((q) => <li key={q}>{q}</li>)}
                   </ol>
+                  {!replyOpen ? (
+                    <button type="button" onClick={() => setReplyOpen(true)} style={{ marginTop: 10, background: 'none', border: 'none', padding: 0, color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                      Paste the customer's reply
+                    </button>
+                  ) : !proposals ? (
+                    <div style={{ marginTop: 10 }}>
+                      <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Paste what the customer sent back."
+                        style={{ width: '100%', minHeight: 90, border: '1px solid #D1D5DB', borderRadius: 8, padding: 10, fontSize: 14, fontFamily: FONT, background: '#fff' }} />
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                        <button type="button" disabled={!replyText.trim()} onClick={reviewReply} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: replyText.trim() ? 1 : 0.5 }}>Review changes</button>
+                        <button type="button" onClick={() => { setReplyOpen(false); setReplyText(''); }} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 10, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: 12 }}>
+                      {proposals.length === 0 ? (
+                        <div style={{ fontSize: 13, color: '#374151' }}>I didn't find anything new in that reply.</div>
+                      ) : proposals.map((x, i) => (
+                        <div key={x.k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderTop: i ? '1px solid #F3F4F6' : 'none', fontSize: 13 }}>
+                          <div>
+                            <div style={{ fontWeight: 600, color: '#111827' }}>{FIELD_LABEL[x.k]}</div>
+                            <div style={{ color: '#374151' }}>{x.from ? <span style={{ textDecoration: 'line-through', color: '#9CA3AF' }}>{x.from}</span> : <span style={{ color: '#9CA3AF' }}>Empty</span>} → <b>{x.to}</b></div>
+                            <div style={{ color: '#6B7280', fontSize: 12 }}>{x.note}</div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            {(['Accept', 'Keep mine'] as const).map((lbl) => {
+                              const on = (lbl === 'Accept') === x.accept;
+                              return <button key={lbl} type="button" onClick={() => setProposals((p) => p && p.map((y) => y.k === x.k ? { ...y, accept: lbl === 'Accept' } : y))}
+                                style={{ border: `1px solid ${on ? BLUE : '#D1D5DB'}`, background: on ? BLUE : '#fff', color: on ? '#fff' : '#374151', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{lbl}</button>;
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                        <button type="button" onClick={applyReply} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Apply</button>
+                        <button type="button" onClick={() => setProposals(null)} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer' }}>Back</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
