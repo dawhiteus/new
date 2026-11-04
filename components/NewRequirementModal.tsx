@@ -357,12 +357,12 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
             </div>
           )}
 
-          {/* Questions for the customer */}
+          {/* Open questions */}
           {agentRun && draft.questions.length > 0 && (
             <div style={{ border: '1px solid #F5C27A', background: '#FFF9ED', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontFamily: FONT }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>
-                  Questions for the customer{drafts.length > 1 ? ` (${draft.label})` : ''}
+                  Open questions{drafts.length > 1 ? ` (${draft.label})` : ''}
                 </div>
                 <button type="button" onClick={() => { navigator.clipboard?.writeText(draft.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')); toast.success('Questions copied.'); }}
                   style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>

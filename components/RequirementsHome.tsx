@@ -401,7 +401,7 @@ export function RequirementsHome() {
     if (d.intake) {
       // One note: the complete source plus the open questions (a requirement takes a single initial note).
       const qs = d.intake.questions.length
-        ? `\n\nOpen questions for the customer:\n${d.intake.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`
+        ? `\n\nOpen questions:\n${d.intake.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`
         : '';
       notes.push({ author: AGENT_NAME, date: dispDate, text: `Source provided by Sales (${d.intake.sourceLabel}), kept in full:\n\n${d.intake.sourceText}${qs}` });
       events.push({
@@ -614,9 +614,11 @@ export function RequirementsHome() {
                       <td style={{ ...td, whiteSpace: 'nowrap' }}>
                         {r.name}
                         {(r.details.intake?.questions.length ?? 0) > 0 && (
-                          <span title="Open questions saved with this requirement" style={{ display: 'inline-block', marginLeft: 8, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: '#FFF3DC', color: '#92400E', border: '1px solid #F5C27A', verticalAlign: 'middle' }}>
-                            {r.details.intake!.questions.length} question{r.details.intake!.questions.length === 1 ? '' : 's'}
-                          </span>
+                          <div style={{ marginTop: 3 }}>
+                            <span title="Open questions saved with this requirement" style={{ display: 'inline-block', padding: '1px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: '#FFF3DC', color: '#92400E', border: '1px solid #F5C27A' }}>
+                              {r.details.intake!.questions.length} open question{r.details.intake!.questions.length === 1 ? '' : 's'}
+                            </span>
+                          </div>
                         )}
                         {r.origin && !r.origin.seen && (
                           <span style={{ display: 'inline-block', marginLeft: 8, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: '#0D619B', color: '#fff', verticalAlign: 'middle' }}>NEW</span>
