@@ -541,44 +541,42 @@ export function RequirementsHome() {
     toast.success(o.method === 'agent' ? `“${o.name}” created and assessed.` : o.method === 'manual' ? `“${o.name}” created in LiquidSpace.` : `“${o.name}” linked.`);
   };
 
-  /** An accepted assessment proposal changes the Requirement (never the Collection) and is logged like any other field change. */
-  const applyAssessChange = (req: MvpRequirement, patch: ReqPatch, summary: string) => {
+  /** Applying an assessment change updates the Requirement (never the Collection) and is logged like any other field change. */
+  const applyAssessChange = (req: MvpRequirement, patch: ReqPatch) => {
     const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const said: string[] = [];
     setRows((rs) => rs.map((r) => {
       if (r.id !== req.id) return r;
       const events: MvpRequirement['details']['events'] = [];
+      const log = (what: string) => { said.push(what); events.push({ id: `e-${Date.now()}-${events.length}`, type: 'update', title: 'Requirement Updated', description: `${what}, applied from the collection assessment.`, date: dispDate, actor: CURRENT_USER_EMAIL }); };
       let next = { ...r, lastUpdated: new Date().toISOString().slice(0, 10) };
-      if (patch.budget != null) {
-        events.push({ id: `e-${Date.now()}-b`, type: 'update', title: 'Requirement Updated', description: `Budget changed from ${money(r.budget ?? 0)}/mo to ${money(patch.budget)}/mo, accepted from the collection assessment.`, date: dispDate, actor: CURRENT_USER_EMAIL });
-        next = { ...next, budget: patch.budget };
-      }
-      if (patch.capacity != null) {
-        events.push({ id: `e-${Date.now()}-c`, type: 'update', title: 'Requirement Updated', description: `Capacity changed from ${r.details.capacity || 'not provided'} to ${patch.capacity}, accepted from the collection assessment.`, date: dispDate, actor: CURRENT_USER_EMAIL });
-        next = { ...next, details: { ...next.details, capacity: String(patch.capacity) } };
-      }
+      if ('budget' in patch) { log(`Budget changed from ${r.budget ? money(r.budget) + '/mo' : 'not provided'} to ${patch.budget ? money(patch.budget) + '/mo' : 'not provided'}`); next = { ...next, budget: patch.budget ?? null }; }
+      if ('capacity' in patch) { log(`Capacity changed from ${r.details.capacity || 'not provided'} to ${patch.capacity ?? 'not provided'}`); next = { ...next, details: { ...next.details, capacity: patch.capacity != null ? String(patch.capacity) : '' } }; }
+      if ('type' in patch) { log(`Workspace type changed from ${r.details.workspaceType || 'any'} to ${patch.type || 'any'}`); next = { ...next, details: { ...next.details, workspaceType: patch.type ?? '' } }; }
+      if ('location' in patch) { log(`Location changed from ${r.details.location || r.city || 'not provided'} to ${patch.location || 'not provided'}`); next = { ...next, city: patch.location ?? '', details: { ...next.details, location: patch.location ?? '' } }; }
       if (patch.searchArea) {
-        const kept = (r.details.otherFunctional || '').replace(/Search area:[^\n]*\n?/g, '').trim();
-        const line = `Search area: ${patch.searchArea}.`;
-        events.push({ id: `e-${Date.now()}-a`, type: 'update', title: 'Requirement Updated', description: `Search area set to ${patch.searchArea}, accepted from the collection assessment.`, date: dispDate, actor: CURRENT_USER_EMAIL });
-        next = { ...next, details: { ...next.details, otherFunctional: [kept, line].filter(Boolean).join('\n') } };
+        const kept = (next.details.otherFunctional || '').replace(/Search area:[^\n]*\n?/g, '').trim();
+        log(`Search area set to ${patch.searchArea}`);
+        next = { ...next, details: { ...next.details, otherFunctional: [kept, `Search area: ${patch.searchArea}.`].filter(Boolean).join('\n') } };
       }
       return { ...next, details: { ...next.details, events: [...next.details.events, ...events] } };
     }));
-    toast.success(`Requirement updated: ${summary}.`);
+    toast.success('Requirement updated from the assessment.');
   };
 
-  /** Adds a space to the collection only. In the product this is add_workspace_to_collection; the demo records it for the session. */
-  const addSpaceToCollection = (req: MvpRequirement, url: string) => {
-    const sp = listingByUrl(url)?.space;
-    if (!sp) return;
-    addedSpaces.set(req.id, [...(addedSpaces.get(req.id) ?? []), url]);
+  /** Adds spaces to the collection only. In the product this is add_workspace_to_collection, one space at a time; the demo records it for the session. */
+  const addSpacesToCollection = (req: MvpRequirement, urls: string[]) => {
+    const have = new Set(addedSpaces.get(req.id) ?? []);
+    const fresh = urls.filter((u) => !have.has(u) && listingByUrl(u));
+    if (!fresh.length) return;
+    addedSpaces.set(req.id, [...have, ...fresh]);
     const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     setRows((rs) => rs.map((r) => (r.id !== req.id || !r.collection ? r : {
       ...r,
-      collection: { ...r.collection, totalSpaces: r.collection.totalSpaces + 1, saved: r.collection.saved + 1 },
-      details: { ...r.details, events: [...r.details.events, { id: `e-${Date.now()}-s`, type: 'collection', title: 'Space Added', description: `${sp.title} (${sp.venue}) added to ${r.collection.name}.`, date: dispDate, actor: CURRENT_USER_EMAIL }] },
+      collection: { ...r.collection, totalSpaces: r.collection.totalSpaces + fresh.length, saved: r.collection.saved + fresh.length },
+      details: { ...r.details, events: [...r.details.events, { id: `e-${Date.now()}-s`, type: 'collection', title: 'Spaces Added', description: `${fresh.length} space${fresh.length === 1 ? '' : 's'} added to ${r.collection.name}.`, date: dispDate, actor: CURRENT_USER_EMAIL }] },
     })));
-    toast.success(`${sp.title} added to the collection.`);
+    toast.success(`${fresh.length} space${fresh.length === 1 ? '' : 's'} added to the collection.`);
   };
 
   const handleAction = (req: MvpRequirement, action: string) => {
@@ -762,7 +760,7 @@ export function RequirementsHome() {
         requirement={rows.find((r) => r.id === assessForId) ?? null}
         onClose={() => setAssessForId(null)}
         onApply={applyAssessChange}
-        onAddSpace={addSpaceToCollection}
+        onAddSpaces={addSpacesToCollection}
       />
       <RequirementDetailsModal
         requirement={rows.find((r) => r.id === detailId) ?? null}

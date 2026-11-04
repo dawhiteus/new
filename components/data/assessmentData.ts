@@ -1,6 +1,6 @@
 // Real data recorded from LiquidSpace (Pulse: Workspaces and Venues), for the Assessment prototype.
 // The browser demo cannot call Pulse, so each collection's spaces and a pool of nearby listings are recorded here.
-import { SAMPLE_INVENTORY, type Venue } from './collectionAgent';
+import { SAMPLE_INVENTORY, REAL_COLLECTIONS, type Venue } from './collectionAgent';
 
 export interface AssessSpace {
   id: string;
@@ -183,6 +183,13 @@ m/us/ny/new-york/jay-suites/team-office-3049-for-up-to-6|Jay Suites - Bryant Par
 m/us/ny/new-york/1501-broadway/private-office-96f6|Bevmax Office Centers - Times Square|Private office|Private Office|6|3500|40.757|-73.986|2026-11-02`,
 };
 
+/** Rows are url|venue|title|...fixed fields. Venue names can contain "|" (for example "Regus | LISBON"), so parse from the right. */
+function parseRow(line: string, tail: number) {
+  const p = line.split('|');
+  const mid = p.slice(1, p.length - tail);
+  return { url: p[0], venue: mid.slice(0, -1).join('|'), title: mid[mid.length - 1], t: p.slice(p.length - tail) };
+}
+
 const urlMember = (suffix: string) => `https://liquidspace.c${suffix}`;
 const urlPool = (suffix: string) => `https://liquidspace.co${suffix}`;
 
@@ -191,8 +198,9 @@ export function collectionSpaces(city: string): AssessSpace[] {
   const key = city.toLowerCase().split(',')[0].trim();
   if (REAL_MEMBERS[key]) {
     return REAL_MEMBERS[key].split('\n').map((l, i) => {
-      const [u, venue, title, lat, lng, modified, booking, type, desks, rate, minTerm] = l.split('|');
-      return { id: `${key}-m${i}`, url: urlMember(u), venue, title, type, desks: +desks, rate: rate ? +rate : null, lat: +lat, lng: +lng, modified, booking, minTerm: minTerm || undefined, inCollection: true };
+      const { url, venue, title, t } = parseRow(l, key === 'lisbon' ? 8 : 7);
+      const [lat, lng, modified, booking, type, desks, rate, minTerm] = t;
+      return { id: `${key}-m${i}`, url: urlMember(url), venue, title, type, desks: +desks, rate: rate ? +rate : null, lat: +lat, lng: +lng, modified, booking, minTerm: minTerm || undefined, inCollection: true };
     });
   }
   const inv: Venue[] = SAMPLE_INVENTORY[key] ?? [];
@@ -212,8 +220,9 @@ export function marketPool(city: string): AssessSpace[] {
   const raw = POOL[key];
   if (!raw) return [];
   return raw.split('\n').map((l, i) => {
-    const [u, venue, title, type, desks, rate, lat, lng, modified] = l.split('|');
-    return { id: `${key}-p${i}`, url: urlPool(u), venue, title, type, desks: +desks, rate: +rate, lat: +lat, lng: +lng, modified, inCollection: false };
+    const { url, venue, title, t } = parseRow(l, 6);
+    const [type, desks, rate, lat, lng, modified] = t;
+    return { id: `${key}-p${i}`, url: urlPool(url), venue, title, type, desks: +desks, rate: +rate, lat: +lat, lng: +lng, modified, inCollection: false };
   });
 }
 
@@ -243,3 +252,11 @@ export function listingsAtVenue(venueUrl: string): AssessSpace[] {
 
 /** An example link to try in the demo: a real listing near the city center that is not yet in the collection. */
 export const exampleLink = (city: string) => marketPool(city)[0]?.url ?? '';
+
+/** The recorded city of a real LiquidSpace collection, from its link. Collections not recorded here return undefined. */
+export function collectionCityFor(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  const real = Object.entries(REAL_COLLECTIONS).find(([, c]) => c.url === url)?.[0];
+  if (real) return real;
+  return url.includes('573e59b5-7b3f-43cb-a0f1-e8d341902c4c') ? 'lisbon' : undefined;
+}

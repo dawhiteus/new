@@ -1,75 +1,65 @@
 # Collection Assessment
-Transaction Manager | Functional Specification | v.1 draft
+Transaction Manager | Functional Specification | v.2 draft
 
 ## Objective
-A Collection is a list of candidate spaces for a Requirement. Assessment tells Sales whether that list is good enough: plenty of matches, few, or none. It makes it easy to widen or change the criteria, to ask what a change would do, and to add a space Sales already knows about. It does not choose among candidates; choosing stays with Sales and the customer.
+A Collection is a list of candidate spaces for a Requirement. The Collection Assessment Agent tells Sales whether that list is good enough (plenty of matches, few, none, or an empty collection) and why. It makes it easy to change the criteria and see the effect, to ask questions, and to add a space Sales already knows about. It does not choose among candidates; that stays with Sales and the customer.
+
+The page does three things: it **explains what the agent found and why**, it lets people **adjust** the requirement's values simply, and it shows **what changes** when they do.
 
 ## 1. Where it is merchandised and accessed
-Assessment opens in a modal, in the same style as Create Collection. It has no page of its own and nothing runs on its own. Two entry points, both on a Requirement that has a Collection:
+The assessment opens in a modal. Every Requirement that has a Collection has an Assess action; there are no exceptions and nothing to hunt for:
+1. **Collection pill hover card (Requirements table):** a one-line status ("Few matches", "Empty collection", "Not assessed") and an **Assess collection** link beside View Collection.
+2. **Requirement row menu:** **Assess collection** with View, Update and Remove collection.
 
-1. **Collection pill hover card (Requirements table).** The card shows a one-line status ("Few matches") under the Collection name and an **Assess** link beside View Collection. The status is visible without opening anything.
-2. **Requirement row menu.** **Assess collection** joins the existing collection group: View collection, **Assess collection**, Update collection, Remove collection.
+Update collection refreshes the Collection's spaces. Assess explains whether the Collection is enough and what would improve it.
 
-**How it relates to Update collection.** Update collection refreshes the Collection's spaces (Populate). Assess tells Sales whether the Collection is enough and what would widen it. An accepted proposal in Assess can lead to Update collection; the two stay separate actions.
+Held back for now: a button on the "Collection populated" confirmation, the Workflow task, and a "re-check" line on the Requirement Overview. Intended users are the Transaction Manager team; customer-scoped access is untested.
 
-**Held back for now:** a button on the "Collection populated" confirmation, the Workflow task, and a "re-check" line on the Requirement Overview. They can be added later without changing the modal.
+## 2. Identity
+The agent is marked with the agent icon pattern used elsewhere: the green agent icon in a neutral circle, named **Collection Assessment Agent**, and it speaks in the first person ("I checked the 8 spaces…"). No badges, pills or colored tags are used.
 
-Not included: automatic runs, badges that nag, and anything on the LiquidSpace collection page (outside Transaction Manager). Intended users are the Transaction Manager team; customer-scoped access is untested.
+## 3. What the page shows
+**What I found.**
+* A plain result (Plenty of matches, Few matches, No matches, Empty collection, or Not assessed) and a short summary in the agent's voice: what it checked, how many fit, and why the rest do not.
+* Three counts: spaces in the search area, within budget, and for the headcount band.
+* **Gaps and trade-offs**, one plain sentence per row: Area, Budget, Capacity, Workspace type, Rate (more than 15% over market), Listings (not updated in 90 days), Term, and Not assessed.
+* One sentence for the next best change ("Raising the budget to $11,700/mo would add 2 matching spaces"), a link to add the matching nearby spaces, and a link to show the spaces, each with its distance, seats, rate, listing age and reason.
 
-## 2. What it shows
-1. **Headline:** **Plenty**, **Few** or **None**, with one sentence. A *fit* is a space that meets the Requirement's location, capacity, budget and workspace type. Plenty is 5 or more confirmed fits. Few is 1 to 4. None is 0. Fits that are not confirmed are counted separately ("3 more fit, but their listings are older than 90 days").
-2. **What limits the pool:** a short funnel showing how many spaces each criterion removes, for example "Budget removes 9 of 14. Area removes 3."
-3. **Widen or change:** proposals drawn from the funnel, for example "Raise budget 15%: adds 6" or "Search within 5 miles: adds 3". Each uses Accept / Keep mine.
-4. **Ask:** a question box (section 4).
-5. **Add a space:** paste a LiquidSpace link (section 5).
-6. **Spaces and evidence on demand:** the candidate spaces, each expandable to show why it counts or does not, with the source of every value (for example "2.1 mi from the search center, from the venue location", "$270 per seat against a market median of $320, from 18 listings", "minimum term 12 months against 24 requested", "listing updated 41 days ago"). Availability shows as "not known"; it is never inferred.
-7. **History:** a timeline of assessments, for example "Assessed: Few" and "Re-assessed after budget change: Few to Plenty".
+**Adjust.** Five fields, prefilled from the Requirement: Location, People, Budget, Workspace type and Search distance. Editing a field changes nothing. Reset restores the values.
 
-## 3. Core behavior
-**Candidates.** Everything in the Collection counts: Favorites (MCP "potential") and Shortlist together. The agent also reports how many matching spaces exist in the market that are not in the Collection.
+**What changes.** Appears once a value is edited. It shows before and after for the result, the fits in this Collection, and the matching spaces nearby, and lists the spaces that would newly fit. **Apply to the requirement** writes the changed values to the Requirement as a normal update, logged on the Timeline. The Collection's spaces are never changed by this.
 
-**Confirmed.** A space is confirmed when its listing was updated within 90 days (from the listing's last-modified date) or it has a current RFP quote. Availability data is not used: Pulse holds an availability date for almost no listings.
+**Ask.** One input at the bottom: "Ask me about this collection, or paste a link to a space and I'll add it."
 
-**Must-haves first.** A space that misses a must-have is not a fit at any price. Rates more than 15 percent above the local market are flagged.
+## 4. An empty or unassessable Collection
+This is a primary reason to assess. The agent says what is going on:
+* **Empty, location known:** it looks at the listings near the location and reports, per criterion, how many pass (Area, Workspace type, Capacity, Budget) and how many pass all of them. If some pass, it says the collection did not need to be empty and offers to add them. If none pass, it names the biggest blocker.
+* **Empty, location not found:** it says it cannot search because it cannot find that location, and asks for a city under Adjust.
+* **A budget is set:** it notes the known platform issue that populate returns nothing when a requirement has a budget, which can leave a collection empty even when spaces exist.
+* **Spaces not available to the demo:** it says so plainly ("Not assessed") rather than hiding the action.
 
-**Scoring.** Per space, four dimensions: location by true distance, workspace type, capacity band, and budget per seat against market. Term is shown as a gap, not scored. Each dimension is Strong, Partial or No match; a dimension with no matching space anywhere in the Collection is shown as "No match". A 0 to 100 score with reasons supports the evidence view and does not drive the headline.
+## 5. Ask and add by link
+Question types: count or list ("How many Private Offices under $5,000 within 3 miles?"), what-if ("What if the budget goes up 15%?"), explain ("Why isn't Regus Westlake a fit?"), and adding a space. Answers are short lines under the input. A what-if puts its values into Adjust and shows the effect under What changes; it never changes the Requirement itself.
 
-**What changes the Requirement.** Nothing automatically. There is one source of truth: the Requirement's fields are the Collection's definition. What-ifs are read-only and labelled "if". A change to the Requirement happens only when Sales accepts a proposal; it is written as a normal Requirement update and logged by the platform. Adding or removing spaces never changes the Requirement. After an accepted change, the Collection is marked as assessed before the change and the agent offers a re-check: budget, headcount or type changes re-check the same spaces; a location change offers to refresh the Collection with new spaces. A search area has no field, so it is stored as text in Other Functional Requirements.
+**Adding a space.** Pasting a LiquidSpace link adds the space to the Collection and says whether it fits. There is no confirmation step. A venue link lists that venue's spaces to choose from. A link that is not LiquidSpace cannot be added; it needs a private listing created by the supply team. The agent never contacts a venue.
 
-**Boundaries.** The agent does not set the Shortlist, change stage or status, or contact any venue. Anything that needs a venue (an RFP, a new listing) is a note for the supply side.
+## 6. Core rules
+* **Fit:** the right area, the headcount band, the budget and the workspace type. Confirmed means the listing was updated within 90 days (from the listing's last-modified date). Plenty is 5 or more confirmed fits, Few is 1 to 4. Availability is not known and is never inferred.
+* **One source of truth:** the Requirement's fields are the Collection's definition. Adjust and what-ifs are read-only previews; only Apply writes, and adding or removing spaces never changes the Requirement.
+* **Search area:** with none given, the city center and 5 miles are used. A search distance is stored as text in Other Functional Requirements.
+* **Boundaries:** the agent does not set the Shortlist, change stage or status, or contact any venue.
 
-## 4. Ask
-Ask follows the Ask pattern (agent-ui-patterns, section 11). Scope is "this collection". Suggested questions reflect the current state, led by the biggest limiter from the funnel. Question types:
-* **Count:** "How many Private Offices under $5,000 within 3 miles?"
-* **What-if:** "If budget goes up 15 percent?" Shows the change in Plenty, Few or None and offers the Requirement change.
-* **Explain:** "Why is this space not a fit?"
-* **Find:** "Show spaces like this one." Lists matches from the market, with a proposal to add them.
-* **Add:** a pasted link (section 5).
-
-Each answer is a card: the answer, the evidence, and an optional proposal. Follow-ups are "refine" chips on the last answer. There is no conversational memory in V1. Unsupported questions say so and suggest the nearest supported one.
-
-## 5. Add a space by link
-Sales pastes a LiquidSpace space link. The agent resolves it to the workspace and venue, shows the same evidence as other candidates, and proposes **Add to collection**, listing the operation first ("Add 1 workspace to Austin Collection"). After it is added, the agent re-checks and shows the effect.
-
-Edge cases: a venue link lists that venue's spaces to choose from; a space already in the Collection says so; a hidden or unlisted space explains why it cannot be added; a link that is not LiquidSpace cannot be added, because that needs a private listing (Venue Manager, BL-027), and the agent leaves a note for the supply side.
-
-## 6. Data and tool basis
-* **Per-space metrics are computed from Pulse** (workspace and venue data, market medians). The platform's Assess tool returns counts that did not reconcile in testing and gives nothing per workspace, so it is not the source. The scoring rules are written here so engineering can adopt or replace them: one definition of a match.
-* Logged platform issues affect Collection building, not assessment: Populate returns nothing when a Requirement has a budget, ignores the search area, and leaves the Collection link empty.
+## 7. Data and tool basis
+* Per-space facts are computed from Pulse (venue location, rate, seats, minimum term, last-modified date, booking method, venue response time). The platform's Assess tool did not reconcile in testing and gives nothing per workspace, so it is not the source.
 * Not available: availability dates, Shortlist control, task or note writes, and any inquire, tour or book operation.
 
-## 7. Records
-Assessments appear in the Timeline. Accepted Requirement changes are logged by the platform as field changes. The agent cannot write tasks or notes through MCP, so the Assess Collection task keeps only a link to the latest result in the prototype; in the product this depends on task writes (F10).
+## 8. Prototype notes
+* The browser demo cannot call Pulse. For each assessable city (Austin, Chicago, Minneapolis, Dallas, New York, Porto, Denver, Lisbon) the spaces of its real LiquidSpace collection are recorded with their Pulse facts, plus a pool of the nearest real listings. Counts that cover the market cover that recorded pool, and answers say so.
+* Adding a space is recorded for the demo session only; in the product it is `add_workspace_to_collection`.
+* Ask matches free text to question types by simple rules; the product would use a language model for that step with the same queries behind it.
 
-## 8. Open questions
+## 9. Open questions
 * Does the existing LiquidSpace "search profile" belong in this design, or alongside it?
-* Should "confirmed" use only listing age in V1, or also RFP quotes once private listings exist?
+* Should "confirmed" use only listing age, or also RFP quotes once private listings exist?
 * Customer-scoped access and permissions for Ask and Add.
 * Does Assess evolve to per-workspace output, or does the agent keep its own scoring?
-
-## 9. Prototype notes
-* **Data:** the browser demo cannot call Pulse. For each assessable city (Austin, Chicago, Minneapolis, Dallas, New York, Porto, Denver) the spaces of its real LiquidSpace collection are recorded with their Pulse facts (venue location, last-modified date, booking method, venue response time), together with a pool of the nearest real listings. Counts that cover the market cover that recorded pool, and answers say so.
-* **Search area:** with none given, the city center and 5 miles are used.
-* **Ask:** free text is matched to the question types by simple rules; the product would use a language model for that step with the same deterministic queries behind it. Filters understood: workspace type, a monthly rate ceiling, a distance, and a headcount band. What-ifs understood: a budget change (percent or amount), a search distance, and a headcount.
-* **Add a space:** looks up the link among the recorded listings. In the demo the addition is recorded for the session only; in the product it is `add_workspace_to_collection`. The Requirement is never changed by an addition.
-* **Not in the demo:** Lisbon and the "Test" collections have no recorded data, so they cannot be assessed.
