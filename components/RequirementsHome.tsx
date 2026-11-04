@@ -761,6 +761,7 @@ export function RequirementsHome() {
         onClose={() => setAssessForId(null)}
         onApply={applyAssessChange}
         onAddSpaces={addSpacesToCollection}
+        onEditRequirement={(r) => { setAssessForId(null); setDetailId(r.id); }}
       />
       <RequirementDetailsModal
         requirement={rows.find((r) => r.id === detailId) ?? null}
