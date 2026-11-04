@@ -31,7 +31,7 @@ export function LicenseActionsDropdown({
     { label: 'View Payments', run: onViewPayments },
     { label: 'View Tasks', run: onViewTasks },
     { label: 'Edit', run: onEdit },
-    onViewCollection ? { label: 'View collection', run: onViewCollection } : { label: 'Create collection', run: onCreateCollection },
+    onViewCollection ? { label: 'View Collection', run: onViewCollection } : { label: 'Create Collection', run: onCreateCollection },
     { label: 'Create New Requirement', run: onCreateRequirement },
   ];
 
