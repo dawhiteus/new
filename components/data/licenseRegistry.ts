@@ -16,9 +16,11 @@ export interface RegistryLicense {
   notificationPeriod: string;
   /** ISO. The day the license ends. Empty for auto-renewing licenses. */
   termEnd: string;
-  /** ISO. The day the customer must say what they intend to do (renew, exit, ...). */
+  /** ISO. Term end minus the notification period; empty when there is no term end (auto-renew). */
   noticeDate: string;
 }
+
+const shift = (isoDate: string, days: number) => { const d = new Date(isoDate + 'T00:00:00'); d.setDate(d.getDate() + days); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
 const toRegistry = (r: any): RegistryLicense => {
   const [city, state = ''] = String(r.location || r.city).split(',').map((x: string) => x.trim());
@@ -27,7 +29,9 @@ const toRegistry = (r: any): RegistryLicense => {
     licenseId: r.licenseId, customer: r.customer, operator: r.operator, city, state,
     seats: r.seats, sizeSf: r.squareFootage, monthlyCost: r.cost, contractType: r.type,
     renewalMechanism: fixed ? 'Renewal by Mutual Agreement' : 'Auto-Renewal',
-    notificationPeriod: r.notificationPeriod, termEnd: fixed ? r.endDate : '', noticeDate: r.noticeDate,
+    notificationPeriod: r.notificationPeriod, termEnd: fixed ? r.endDate : '',
+    // Calculated, as in production: term end minus the notification period. Auto-renew licenses have no term end, so no date.
+    noticeDate: fixed ? shift(r.endDate, -(parseInt(r.notificationPeriod, 10) || 0)) : '',
   };
 };
 
@@ -39,7 +43,7 @@ export const daysUntil = (isoDate: string) =>
   Math.round((new Date(isoDate + 'T00:00:00').getTime() - new Date(new Date().toDateString()).getTime()) / DAY);
 
 /** Soonest notification date first (overdue ones lead). */
-export const byNoticeDate = (a: RegistryLicense, b: RegistryLicense) => a.noticeDate.localeCompare(b.noticeDate);
+export const byNoticeDate = (a: RegistryLicense, b: RegistryLicense) => (a.noticeDate || '9999').localeCompare(b.noticeDate || '9999');
 
 /** Licenses whose notification date falls within the next `months` months (or has already passed). */
-export const needingDecision = (months = 6) => LICENSE_REGISTRY.filter((l) => daysUntil(l.noticeDate) <= months * 30.5).sort(byNoticeDate);
+export const needingDecision = (months = 6) => LICENSE_REGISTRY.filter((l) => l.noticeDate && daysUntil(l.noticeDate) <= months * 30.5).sort(byNoticeDate);

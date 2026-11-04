@@ -325,8 +325,8 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
                               </div>
                               {rows.length === 0 && <div style={{ padding: '8px 12px', fontSize: 13, color: '#6B7280' }}>No licenses match.</div>}
                               {rows.map((l) => {
-                                const d = daysUntil(l.noticeDate);
-                                const late = d < 0;
+                                const d = l.noticeDate ? daysUntil(l.noticeDate) : null;
+                                const late = d != null && d < 0;
                                 return (
                                   <button key={l.licenseId} type="button" onMouseDown={(e) => { e.preventDefault(); setLicenseId(l.licenseId); setLicOpen(false); }}
                                     className="hover:bg-gray-50"
@@ -336,8 +336,8 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
                                       <span style={{ display: 'block', fontSize: 12.5, color: '#6B7280' }}>{l.licenseId} · {l.termEnd ? `ends ${fmtShort(l.termEnd)}` : 'auto-renews'}</span>
                                     </span>
                                     <span style={{ fontSize: 12.5, fontWeight: 600, color: late ? '#B91C1C' : '#374151', whiteSpace: 'nowrap', textAlign: 'right' }}>
-                                      Notify by {fmtShort(l.noticeDate)}
-                                      <span style={{ display: 'block', fontWeight: 400, color: late ? '#B91C1C' : '#6B7280' }}>{late ? `${-d} days overdue` : d === 0 ? 'today' : `in ${d} days`}</span>
+                                      {l.noticeDate ? `Notify by ${fmtShort(l.noticeDate)}` : 'No notification date'}
+                                      <span style={{ display: 'block', fontWeight: 400, color: late ? '#B91C1C' : '#6B7280' }}>{d == null ? 'Auto-renews' : late ? `${-d} days overdue` : d === 0 ? 'today' : `in ${d} days`}</span>
                                     </span>
                                   </button>
                                 );

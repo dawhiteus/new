@@ -887,6 +887,7 @@ export function LicenseTracker({
           termStart: selectedLicense.startDate,
           termEnd: isISODate(selectedLicense.endDate) ? selectedLicense.endDate : '',
           notificationPeriod: selectedLicense.notificationPeriod,
+          owner: selectedLicense.customer,
         }}
         onClose={handleCloseDetailModal}
         onSave={handleSaveLicense}
