@@ -60,11 +60,14 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onCreate?: (items: NewRequirementData[]) => void;
+  /** When set, the Intake Agent opens and drafts straight from this license. */
+  initialLicenseId?: string;
 }
 
 type Phase = 'closed' | 'open' | 'working' | 'review';
 
-export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
+export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseId }: Props) {
+  const [autoRun, setAutoRun] = useState(false);
   const [phase, setPhase] = useState<Phase>('closed');
   const [text, setText] = useState('');
   const [licenseId, setLicenseId] = useState('');
@@ -83,7 +86,14 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
   useEffect(() => {
     if (!isOpen) return;
     setPhase('closed'); setText(''); setLicenseId(''); setFileName(''); setFileText(''); setFileUnreadable(false); setReviewOnly(false); setResult(null); setDrafts([manualDraft()]); setActive(0);
+    if (initialLicenseId) { setLicenseId(initialLicenseId); setPhase('open'); setAutoRun(true); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  useEffect(() => {
+    if (autoRun && licenseId) { setAutoRun(false); startAgent(); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRun, licenseId]);
 
   const close = () => onClose();
   const draft = drafts[active] ?? drafts[0];
@@ -323,7 +333,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
                                     style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', gap: 12, textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', borderTop: '1px solid #F3F4F6', cursor: 'pointer' }}>
                                     <span>
                                       <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: INK }}>{l.customer} · {l.city}</span>
-                                      <span style={{ display: 'block', fontSize: 12.5, color: '#6B7280' }}>{l.licenseId} · ends {fmtShort(l.termEnd)}</span>
+                                      <span style={{ display: 'block', fontSize: 12.5, color: '#6B7280' }}>{l.licenseId} · {l.termEnd ? `ends ${fmtShort(l.termEnd)}` : 'auto-renews'}</span>
                                     </span>
                                     <span style={{ fontSize: 12.5, fontWeight: 600, color: late ? '#B91C1C' : '#374151', whiteSpace: 'nowrap', textAlign: 'right' }}>
                                       Notify by {fmtShort(l.noticeDate)}

@@ -262,7 +262,7 @@ export function runIntake(text: string, licenseIdRaw: string): IntakeResult {
       f.name = `${license.city} renewal`; prov.name = { kind: 'suggested', note: `Suggested from license ${license.licenseId}` };
       if (!f.capacity) { f.capacity = String(license.seats); prov.capacity = { kind: 'license', note: `License ${license.licenseId}: ${license.seats} seats` }; }
       if (!f.size) { f.size = String(license.sizeSf); prov.size = { kind: 'license', note: `License ${license.licenseId}: ${license.sizeSf.toLocaleString()} sq ft` }; }
-      if (!f.startDate) { f.startDate = addDay(license.termEnd); prov.startDate = { kind: 'suggested', note: `Day after the current term ends (${fmtLong(license.termEnd)}). Please confirm.` }; }
+      if (!f.startDate && license.termEnd) { f.startDate = addDay(license.termEnd); prov.startDate = { kind: 'suggested', note: `Day after the current term ends (${fmtLong(license.termEnd)}). Please confirm.` }; }
     }
 
     // Month-only start dates are ambiguous: leave blank and ask.
@@ -289,7 +289,7 @@ export function runIntake(text: string, licenseIdRaw: string): IntakeResult {
 
 export const licenseTermsReference = (l: LicenseRecord) => [
   { label: 'Current monthly cost', value: fmtMoney(l.monthlyCost) },
-  { label: 'Term ends', value: fmtLong(l.termEnd) },
+  { label: 'Term ends', value: l.termEnd ? fmtLong(l.termEnd) : 'Auto-renews' },
   { label: 'Contract type', value: l.contractType },
   { label: 'Renewal mechanism', value: l.renewalMechanism },
   { label: 'Notice period', value: l.notificationPeriod },

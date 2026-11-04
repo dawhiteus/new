@@ -269,7 +269,16 @@ export function RequirementsHome() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailIdRaw] = useState<string | null>(null);
   const [collectionForId, setCollectionForId] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [fromLicense, setFromLicense] = useState('');
+  useEffect(() => {
+    const lic = searchParams.get('fromLicense');
+    if (lic) {
+      setFromLicense(lic); setCreateOpen(true);
+      const next = new URLSearchParams(searchParams); next.delete('fromLicense'); setSearchParams(next, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setDetailId = (id: string | null) => {
     setDetailIdRaw(id);
@@ -687,7 +696,7 @@ export function RequirementsHome() {
         onClose={() => setDetailId(null)}
         onSave={(u) => setRows((rs) => rs.map((r) => (r.id === u.id ? u : r)))}
       />
-      <NewRequirementModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
+      <NewRequirementModal isOpen={createOpen} onClose={() => { setCreateOpen(false); setFromLicense(''); }} onCreate={handleCreate} initialLicenseId={fromLicense || undefined} />
     </div>
   );
 }
