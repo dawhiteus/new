@@ -138,12 +138,16 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
 
   const missingActive = (form: FormState) => ACTIVE_REQUIRED.filter((k) => !String(form[k] ?? '').trim());
 
+  const prune = (form: FormState) => form.intake
+    ? { ...form.intake, questions: form.intake.questions.filter((q) => { const hit = Q_FIELD.find(([re]) => re.test(q)); return !(hit && String((form as any)[hit[1]] ?? '').trim()); }) }
+    : form.intake;
+
   const save = () => {
     // Saving progress never loses anything. If required details are still missing, the requirement stays (or becomes) a Draft.
     const missing = missingActive(f);
     const forcedDraft = missing.length > 0 && f.status !== 'Draft';
     commit(
-      forcedDraft ? { status: 'Draft' } : {},
+      { ...(forcedDraft ? { status: 'Draft' } : {}), intake: prune(f) },
       [ev('update', 'Requirement Updated', `${f.name} requirement details were updated.`)],
     );
     toast.success(
@@ -340,10 +344,16 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                 <div style={{ border: '1px solid #F5C27A', background: '#FFF9ED', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>Open questions <span style={{ fontWeight: 400, color: '#B45309', fontSize: 12 }}>· saved with this requirement</span></div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
                     <button type="button" onClick={() => { navigator.clipboard?.writeText(f.intake!.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')); toast.success('Questions copied.'); }}
                       style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                       <Copy size={13} /> Copy
                     </button>
+                    <button type="button" aria-label="Dismiss open questions" title="Dismiss: no longer needed" onClick={() => { commit({ intake: { ...f.intake!, questions: [] } }, []); toast.success('Open questions dismissed.'); }}
+                      style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', padding: 0, marginLeft: 12, display: 'inline-flex' }}>
+                      <X size={16} />
+                    </button>
+                    </div>
                   </div>
                   <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
                     {f.intake.questions.map((q) => (
