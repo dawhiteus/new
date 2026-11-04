@@ -399,14 +399,14 @@ export function RequirementsHome() {
     ];
     const notes: MvpRequirement['details']['notes'] = [];
     if (d.intake) {
-      // The agent keeps the complete source and its open questions with the requirement.
-      notes.push({ author: AGENT_NAME, date: dispDate, text: `Source provided by Sales (pasted), kept in full:\n\n${d.intake.sourceText}` });
-      if (d.intake.questions.length) {
-        notes.push({ author: AGENT_NAME, date: dispDate, text: `I flagged these open questions to clarify with the customer:\n${d.intake.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` });
-      }
+      // One note: the complete source plus the open questions (a requirement takes a single initial note).
+      const qs = d.intake.questions.length
+        ? `\n\nOpen questions for the customer:\n${d.intake.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`
+        : '';
+      notes.push({ author: AGENT_NAME, date: dispDate, text: `Source provided by Sales (${d.intake.sourceLabel}), kept in full:\n\n${d.intake.sourceText}${qs}` });
       events.push({
         id: `e-${Date.now()}-${seq}-agent`, type: 'note', title: 'Draft Prepared',
-        description: `${AGENT_NAME} drafted this requirement from pasted text${d.intake.licenseId ? ` and license ${d.intake.licenseId}` : ''}. Reviewed and saved by Sales.`,
+        description: `${AGENT_NAME} drafted this requirement from ${d.intake.sourceLabel}${d.intake.licenseId ? ` and license ${d.intake.licenseId}` : ''}. Reviewed and saved by Sales.`,
         date: dispDate, actor: AGENT_EMAIL,
       });
     }

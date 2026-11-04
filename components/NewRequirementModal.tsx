@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, ChevronsUpDown, Bot, Loader2, Sparkles, Copy, ArrowUp } from 'lucide-react';
+import { X, ChevronsUpDown, Bot, Loader2, Sparkles, Copy, ArrowUp, Paperclip } from 'lucide-react';
 import { toast } from './ui/toast';
 import {
   AGENT_NAME, REQUIRED, FIELD_LABEL,
@@ -18,7 +18,7 @@ const CONFIGURATIONS = ['Single space', 'Collection of spaces'];
 
 export type NewRequirementData = IntakeFields & {
   /** Present when the Requirements Intake Agent drafted this requirement. */
-  intake?: { sourceText: string; questions: string[]; licenseId?: string };
+  intake?: { sourceText: string; sourceLabel: string; questions: string[]; licenseId?: string };
   /** Fields the agent filled, with their sources. */
   prov?: Partial<Record<FieldKey, Provenance>>;
 };
@@ -66,6 +66,11 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
   const [phase, setPhase] = useState<Phase>('closed');
   const [text, setText] = useState('');
   const [licenseId, setLicenseId] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [fileText, setFileText] = useState('');
+  const [fileUnreadable, setFileUnreadable] = useState(false);
+  const [reviewOnly, setReviewOnly] = useState(false);
+  const fileRef = React.useRef<HTMLInputElement>(null);
   const [workMsg, setWorkMsg] = useState('');
   const [result, setResult] = useState<IntakeResult | null>(null);
   const [drafts, setDrafts] = useState<IntakeDraft[]>([manualDraft()]);
@@ -73,25 +78,41 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
 
   useEffect(() => {
     if (!isOpen) return;
-    setPhase('closed'); setText(''); setLicenseId(''); setResult(null); setDrafts([manualDraft()]); setActive(0);
+    setPhase('closed'); setText(''); setLicenseId(''); setFileName(''); setFileText(''); setFileUnreadable(false); setReviewOnly(false); setResult(null); setDrafts([manualDraft()]); setActive(0);
   }, [isOpen]);
 
   const close = () => onClose();
   const draft = drafts[active] ?? drafts[0];
   const agentRun = phase === 'review' && result !== null;
 
+  const TEXT_FILE = /\.(txt|eml|md|csv|rtf)$/i;
+  const attachFile = async (file: File | undefined) => {
+    if (!file) return;
+    setFileName(file.name);
+    if (TEXT_FILE.test(file.name) || file.type.startsWith('text/')) {
+      setFileText((await file.text()).trim());
+      setFileUnreadable(false);
+    } else {
+      setFileText('');
+      setFileUnreadable(true);
+    }
+  };
+  const removeFile = () => { setFileName(''); setFileText(''); setFileUnreadable(false); if (fileRef.current) fileRef.current.value = ''; };
+  const sourceText = [text.trim(), fileText].filter(Boolean).join('\n\n');
+  const sourceLabel = text.trim() && fileText ? `pasted text and the attached file “${fileName}”` : fileText ? `the attached file “${fileName}”` : 'pasted text';
+
   const startAgent = () => {
-    if (!text.trim() && !licenseId.trim()) return;
+    if (!sourceText && !licenseId.trim()) return;
     setPhase('working');
     const steps = [
-      licenseId.trim() ? `Pulling license ${licenseId.trim().toUpperCase()}…` : 'Reading what you pasted…',
+      licenseId.trim() ? `Pulling license ${licenseId.trim().toUpperCase()}…` : fileText ? 'Reading the file…' : 'Reading what you pasted…',
       'Pulling out the requirement details…',
       'Checking what is missing…',
     ];
     setWorkMsg(steps[0]);
     steps.forEach((s, i) => setTimeout(() => setWorkMsg(s), i * 700));
     setTimeout(() => {
-      const r = runIntake(text, licenseId);
+      const r = runIntake(sourceText, licenseId);
       setResult(r);
       setDrafts(r.drafts);
       setActive(0);
@@ -99,7 +120,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
     }, steps.length * 700);
   };
 
-  const startOver = () => { setPhase('closed'); setResult(null); setDrafts([manualDraft()]); setActive(0); setText(''); setLicenseId(''); };
+  const startOver = () => { setPhase('closed'); setResult(null); setDrafts([manualDraft()]); setActive(0); setText(''); setLicenseId(''); setFileName(''); setFileText(''); setFileUnreadable(false); setReviewOnly(false); };
 
   const setField = (k: FieldKey, v: string) =>
     setDrafts((ds) => ds.map((d, i) => {
@@ -126,7 +147,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
       drafts.map((d) => ({
         ...d.fields,
         prov: Object.keys(d.prov).length ? d.prov : undefined,
-        intake: agentRun && result ? { sourceText: result.sourceText, questions: d.questions, licenseId: result.license?.licenseId } : undefined,
+        intake: agentRun && result ? { sourceText: result.sourceText, sourceLabel, questions: d.questions, licenseId: result.license?.licenseId } : undefined,
       })),
     );
     close();
@@ -142,6 +163,14 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
       </span>
     );
   };
+  // Fields to review: anything missing that Active needs, anything the agent only suggested, plus the name and company.
+  const needsReview = (k: FieldKey) =>
+    k === 'name' || k === 'company' ||
+    (REQUIRED.includes(k) && !draft.fields[k].trim()) ||
+    draft.prov[k]?.kind === 'suggested';
+  const vis = (k: FieldKey) => !(agentRun && reviewOnly) || needsReview(k);
+  const ALL_FIELDS: FieldKey[] = ['company', 'name', 'location', 'workspaceType', 'capacity', 'size', 'programNeeds', 'amenityNeeds', 'configuration', 'otherFunctional', 'startDate', 'termLength', 'closeDate', 'budget', 'otherCommercial'];
+  const hiddenCount = ALL_FIELDS.filter((k) => !needsReview(k) && String(draft.fields[k] ?? '').trim()).length;
   const missingFlag = (k: FieldKey) => agentRun && REQUIRED.includes(k) && k !== 'name' && !draft.fields[k];
 
   const field = (k: FieldKey, type = 'text') => (
@@ -185,7 +214,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
   const row2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 };
 
   const f = draft.fields;
-  const canDraft = !!(text.trim() || licenseId.trim());
+  const canDraft = !!(sourceText || licenseId.trim());
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) close(); }}>
@@ -230,7 +259,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
 
                   {phase === 'open' && (
                     <>
-                      <div style={{ position: 'relative' }}>
+                      <div style={{ position: 'relative' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); attachFile(e.dataTransfer.files?.[0]); }}>
                         <textarea
                           autoFocus
                           value={text}
@@ -244,6 +273,21 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
                           style={{ position: 'absolute', right: 10, bottom: 10, width: 32, height: 32, borderRadius: '50%', border: 'none', background: canDraft ? GREEN : '#C7D9CF', color: '#fff', cursor: canDraft ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <ArrowUp size={18} />
                         </button>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                        <input ref={fileRef} type="file" accept=".txt,.eml,.md,.csv,.rtf,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={(e) => attachFile(e.target.files?.[0])} />
+                        {fileName ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid #BFE5CC', borderRadius: 999, padding: '4px 6px 4px 10px', fontSize: 13, color: INK }}>
+                            <Paperclip size={13} /> {fileName}
+                            <button type="button" onClick={removeFile} aria-label="Remove file" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', display: 'inline-flex', padding: 2 }}><X size={13} /></button>
+                          </span>
+                        ) : (
+                          <button type="button" onClick={() => fileRef.current?.click()}
+                            style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            <Paperclip size={14} /> Attach a file
+                          </button>
+                        )}
+                        {fileUnreadable && <span style={{ fontSize: 12.5, color: '#B45309' }}>The prototype can only read text files (.txt, .eml, .md). Paste this file's text instead.</span>}
                       </div>
                       <input
                         value={licenseId}
@@ -274,6 +318,14 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
                 </div>
               </div>
             </div>
+          )}
+
+          {agentRun && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#374151', fontFamily: FONT, margin: '-8px 0 16px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={reviewOnly} onChange={(e) => setReviewOnly(e.target.checked)} />
+              Show only fields to review
+              {reviewOnly && <span style={{ color: '#6B7280' }}>· {hiddenCount} filled field{hiddenCount === 1 ? '' : 's'} hidden</span>}
+            </label>
           )}
 
           {/* Draft switcher (multiple locations) */}
@@ -325,9 +377,9 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
           )}
 
           {/* ── The requirement form ── */}
-          <div style={sectionStyle}>Deal Details</div>
+          {(['company'] as FieldKey[]).some(vis) && <div style={sectionStyle}>Deal Details</div>}
           <div style={row2}>
-            {field('company')}
+            {vis('company') && field('company')}
             <div>
               <label style={labelStyle}>Status *</label>
               <div style={{ position: 'relative' }}>
@@ -339,39 +391,39 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
             </div>
           </div>
 
-          <div style={sectionStyle}>Business Requirements</div>
-          <div style={{ marginBottom: 20 }}>{field('name')}</div>
-          <div style={{ marginBottom: 20 }}>{field('location')}</div>
-          <div style={{ marginBottom: 20 }}>
+          {(['name','location','workspaceType','capacity','size','programNeeds','amenityNeeds','configuration','otherFunctional'] as FieldKey[]).some(vis) && <div style={sectionStyle}>Business Requirements</div>}
+          {vis('name') && <div style={{ marginBottom: 20 }}>{field('name')}</div>}
+          {vis('location') && <div style={{ marginBottom: 20 }}>{field('location')}</div>}
+          {vis('workspaceType') && <div style={{ marginBottom: 20 }}>
             <label style={labelStyle}>Workspace Type{marker('workspaceType')}</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {WORKSPACE_TYPES.map((t) => chip(f.workspaceType === t, t, () => setField('workspaceType', f.workspaceType === t ? '' : t)))}
             </div>
-          </div>
+          </div>}
           <div style={row2}>
-            {field('capacity', 'number')}
-            {field('size', 'number')}
+            {vis('capacity') && field('capacity', 'number')}
+            {vis('size') && field('size', 'number')}
           </div>
-          {area('programNeeds', 'Open workstations, 3 meeting rooms, 2 team rooms, and a kitchen/pantry.')}
-          {area('amenityNeeds', 'On-site staffed reception, secure badge access, and bookable phone booths.')}
-          <div style={{ marginBottom: 20 }}>
+          {vis('programNeeds') && area('programNeeds', 'Open workstations, 3 meeting rooms, 2 team rooms, and a kitchen/pantry.')}
+          {vis('amenityNeeds') && area('amenityNeeds', 'On-site staffed reception, secure badge access, and bookable phone booths.')}
+          {vis('configuration') && <div style={{ marginBottom: 20 }}>
             <label style={labelStyle}>Configuration{marker('configuration')}</label>
             <div style={{ display: 'flex', gap: 12 }}>
               {CONFIGURATIONS.map((c) => chip(f.configuration === c, c, () => setField('configuration', f.configuration === c ? '' : c), true))}
             </div>
-          </div>
-          {area('otherFunctional', 'Any other functional needs')}
+          </div>}
+          {vis('otherFunctional') && area('otherFunctional', 'Any other functional needs')}
 
-          <div style={sectionStyle}>Commercial Terms</div>
+          {(['startDate','termLength','closeDate','budget','otherCommercial'] as FieldKey[]).some(vis) && <div style={sectionStyle}>Commercial Terms</div>}
           <div style={row2}>
-            {field('startDate', 'date')}
-            {field('termLength', 'number')}
+            {vis('startDate') && field('startDate', 'date')}
+            {vis('termLength') && field('termLength', 'number')}
           </div>
           <div style={row2}>
-            {field('closeDate', 'date')}
-            {field('budget', 'number')}
+            {vis('closeDate') && field('closeDate', 'date')}
+            {vis('budget') && field('budget', 'number')}
           </div>
-          {area('otherCommercial', 'Any other commercial terms')}
+          {vis('otherCommercial') && area('otherCommercial', 'Any other commercial terms')}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 28 }}>
             <button type="button" onClick={close} style={{ padding: '10px 16px', borderRadius: 8, border: `1px solid ${BLUE}`, background: '#fff', color: BLUE, fontSize: 15, fontWeight: 500, fontFamily: FONT, cursor: 'pointer' }}>Cancel</button>
