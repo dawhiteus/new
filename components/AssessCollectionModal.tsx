@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, MapPin, DollarSign, Users, ChevronDown, ExternalLink } from 'lucide-react';
-import { assess, type SpaceResult, type Widen } from './data/assessmentAgent';
+import { assess, ask, suggestions, type Answer, type ReqPatch, type SpaceResult, type Widen } from './data/assessmentAgent';
+import { exampleLink } from './data/assessmentData';
 import type { MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
@@ -21,15 +22,22 @@ interface Props {
   requirement: MvpRequirement | null;
   onClose: () => void;
   /** Accepting a proposal changes the Requirement, never the Collection directly. */
-  onApply: (req: MvpRequirement, patch: { budget?: number; searchArea?: string }, summary: string) => void;
+  onApply: (req: MvpRequirement, patch: ReqPatch, summary: string) => void;
+  /** Adding a space changes the Collection only; the Requirement is never touched. */
+  onAddSpace: (req: MvpRequirement, url: string) => void;
 }
 
-export function AssessCollectionModal({ requirement, onClose, onApply }: Props) {
+export function AssessCollectionModal({ requirement, onClose, onApply, onAddSpace }: Props) {
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
   const [open, setOpen] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [answers, setAnswers] = useState<Answer[]>([]);
+  const [text, setText] = useState('');
+  const [decision, setDecision] = useState<Record<string, 'accept' | 'keep' | 'done'>>({});
+  const [showEv, setShowEv] = useState<Record<string, boolean>>({});
+  const scroller = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setAccepted({}); setOpen(null); setNote(''); }, [requirement?.id]);
+  useEffect(() => { setAccepted({}); setOpen(null); setNote(''); setAnswers([]); setText(''); setDecision({}); setShowEv({}); }, [requirement?.id]);
 
   if (!requirement) return <Dialog open={false}><DialogContent className="hidden" /></Dialog>;
   const a = assess(requirement);
@@ -48,12 +56,27 @@ export function AssessCollectionModal({ requirement, onClose, onApply }: Props) 
 
   const chosen = a.widen.filter((w) => accepted[w.id]);
   const apply = () => {
-    const patch: { budget?: number; searchArea?: string } = {};
+    const patch: ReqPatch = {};
     chosen.forEach((w) => Object.assign(patch, w.patch));
     onApply(requirement, patch, chosen.map((w) => w.title).join('; '));
     setAccepted({});
     setNote('Requirement updated and the collection re-checked.');
   };
+
+  const submitQuestion = (q: string) => {
+    const v = q.trim();
+    if (!v) return;
+    setAnswers((prev) => [ask(v, requirement), ...prev]);
+    setText('');
+    setTimeout(() => scroller.current?.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+  };
+  const applyProposal = (ans: Answer) => {
+    if (!ans.proposal) return;
+    if (ans.proposal.patch) onApply(requirement, ans.proposal.patch, ans.proposal.title);
+    if (ans.proposal.addUrl) onAddSpace(requirement, ans.proposal.addUrl);
+    setDecision((p) => ({ ...p, [ans.id]: 'done' }));
+  };
+  const chips = suggestions(requirement);
 
   const row = (Icon: typeof MapPin, label: string, n: number | null) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 14, padding: '4px 0' }}>
@@ -101,7 +124,7 @@ export function AssessCollectionModal({ requirement, onClose, onApply }: Props) 
           <button type="button" onClick={onClose} aria-label="Close" className="hover:bg-gray-100" style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', borderRadius: 8, padding: 6, marginTop: -4, marginRight: -6 }}><X size={18} /></button>
         </div>
 
-        <div style={{ padding: '0 24px 24px', overflowY: 'auto', maxHeight: 'calc(92vh - 150px)' }}>
+        <div ref={scroller} style={{ padding: '0 24px 24px', overflowY: 'auto', maxHeight: 'calc(92vh - 230px)' }}>
           {/* Result */}
           <div style={{ ...box, background: '#F9FAFB', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 18, fontWeight: 700, color: INK }}>
@@ -120,6 +143,82 @@ export function AssessCollectionModal({ requirement, onClose, onApply }: Props) 
             )}
           </div>
           {note && <div style={{ fontSize: 13, color: '#0F7B4F', marginTop: 8, fontFamily: FONT }}>{note}</div>}
+          {answers.length > 0 && (
+            <>
+              <div style={sectionTitle}>Your questions</div>
+              {answers.map((ans) => {
+                const dec = decision[ans.id];
+                return (
+                  <div key={ans.id} style={{ ...box, marginBottom: 10 }}>
+                    <div style={{ padding: '12px 14px' }}>
+                      <div style={{ fontSize: 12.5, color: '#9CA3AF' }}>{ans.question}</div>
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: INK, marginTop: 4, lineHeight: 1.45 }}>{ans.headline}</div>
+                      {ans.detail && <div style={{ fontSize: 13.5, color: '#374151', marginTop: 4, lineHeight: 1.5 }}>{ans.detail}</div>}
+                      {ans.applied && <div style={{ fontSize: 12.5, color: '#6B7280', marginTop: 6, lineHeight: 1.45 }}>{ans.applied}</div>}
+                      {ans.choices && (
+                        <div style={{ marginTop: 8, border: '1px solid #E5E7EB', borderRadius: 8, overflow: 'hidden' }}>
+                          {ans.choices.map((sp, i) => (
+                            <button key={sp.id} type="button" onClick={() => submitQuestion(sp.url)} className="hover:bg-gray-50"
+                              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', borderTop: i ? '1px solid #F1F3F5' : undefined, cursor: 'pointer', fontFamily: FONT }}>
+                              <span style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{sp.title}</span>
+                              <span style={{ display: 'block', fontSize: 12.5, color: '#6B7280' }}>{sp.desks} seats · {sp.rate != null ? `${money(sp.rate)}/mo` : 'Not priced monthly'}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {ans.refine && ans.refine.length > 0 && (
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                          {ans.refine.map((rf) => (
+                            <button key={rf} type="button" onClick={() => submitQuestion(rf)} style={{ border: '1px solid #D1D5DB', background: '#fff', borderRadius: 999, padding: '3px 10px', fontSize: 12, color: '#374151', cursor: 'pointer' }}>{rf.length > 46 ? `${rf.slice(0, 44)}…` : rf}</button>
+                          ))}
+                        </div>
+                      )}
+                      {ans.evidence.length > 0 && (
+                        <button type="button" onClick={() => setShowEv((p) => ({ ...p, [ans.id]: !p[ans.id] }))} style={{ background: 'none', border: 'none', padding: 0, marginTop: 8, color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                          {showEv[ans.id] ? 'Hide evidence' : `Show evidence (${ans.evidence.length})`}
+                        </button>
+                      )}
+                    </div>
+                    {showEv[ans.id] && (
+                      <div style={{ borderTop: '1px solid #F1F3F5', background: '#F9FAFB' }}>
+                        {ans.evidence.map((e, i) => (
+                          <div key={`${e.title}-${i}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '8px 14px', borderTop: i ? '1px solid #F1F3F5' : undefined }}>
+                            <div>
+                              <div style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{e.title}</div>
+                              <div style={{ fontSize: 12.5, color: '#6B7280' }}>{e.sub}</div>
+                            </div>
+                            {e.url && <a href={e.url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none', whiteSpace: 'nowrap' }}>Open listing <ExternalLink size={12} /></a>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {ans.proposal && (
+                      <div style={{ borderTop: '1px solid #E5E7EB', background: '#F9FAFB', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                        <div>
+                          <div style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{ans.proposal.title}</div>
+                          <div style={{ fontSize: 12.5, color: '#6B7280' }}>{ans.proposal.ops}</div>
+                          <div style={{ fontSize: 12.5, color: '#374151' }}>{ans.proposal.effect}</div>
+                          {ans.proposal.addUrl && <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>Demo: the space is added for this session only. In the product it is added to the collection in LiquidSpace.</div>}
+                        </div>
+                        {dec === 'done' ? (
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#0F7B4F', whiteSpace: 'nowrap' }}>Done</span>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                            {(['Accept', 'Keep mine'] as const).map((lbl) => {
+                              const sel = (lbl === 'Accept') === (dec === 'accept');
+                              return <button key={lbl} type="button" onClick={() => setDecision((p) => ({ ...p, [ans.id]: lbl === 'Accept' ? 'accept' : 'keep' }))}
+                                style={{ border: `1px solid ${sel ? BLUE : '#D1D5DB'}`, background: sel ? BLUE : '#fff', color: sel ? '#fff' : '#374151', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{lbl}</button>;
+                            })}
+                            {dec === 'accept' && <button type="button" onClick={() => applyProposal(ans)} style={{ ...primary, height: 28, padding: '0 12px', fontSize: 12.5 }}>Apply</button>}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
 
           {/* Overview (original structure) */}
           <div style={{ ...box, marginTop: 14 }}>
@@ -234,8 +333,23 @@ export function AssessCollectionModal({ requirement, onClose, onApply }: Props) 
           </div>
         </div>
 
-        <div style={{ padding: '14px 24px', borderTop: '1px solid #E5E7EB', background: '#F9FAFB', display: 'flex', justifyContent: 'flex-end' }}>
-          <button type="button" onClick={onClose} style={secondary}>Close</button>
+        <div style={{ padding: '12px 24px 14px', borderTop: '1px solid #E5E7EB', background: '#F9FAFB' }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: '#374151', marginBottom: 6, fontFamily: FONT }}>Ask about this collection</div>
+          {chips.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+              {chips.map((ch) => (
+                <button key={ch} type="button" onClick={() => submitQuestion(ch)} style={{ border: '1px solid #D1D5DB', background: '#fff', borderRadius: 999, padding: '4px 11px', fontSize: 12.5, color: '#374151', cursor: 'pointer', fontFamily: FONT }}>{ch}</button>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitQuestion(text); } }}
+              placeholder="Ask a question, or paste a link to a space to add it" className="focus:!border-[#0D619B]"
+              style={{ flex: 1, height: 40, border: '1px solid #D1D5DB', borderRadius: 10, padding: '0 14px', fontSize: 14, fontFamily: FONT, outline: 'none', background: '#fff' }} />
+            <button type="button" onClick={() => submitQuestion(text)} disabled={!text.trim()} style={{ ...primary, height: 40, opacity: text.trim() ? 1 : 0.5, cursor: text.trim() ? 'pointer' : 'default' }}>Ask</button>
+            <button type="button" onClick={onClose} style={secondary}>Close</button>
+          </div>
+          <button type="button" onClick={() => setText(a.marketFits[0]?.space.url ?? exampleLink(a.criteria.city))} style={{ background: 'none', border: 'none', padding: 0, marginTop: 6, color: BLUE, fontSize: 12, cursor: 'pointer', fontFamily: FONT }}>Use an example link</button>
         </div>
       </DialogContent>
     </Dialog>

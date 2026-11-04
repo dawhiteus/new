@@ -22,7 +22,8 @@ import { capacityBand } from './data/collectionAgent';
 import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
 import { AssessCollectionModal } from './AssessCollectionModal';
-import { canAssess, quickStatus } from './data/assessmentAgent';
+import { canAssess, quickStatus, addedSpaces, type ReqPatch } from './data/assessmentAgent';
+import { listingByUrl } from './data/assessmentData';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
 import { useSearchParams } from 'react-router-dom';
 import { readHubOrigin, formatVerdict, formatPurpose, formatUsd } from './hubOrigin';
@@ -543,7 +544,7 @@ export function RequirementsHome() {
   };
 
   /** An accepted assessment proposal changes the Requirement (never the Collection) and is logged like any other field change. */
-  const applyAssessChange = (req: MvpRequirement, patch: { budget?: number; searchArea?: string }, summary: string) => {
+  const applyAssessChange = (req: MvpRequirement, patch: ReqPatch, summary: string) => {
     const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     setRows((rs) => rs.map((r) => {
       if (r.id !== req.id) return r;
@@ -552,6 +553,10 @@ export function RequirementsHome() {
       if (patch.budget != null) {
         events.push({ id: `e-${Date.now()}-b`, type: 'update', title: 'Requirement Updated', description: `Budget changed from ${money(r.budget ?? 0)}/mo to ${money(patch.budget)}/mo, accepted from the collection assessment.`, date: dispDate, actor: CURRENT_USER_EMAIL });
         next = { ...next, budget: patch.budget };
+      }
+      if (patch.capacity != null) {
+        events.push({ id: `e-${Date.now()}-c`, type: 'update', title: 'Requirement Updated', description: `Capacity changed from ${r.details.capacity || 'not provided'} to ${patch.capacity}, accepted from the collection assessment.`, date: dispDate, actor: CURRENT_USER_EMAIL });
+        next = { ...next, details: { ...next.details, capacity: String(patch.capacity) } };
       }
       if (patch.searchArea) {
         const kept = (r.details.otherFunctional || '').replace(/Search area:[^\n]*\n?/g, '').trim();
@@ -562,6 +567,20 @@ export function RequirementsHome() {
       return { ...next, details: { ...next.details, events: [...next.details.events, ...events] } };
     }));
     toast.success(`Requirement updated: ${summary}.`);
+  };
+
+  /** Adds a space to the collection only. In the product this is add_workspace_to_collection; the demo records it for the session. */
+  const addSpaceToCollection = (req: MvpRequirement, url: string) => {
+    const sp = listingByUrl(url)?.space;
+    if (!sp) return;
+    addedSpaces.set(req.id, [...(addedSpaces.get(req.id) ?? []), url]);
+    const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    setRows((rs) => rs.map((r) => (r.id !== req.id || !r.collection ? r : {
+      ...r,
+      collection: { ...r.collection, totalSpaces: r.collection.totalSpaces + 1, saved: r.collection.saved + 1 },
+      details: { ...r.details, events: [...r.details.events, { id: `e-${Date.now()}-s`, type: 'collection', title: 'Space Added', description: `${sp.title} (${sp.venue}) added to ${r.collection.name}.`, date: dispDate, actor: CURRENT_USER_EMAIL }] },
+    })));
+    toast.success(`${sp.title} added to the collection.`);
   };
 
   const handleAction = (req: MvpRequirement, action: string) => {
@@ -745,6 +764,7 @@ export function RequirementsHome() {
         requirement={rows.find((r) => r.id === assessForId) ?? null}
         onClose={() => setAssessForId(null)}
         onApply={applyAssessChange}
+        onAddSpace={addSpaceToCollection}
       />
       <RequirementDetailsModal
         requirement={rows.find((r) => r.id === detailId) ?? null}

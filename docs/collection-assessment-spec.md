@@ -66,3 +66,10 @@ Assessments appear in the Timeline. Accepted Requirement changes are logged by t
 * Should "confirmed" use only listing age in V1, or also RFP quotes once private listings exist?
 * Customer-scoped access and permissions for Ask and Add.
 * Does Assess evolve to per-workspace output, or does the agent keep its own scoring?
+
+## 9. Prototype notes
+* **Data:** the browser demo cannot call Pulse. For each assessable city (Austin, Chicago, Minneapolis, Dallas, New York, Porto, Denver) the spaces of its real LiquidSpace collection are recorded with their Pulse facts (venue location, last-modified date, booking method, venue response time), together with a pool of the nearest real listings. Counts that cover the market cover that recorded pool, and answers say so.
+* **Search area:** with none given, the city center and 5 miles are used.
+* **Ask:** free text is matched to the question types by simple rules; the product would use a language model for that step with the same deterministic queries behind it. Filters understood: workspace type, a monthly rate ceiling, a distance, and a headcount band. What-ifs understood: a budget change (percent or amount), a search distance, and a headcount.
+* **Add a space:** looks up the link among the recorded listings. In the demo the addition is recorded for the session only; in the product it is `add_workspace_to_collection`. The Requirement is never changed by an addition.
+* **Not in the demo:** Lisbon and the "Test" collections have no recorded data, so they cannot be assessed.

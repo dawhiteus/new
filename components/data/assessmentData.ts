@@ -199,3 +199,28 @@ export function marketPool(city: string): AssessSpace[] {
 }
 
 export const hasAssessmentData = (city: string) => collectionSpaces(city).length > 0;
+
+const CITY_KEYS = Object.keys(CENTERS);
+const norm = (u: string) => u.trim().replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase();
+
+/** Find a recorded listing by its LiquidSpace link, in any recorded city. */
+export function listingByUrl(url: string): { space: AssessSpace; city: string } | null {
+  const n = norm(url);
+  for (const city of CITY_KEYS) {
+    const all = [...collectionSpaces(city), ...marketPool(city)];
+    const hit = all.find((s) => norm(s.url) === n);
+    if (hit) return { space: hit, city };
+  }
+  return null;
+}
+
+/** All recorded listings at a venue, given a venue link (one path level shorter than a space link). */
+export function listingsAtVenue(venueUrl: string): AssessSpace[] {
+  const n = norm(venueUrl) + '/';
+  const out: AssessSpace[] = [];
+  for (const city of CITY_KEYS) out.push(...[...collectionSpaces(city), ...marketPool(city)].filter((s) => norm(s.url).startsWith(n)));
+  return out;
+}
+
+/** An example link to try in the demo: a real listing near the city center that is not yet in the collection. */
+export const exampleLink = (city: string) => marketPool(city)[0]?.url ?? '';
