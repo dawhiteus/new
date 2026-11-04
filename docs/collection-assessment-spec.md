@@ -19,22 +19,15 @@ Held back for now: a button on the "Collection populated" confirmation, the Work
 The agent is marked with the agent icon pattern used elsewhere: the green agent icon in a neutral circle, named **Collection Assessment Agent**, and it speaks in the first person ("I checked the 8 spaces…"). No badges, pills or colored tags are used.
 
 ## 3. What the page shows
-**Heading.** A band in the product's header blue that opens the conversation. It leads with a **match score** (0 to 100) and the **number of matches** ("3 of 6 spaces match"), with the result label colored by outcome (green for plenty, amber for few, red for none, neutral when empty). One verdict line follows ("None fit. Capacity and area are the main gaps."), then the next best change and a link to add the matching nearby spaces.
+**Heading.** The title bar matches the other modals (solid blue, white title, close). Below it is the agent bar, as used elsewhere, then the finding: the number of matches ("0 of 8 spaces match"), one line saying why ("None fit. Capacity and area are the main gaps."), and a short line saying what was checked ("Checked against 8-14 people, under $9,000/mo, within 5 miles of downtown Austin"). There is no score.
 
-The score is 60% how many of the 5 spaces you need fit (confirmed fits, capped at 5) and 40% how close the best five spaces come to fitting (area, size, budget and type, with partial credit). An empty collection scores 0. When nothing can be scored (an unknown location, or spaces the demo does not have) the score shows a dash.
-
-**Criteria cards.** One card per criterion the requirement gives (area, budget, headcount, workspace type), each showing how many spaces meet it ("4 of 8"). Cards use the design system's tints: green when every space meets the criterion, red when none does, amber in between.
+**Criteria cards.** One card per criterion the requirement gives (area, budget, headcount, workspace type), each showing how many spaces meet it ("4 of 8"). Cards are plain white with a thin border. Color is used only for contrast: the number is red when no space meets the criterion and green when every space does.
 
 **Gaps and trade-offs** (or **Why it's empty**). One plain sentence per row, giving the detail behind the cards and not repeating their counts: the nearest and farthest distance, the lowest price over budget, the size range against the size needed, the workspace type mix, spaces over the market rate, stale listings, term, and what was not assessed.
 
 The spaces follow, collapsed, each with distance, seats, rate, listing age and reason, and a link to its listing.
 
-**Ask me.** A conversation with the agent, with a few example questions shown as plain text before the first question. Each answer is short, with the spaces behind it. Questions and answers appear as a simple conversation; the input is fixed at the bottom.
-
-**Edit requirement.** A link in the header opens Requirement Details, the one place values are edited by hand.
-
-## 3a. What-ifs and changes
-A what-if is only an answer. "What if the budget goes up 15%?" is answered with the effect (for example "Few matches → Plenty of matches. 3 spaces would newly fit") and the spaces behind it. When an answer implies a change, it offers explicit actions under the answer: **Update the requirement: budget $9,000 → $10,350/mo**, and, if nearby spaces would fit, **Add the 3 nearby spaces to <collection>**. Nothing changes until one is chosen. Updating the requirement is a normal requirement update, logged on the Timeline; it never edits the Collection. Adding spaces never changes the requirement.
+**Ask me.** One label, one input and plain answers: the question in gray, the answer beneath it, newest first. No avatars, bubbles, buttons or example lists. An answer never changes anything, with one exception: pasting a LiquidSpace link adds that space to the collection and the answer says so. A what-if only reports the effect. Requirement values are edited in Requirement Details.
 
 ## 4. An empty or unassessable Collection
 This is a primary reason to assess. The agent says what is going on:

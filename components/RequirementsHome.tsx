@@ -22,7 +22,7 @@ import { capacityBand } from './data/collectionAgent';
 import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
 import { AssessCollectionModal } from './AssessCollectionModal';
-import { canAssess, quickStatus, addedSpaces, type ReqPatch } from './data/assessmentAgent';
+import { quickStatus, addedSpaces } from './data/assessmentAgent';
 import { listingByUrl } from './data/assessmentData';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
 import { useSearchParams } from 'react-router-dom';
@@ -541,29 +541,6 @@ export function RequirementsHome() {
     toast.success(o.method === 'agent' ? `“${o.name}” created and assessed.` : o.method === 'manual' ? `“${o.name}” created in LiquidSpace.` : `“${o.name}” linked.`);
   };
 
-  /** Applying an assessment change updates the Requirement (never the Collection) and is logged like any other field change. */
-  const applyAssessChange = (req: MvpRequirement, patch: ReqPatch) => {
-    const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const said: string[] = [];
-    setRows((rs) => rs.map((r) => {
-      if (r.id !== req.id) return r;
-      const events: MvpRequirement['details']['events'] = [];
-      const log = (what: string) => { said.push(what); events.push({ id: `e-${Date.now()}-${events.length}`, type: 'update', title: 'Requirement Updated', description: `${what}, applied from the collection assessment.`, date: dispDate, actor: CURRENT_USER_EMAIL }); };
-      let next = { ...r, lastUpdated: new Date().toISOString().slice(0, 10) };
-      if ('budget' in patch) { log(`Budget changed from ${r.budget ? money(r.budget) + '/mo' : 'not provided'} to ${patch.budget ? money(patch.budget) + '/mo' : 'not provided'}`); next = { ...next, budget: patch.budget ?? null }; }
-      if ('capacity' in patch) { log(`Capacity changed from ${r.details.capacity || 'not provided'} to ${patch.capacity ?? 'not provided'}`); next = { ...next, details: { ...next.details, capacity: patch.capacity != null ? String(patch.capacity) : '' } }; }
-      if ('type' in patch) { log(`Workspace type changed from ${r.details.workspaceType || 'any'} to ${patch.type || 'any'}`); next = { ...next, details: { ...next.details, workspaceType: patch.type ?? '' } }; }
-      if ('location' in patch) { log(`Location changed from ${r.details.location || r.city || 'not provided'} to ${patch.location || 'not provided'}`); next = { ...next, city: patch.location ?? '', details: { ...next.details, location: patch.location ?? '' } }; }
-      if (patch.searchArea) {
-        const kept = (next.details.otherFunctional || '').replace(/Search area:[^\n]*\n?/g, '').trim();
-        log(`Search area set to ${patch.searchArea}`);
-        next = { ...next, details: { ...next.details, otherFunctional: [kept, `Search area: ${patch.searchArea}.`].filter(Boolean).join('\n') } };
-      }
-      return { ...next, details: { ...next.details, events: [...next.details.events, ...events] } };
-    }));
-    toast.success('Requirement updated from the assessment.');
-  };
-
   /** Adds spaces to the collection only. In the product this is add_workspace_to_collection, one space at a time; the demo records it for the session. */
   const addSpacesToCollection = (req: MvpRequirement, urls: string[]) => {
     const have = new Set(addedSpaces.get(req.id) ?? []);
@@ -715,7 +692,7 @@ export function RequirementsHome() {
                         )}</td>
                       <td style={td}>{fmtDate(r.lastUpdated)}</td>
                       <td style={{ ...td, textAlign: 'right', padding: '14px 12px 14px 0' }} onClick={(e) => e.stopPropagation()}>
-                        <RowMenu hasCollection={!!r.collection} assessable={canAssess(r)} onAction={(a) => handleAction(r, a)} />
+                        <RowMenu hasCollection={!!r.collection} assessable onAction={(a) => handleAction(r, a)} />
                       </td>
                     </tr>
                   ))
@@ -759,9 +736,7 @@ export function RequirementsHome() {
       <AssessCollectionModal
         requirement={rows.find((r) => r.id === assessForId) ?? null}
         onClose={() => setAssessForId(null)}
-        onApply={applyAssessChange}
         onAddSpaces={addSpacesToCollection}
-        onEditRequirement={(r) => { setAssessForId(null); setDetailId(r.id); }}
       />
       <RequirementDetailsModal
         requirement={rows.find((r) => r.id === detailId) ?? null}

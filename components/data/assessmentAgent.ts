@@ -34,8 +34,6 @@ export interface SpaceResult {
   reason: string;
   issues: string[];
   facts: string;
-  /** 0-100: how close this space is to fitting (area, size, budget, type). */
-  score: number;
 }
 
 export type ReqPatch = { location?: string; type?: string; budget?: number | null; capacity?: number | null; searchArea?: string };
@@ -44,8 +42,6 @@ export interface Assessment {
   state: 'ok' | 'unlocated' | 'unrecorded';
   status: Status;
   statusText: string;
-  /** 0-100: 60% how many of the 5 spaces you need fit, 40% how close the best five come. Null when nothing can be scored. */
-  score: number | null;
   /** One short line for the heading. */
   verdict: string;
   /** One card per criterion the requirement gives: how many spaces meet it. */
@@ -113,11 +109,6 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
   const age = daysAgo(sp.modified);
   const perSeat = sp.rate != null && sp.desks ? sp.rate / sp.desks : null;
   const mps = medians[sp.type];
-  const parts: number[] = [mi <= c.radiusMi ? 1 : mi <= c.radiusMi * 2 ? 0.5 : 0];
-  if (capacity !== 'na') parts.push(capacity === 'pass' ? 1 : capacity === 'near' ? 0.5 : 0);
-  if (budget !== 'na' && budget !== 'unknown') parts.push(budget === 'pass' ? 1 : (sp.rate as number) <= (c.budget as number) * 1.15 ? 0.5 : 0);
-  if (type !== 'na') parts.push(type === 'pass' ? 1 : 0);
-  const score = Math.round(100 * (parts.reduce((x, y) => x + y, 0) / parts.length) * (age <= 90 ? 1 : 0.9));
 
   const issues: string[] = [];
   if (area !== 'pass') issues.push(`${mi.toFixed(1)} mi from ${c.centerLabel}`);
@@ -128,7 +119,7 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
   if (perSeat != null && mps && perSeat > mps * 1.15) issues.push('over the local market rate');
   if (age > 90) issues.push(`listing not updated in ${age} days`);
   const facts = [`${mi.toFixed(1)} mi`, `${sp.desks} seats`, sp.rate != null ? `${money(sp.rate)}/mo` : 'not priced monthly', `updated ${age} day${age === 1 ? '' : 's'} ago`].join(' · ');
-  return { space: sp, miles: mi, fit, score, confirmed: age <= 90, ageDays: age, issues, facts, reason: issues.length ? issues[0].charAt(0).toUpperCase() + issues.join(', ').slice(1) : 'Meets every criterion' };
+  return { space: sp, miles: mi, fit, confirmed: age <= 90, ageDays: age, issues, facts, reason: issues.length ? issues[0].charAt(0).toUpperCase() + issues.join(', ').slice(1) : 'Meets every criterion' };
 }
 
 const mediansFor = (all: AssessSpace[]) => {
@@ -159,7 +150,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   };
   const budgetSet = (r.budget ?? 0) > 0;
   const populateNote = 'A budget is set, and populate currently returns nothing when a requirement has one (a known issue, logged Oct 28). It can leave a collection empty even when spaces exist.';
-  const blank = { score: null as number | null, verdict: '', cards: [] as { label: string; n: number; of: number }[], total: members.length || col.totalSpaces, inArea: 0, withinBudget: null, forPeople: null, confirmedFits: 0, marketMore: 0, marketFits: [] as SpaceResult[], results: [] as SpaceResult[], criteria: c, bandText: c.capacity ? capacityBand(c.capacity).join('-') + ' people' : null };
+  const blank = { verdict: '', cards: [] as { label: string; n: number; of: number }[], total: members.length || col.totalSpaces, inArea: 0, withinBudget: null, forPeople: null, confirmedFits: 0, marketMore: 0, marketFits: [] as SpaceResult[], results: [] as SpaceResult[], criteria: c, bandText: c.capacity ? capacityBand(c.capacity).join('-') + ' people' : null };
 
   if (!recorded) {
     return { ...blank, state: 'unrecorded', status: 'None', statusText: 'Not assessed', empty: false, gapsTitle: 'Gaps and trade-offs', gaps: [{ label: 'Not assessed', text: "This collection's spaces aren't available to the demo, so I can't compare them to the requirement here." }], verdict: "I can't see this collection's spaces in the demo.", summary: `${col.name} has ${plural(col.totalSpaces, 'space')}, but I can't see them in the demo, so I can't assess it.` };
@@ -204,9 +195,6 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   const withinBudget = c.budget ? results.filter((x) => x.space.rate != null && x.space.rate <= (c.budget as number)).length : null;
   const forPeople = c.capacity ? results.filter((x) => { const [lo, hi] = capacityBand(c.capacity as number); return x.space.desks >= lo && x.space.desks <= hi; }).length : null;
 
-  const top = results.map((x) => x.score).sort((x, y) => y - x).slice(0, 5);
-  while (top.length < 5) top.push(0);
-  const score = Math.round(100 * (0.6 * Math.min(confirmedFits, 5) / 5 + 0.4 * (top.reduce((x, y) => x + y, 0) / 5 / 100)));
   const typeOk = c.type ? results.filter((x) => x.space.type === c.type).length : null;
   const cards = total === 0 ? [] : [
     { label: `Within ${c.radiusMi} mi of ${c.centerLabel}`, n: inArea, of: total },
@@ -214,7 +202,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
     ...(c.capacity ? [{ label: `For ${band}`, n: forPeople ?? 0, of: total }] : []),
     ...(c.type ? [{ label: c.type, n: typeOk ?? 0, of: total }] : []),
   ];
-  const base = { state: 'ok' as const, score, cards, verdict: '', status, statusText, total, inArea, withinBudget, forPeople, confirmedFits, marketMore: marketFits.length, marketFits, results, criteria: c, bandText: band, next, empty: total === 0 };
+  const base = { state: 'ok' as const, cards, verdict: '', status, statusText, total, inArea, withinBudget, forPeople, confirmedFits, marketMore: marketFits.length, marketFits, results, criteria: c, bandText: band, next, empty: total === 0 };
 
   // Empty collection: say why, using the market around the requirement.
   if (total === 0) {
@@ -292,31 +280,22 @@ export function newlyFit(before: Assessment, after: Assessment): SpaceResult[] {
 }
 
 // ── Ask ─────────────────────────────────────────────────────────────────────
-// Free text is matched to a few question types, each answered by a deterministic query over the recorded data.
-// (The product would use a language model for the matching step only.)
-// A what-if is only ever an answer. Changing the requirement or the collection is a separate action offered with the answer.
-
-export interface AnswerAction {
-  label: string;
-  patch?: ReqPatch;
-  add?: string[];
-}
+// One question, one plain answer. Free text is matched to a few question types, each answered by a deterministic
+// query over the recorded data. (The product would use a language model for the matching step only.)
+// Answers never change anything, except that pasting a LiquidSpace link adds that space to the collection.
 
 export interface Answer {
   id: string;
   question: string;
   text: string;
-  spaces?: { title: string; sub: string; url: string }[];
-  actions?: AnswerAction[];
   /** Spaces added right away (a pasted link). */
   added?: string[];
-  /** A venue link: pick one of its spaces. */
-  choices?: AssessSpace[];
 }
 
 interface Filters { type?: string; maxRate?: number; miles?: number; seatsFor?: number; scope: 'collection' | 'nearby' | 'both' }
 const TYPES: [RegExp, string][] = [[/private offices?/, 'Private Office'], [/team offices?/, 'Team Office'], [/office suites?/, 'Office Suite']];
 const cap = (s: string) => s.replace(/\b\w/g, (m) => m.toUpperCase());
+const names = (xs: string[]) => (xs.length <= 3 ? xs.join(', ') : `${xs.slice(0, 3).join(', ')} and ${xs.length - 3} more`);
 
 function parseFilters(t: string): Filters {
   const f: Filters = { scope: /in this collection|in the collection|already in/.test(t) ? 'collection' : /nearby|not in (?:the|this)|outside the collection|market/.test(t) ? 'nearby' : 'both' };
@@ -332,79 +311,48 @@ function parseFilters(t: string): Filters {
 const hasFilter = (f: Filters) => !!(f.type || f.maxRate != null || f.miles != null || f.seatsFor != null);
 const filterText = (f: Filters) => [f.type, f.maxRate != null ? `under ${money(f.maxRate)}/mo` : '', f.miles != null ? `within ${f.miles} mi` : '', f.seatsFor != null ? `for ${capacityBand(f.seatsFor).join('-')} people` : ''].filter(Boolean).join(', ');
 
-const HELP = "I can explain what I see, count or list spaces (“How many Private Offices under $5,000 within 3 miles?”), try a change (“What if the budget goes up 15%?” or “What if we look in Austin?”), explain a space (“Why isn't Regus Westlake a fit?”), or add a space if you paste a LiquidSpace link.";
-
-/** A few example questions that fit what the agent sees. Shown as plain text, never as buttons. */
-export function suggestions(r: MvpRequirement): string[] {
-  const a = assess(r);
-  if (!a) return [];
-  if (a.state === 'unrecorded') return [];
-  if (a.state === 'unlocated') { const other = Object.keys(CENTERS)[0]; return [`What if we look in ${cap(other)}?`, 'Why is it empty?']; }
-  const out: string[] = [];
-  if (a.empty) out.push('Why is it empty?');
-  const c = a.criteria;
-  if (c.budget && a.confirmedFits < 5) out.push('What if the budget goes up 15%?');
-  else if (a.confirmedFits < 5) out.push(`What if we search within ${Math.round(c.radiusMi * 2)} miles?`);
-  if (a.marketMore > 0) out.push('Show nearby spaces that fit');
-  const worst = a.results.find((q) => !(q.fit && q.confirmed));
-  if (worst) out.push(`Why isn't ${worst.space.venue} a fit?`);
-  return out.slice(0, 3);
-}
+const HELP = "I can explain what I see, count or list spaces (“How many Private Offices under $5,000 within 3 miles?”), try a change (“What if the budget goes up 15%?” or “What if we look in Austin?”), or explain a space (“Why isn't Regus Westlake a fit?”). Paste a LiquidSpace link and I'll add that space.";
 
 export function ask(text: string, r: MvpRequirement): Answer {
   const id = `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const q = text.trim();
   const t = q.toLowerCase();
-  const reply = (body: Partial<Answer> & { text: string }): Answer => ({ id, question: q, ...body });
+  const reply = (body: { text: string; added?: string[] }): Answer => ({ id, question: q, ...body });
   const a = assess(r);
   if (!a || !q) return reply({ text: HELP });
   const colName = r.collection?.name ?? 'the collection';
   const base = currentValues(r);
 
-  // Explain what I see.
+  // What I see.
   if (/\b(why is it empty|why is (?:this|the collection) empty|what(?:'s| is) (?:wrong|going on)|summari[sz]e|what do you see|overview|how does it look)\b/.test(t)) {
     return reply({ text: `${a.summary}${a.next ? ' ' + a.next : ''}` });
   }
 
-  // A what-if: a location, a budget, a distance, or a headcount. Answered, never applied.
+  // A what-if: a location, a budget, a distance or a headcount. Only ever an answer.
   const cityHit = Object.keys(CENTERS).find((k) => new RegExp(`\\b${k}\\b`).test(t));
   const whatIf = /\b(what if|what about|what happens|suppose|widen|expand|raise|increase|lower|reduce|cut|drop)\b|^\s*if\b/.test(t);
   if (whatIf || (cityHit && a.state !== 'ok')) {
     const ov: Partial<Values> = {};
-    const patch: ReqPatch = {};
     const said: string[] = [];
-    const labels: string[] = [];
-    if (cityHit && cityKey(base.location) !== cityHit) { ov.location = cap(cityHit); patch.location = cap(cityHit); said.push(`we look in ${cap(cityHit)}`); labels.push(`location ${base.location || 'not set'} → ${cap(cityHit)}`); }
+    if (cityHit && cityKey(base.location) !== cityHit) { ov.location = cap(cityHit); said.push(`we look in ${cap(cityHit)}`); }
     const down = /\b(lower|reduce|cut|decrease|drop|down)\b/.test(t);
     const abs = t.match(/\$\s*([\d,]+(?:\.\d+)?)\s*(k)?/);
     const pct = t.match(/(\d+(?:\.\d+)?)\s*%/);
     if (base.budget && (abs || pct)) {
       const nb = Math.round((abs ? parseFloat(abs[1].replace(/,/g, '')) * (abs[2] ? 1000 : 1) : base.budget * (1 + (down ? -1 : 1) * parseFloat((pct as RegExpMatchArray)[1]) / 100)) / 100) * 100;
-      ov.budget = nb; patch.budget = nb; said.push(`the budget goes to ${money(nb)}/mo`); labels.push(`budget ${money(base.budget)} → ${money(nb)}/mo`);
+      ov.budget = nb; said.push(`the budget goes to ${money(nb)}/mo`);
     }
     const mi = t.match(/(\d+(?:\.\d+)?)\s*(?:miles?|mi)\b/);
-    if (mi && /(search|area|within|widen|radius|distance|miles)/.test(t)) {
-      const n = parseFloat(mi[1]); ov.radiusMi = n; patch.searchArea = `within ${n} miles of ${CENTERS[cityKey(ov.location ?? base.location)]?.label ?? 'the center'}`; said.push(`we search within ${n} miles`); labels.push(`search distance → ${n} miles`);
-    }
+    if (mi && /(search|area|within|widen|radius|distance|miles)/.test(t)) { ov.radiusMi = parseFloat(mi[1]); said.push(`we search within ${mi[1]} miles`); }
     const hc = t.match(/(\d+)\s*(?:people|seats|persons?|staff|headcount)/);
-    if (hc && /(need|headcount|people|seats|team|grow|hire)/.test(t)) {
-      const n = parseInt(hc[1], 10); ov.capacity = n; patch.capacity = n; said.push(`we need ${n} people`); labels.push(`people ${base.capacity ?? 'not set'} → ${n}`);
-    }
-    if (!said.length) return reply({ text: "I can try a change to the location, budget, search distance or headcount, for example “What if the budget goes up 15%?”" });
+    if (hc && /(need|headcount|people|seats|team|grow|hire)/.test(t)) { ov.capacity = parseInt(hc[1], 10); said.push(`we need ${hc[1]} people`); }
+    if (!said.length) return reply({ text: 'I can try a change to the location, budget, search distance or headcount, for example “What if the budget goes up 15%?”' });
     const after = assess(r, ov);
     if (!after) return reply({ text: HELP });
     if (after.state === 'unlocated') return reply({ text: `If ${said.join(' and ')}: ${after.summary}` });
     const fresh = a.state === 'ok' ? newlyFit(a, after) : [...after.results, ...after.marketFits].filter((x) => x.fit && x.confirmed);
-    const inColl = fresh.filter((x) => x.space.inCollection).length;
-    const near = fresh.filter((x) => !x.space.inCollection);
-    const effect = fresh.length === 0 ? 'No additional spaces would fit.' : `${plural(fresh.length, 'space')} would ${a.state === 'ok' ? 'newly ' : ''}fit${inColl && near.length ? ` (${inColl} in ${colName}, ${near.length} nearby)` : near.length ? ', all nearby and not yet in the collection' : ` in ${colName}`}.`;
-    const actions: AnswerAction[] = [{ label: `Update the requirement: ${labels.join(', ')}`, patch }];
-    if (near.length) actions.push({ label: `Add the ${plural(near.length, 'nearby space')} to ${colName}`, add: near.map((x) => x.space.url) });
-    return reply({
-      text: `If ${said.join(' and ')}: ${a.statusText} → ${after.statusText}. ${effect}`,
-      spaces: fresh.slice(0, 4).map((x) => ({ title: `${x.space.title} · ${x.space.venue}`, sub: `${x.miles.toFixed(1)} mi · ${x.space.desks} seats · ${x.space.rate != null ? `${money(x.space.rate)}/mo` : 'not priced monthly'}${x.space.inCollection ? ' · in this collection' : ''}`, url: x.space.url })),
-      actions: fresh.length ? actions : undefined,
-    });
+    const effect = fresh.length === 0 ? 'No additional spaces would fit.' : `${plural(fresh.length, 'space')} would ${a.state === 'ok' ? 'newly ' : ''}fit: ${names(fresh.map((x) => x.space.title))}.`;
+    return reply({ text: `If ${said.join(' and ')}: ${a.statusText} → ${after.statusText}. ${effect}` });
   }
 
   if (a.state !== 'ok') return reply({ text: a.state === 'unlocated' ? 'I can only look at spaces once the requirement has a location I can find. Ask me, for example, “What if we look in Austin?”' : HELP });
@@ -413,25 +361,19 @@ export function ask(text: string, r: MvpRequirement): Answer {
   const pool = marketPool(c.city).filter((p) => !members.some((m) => m.url === p.url));
   const all = [...members, ...pool];
   const meds = mediansFor(all);
-  const sub = (s: AssessSpace) => `${s.venue} · ${miles(s, c).toFixed(1)} mi · ${s.desks} seats · ${s.rate != null ? `${money(s.rate)}/mo` : 'not priced monthly'}${s.inCollection ? ' · in this collection' : ''}`;
 
-  // A link: add the space.
+  // A link adds the space.
   const url = q.match(/https?:\/\/\S+/)?.[0];
   if (url) {
     let host = '';
     try { host = new URL(url).hostname.replace(/^www\./, ''); } catch { /* not a link */ }
     if (host !== 'liquidspace.com') return reply({ text: "That isn't a LiquidSpace link, so I can't add it. A space outside LiquidSpace needs a private listing, which the supply team creates." });
     const hit = listingByUrl(url);
-    if (!hit) {
-      const at = listingsAtVenue(url);
-      if (at.length) return reply({ text: `That's a venue link. Which of its ${plural(at.length, 'space')} should I add?`, choices: at.slice(0, 8) });
-      return reply({ text: "I couldn't find that listing. The demo can only look up listings it has recorded; the product looks the link up in Pulse." });
-    }
+    if (!hit) return reply({ text: listingsAtVenue(url).length ? "That's a link to a venue. Paste the link to one of its spaces and I'll add it." : "I couldn't find that listing. The demo can only look up listings it has recorded; the product looks the link up in Pulse." });
     const sp = hit.space;
     if (members.some((m) => m.url === sp.url)) return reply({ text: `${sp.title} (${sp.venue}) is already in ${colName}.` });
     const res = evaluate(sp, c, meds);
-    const fits = res.fit && res.confirmed;
-    return reply({ text: `Added ${sp.title} (${sp.venue}) to ${colName}. ${fits ? 'It fits the requirement.' : `It doesn't fit every criterion: ${res.issues.join(', ')}.`}`, added: [sp.url] });
+    return reply({ text: `Added ${sp.title} (${sp.venue}) to ${colName}. ${res.fit && res.confirmed ? 'It fits the requirement.' : `It doesn't fit every criterion: ${res.issues.join(', ')}.`}`, added: [sp.url] });
   }
 
   // Explain a space.
@@ -443,22 +385,16 @@ export function ask(text: string, r: MvpRequirement): Answer {
     for (const sp of all) { const sc = words(`${sp.venue} ${sp.title}`).filter((w) => qw.has(w)).length; if (sc > score) { best = sp; score = sc; } }
     if (!best) return reply({ text: "I couldn't tell which space you mean. Name the venue or the space, for example “Why isn't Regus Westlake a fit?”" });
     const res = evaluate(best, c, meds);
-    const fits = res.fit && res.confirmed;
-    return reply({ text: `${best.title} (${best.venue}) ${fits ? 'fits. It meets the area, capacity, budget and workspace type, and its listing is current.' : `is not a fit: ${res.issues.length ? res.issues.join(', ') : 'its listing could not be confirmed'}.`}`, spaces: [{ title: `${best.title} · ${best.venue}`, sub: sub(best), url: best.url }] });
+    return reply({ text: `${best.title} (${best.venue}) ${res.fit && res.confirmed ? 'fits. It meets the area, capacity, budget and workspace type, and its listing is current.' : `is not a fit: ${res.issues.length ? res.issues.join(', ') : 'its listing could not be confirmed'}.`}` });
   }
 
   // Count or list.
-  const wantsList = /^\s*(show|find|list)\b/.test(t) || /that fit/.test(t);
   if (/that fit|fits? (?:our|the|my) (?:requirement|needs)/.test(t)) {
     const fits = [...a.results.filter((z) => z.fit && z.confirmed), ...a.marketFits];
-    return reply({
-      text: `${plural(a.confirmedFits, 'confirmed fit')} in ${colName} and ${a.marketMore} more nearby that aren't in it.`,
-      spaces: fits.slice(0, 5).map((z) => ({ title: `${z.space.title} · ${z.space.venue}`, sub: sub(z.space), url: z.space.url })),
-      actions: a.marketMore ? [{ label: `Add the ${plural(a.marketMore, 'nearby space')} to ${colName}`, add: a.marketFits.map((x) => x.space.url) }] : undefined,
-    });
+    return reply({ text: `${plural(a.confirmedFits, 'confirmed fit')} in ${colName} and ${a.marketMore} more nearby that aren't in it.${fits.length ? ` They are ${names(fits.map((z) => z.space.title))}.` : ''}` });
   }
   const f = parseFilters(t);
-  if ((/^\s*how many\b/.test(t) || wantsList) && hasFilter(f)) {
+  if ((/^\s*how many\b/.test(t) || /^\s*(show|find|list)\b/.test(t)) && hasFilter(f)) {
     const matches = all.filter((sp) => {
       const mi = miles(sp, c);
       if (f.type && sp.type !== f.type) return false;
@@ -470,7 +406,7 @@ export function ask(text: string, r: MvpRequirement): Answer {
     const inC = matches.filter((m) => m.inCollection).length;
     const near = matches.length - inC;
     const scoped = f.scope === 'collection' ? `${inC} in ${colName}` : f.scope === 'nearby' ? `${near} nearby, not in ${colName}` : `${inC} in ${colName} and ${near} nearby, not in it`;
-    return reply({ text: `${scoped} (${filterText(f)}). That covers the ${all.length} listings recorded near ${c.centerLabel}, not the whole market.`, spaces: matches.slice(0, 5).map((s) => ({ title: `${s.title} · ${s.venue}`, sub: sub(s), url: s.url })) });
+    return reply({ text: `${scoped} (${filterText(f)}). That covers the ${all.length} listings recorded near ${c.centerLabel}, not the whole market.${matches.length ? ` The closest are ${names(matches.slice(0, 3).map((s) => s.title))}.` : ''}` });
   }
   return reply({ text: HELP });
 }
