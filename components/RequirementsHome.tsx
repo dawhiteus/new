@@ -452,7 +452,9 @@ export function RequirementsHome() {
     setRows((rs) => [...created, ...rs]);
     const drafts = created.filter((c, i) => c.status === 'Draft' && items[i].status !== 'Draft');
     const base = created.length === 1 ? `Requirement "${created[0].name}" ${created[0].status === 'Draft' ? 'saved as a Draft' : 'created'}.` : `${created.length} requirements created: ${created.map((c) => c.name).join(', ')}.`;
-    toast.success(drafts.length ? `${base} ${drafts.length === 1 && created.length === 1 ? 'Some details are not provided yet.' : `${drafts.length} saved as Drafts: some details are not provided yet.`}` : base);
+    const nQ = items.reduce((n, it) => n + (it.intake?.questions.length ?? 0), 0);
+    const qNote = nQ ? ` ${nQ} open question${nQ === 1 ? '' : 's'} saved with ${created.length === 1 ? 'it' : 'them'}.` : '';
+    toast.success((drafts.length ? `${base} ${drafts.length === 1 && created.length === 1 ? 'Some details are not provided yet.' : `${drafts.length} saved as Drafts: some details are not provided yet.`}` : base) + qNote);
   };
 
   const openCollection = (req: MvpRequirement) => {
@@ -611,6 +613,11 @@ export function RequirementsHome() {
                     <tr key={r.id} onClick={() => setDetailId(r.id)} style={{ borderTop: '1px solid #E5E7EB', background: r.origin && !r.origin.seen ? '#E8F4FD' : i % 2 ? '#F9FAFB' : '#fff', boxShadow: r.origin && !r.origin.seen ? 'inset 4px 0 0 #0D619B' : undefined, cursor: 'pointer' }}>
                       <td style={{ ...td, whiteSpace: 'nowrap' }}>
                         {r.name}
+                        {(r.details.intake?.questions.length ?? 0) > 0 && (
+                          <span title="Open questions saved with this requirement" style={{ display: 'inline-block', marginLeft: 8, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: '#FFF3DC', color: '#92400E', border: '1px solid #F5C27A', verticalAlign: 'middle' }}>
+                            {r.details.intake!.questions.length} question{r.details.intake!.questions.length === 1 ? '' : 's'}
+                          </span>
+                        )}
                         {r.origin && !r.origin.seen && (
                           <span style={{ display: 'inline-block', marginLeft: 8, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: '#0D619B', color: '#fff', verticalAlign: 'middle' }}>NEW</span>
                         )}

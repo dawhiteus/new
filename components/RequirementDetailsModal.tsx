@@ -304,10 +304,10 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                 Authoritative summary of client requirements and deal parameters
               </div>
 
-              {f.intake && f.intake.questions.length > 0 && requirement.status === 'Draft' && (
+              {f.intake && f.intake.questions.length > 0 && (
                 <div style={{ border: '1px solid #F5C27A', background: '#FFF9ED', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>Questions for the customer</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>Questions for the customer <span style={{ fontWeight: 400, color: '#B45309', fontSize: 12 }}>· saved with this requirement</span></div>
                     <button type="button" onClick={() => { navigator.clipboard?.writeText(f.intake!.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')); toast.success('Questions copied.'); }}
                       style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                       <Copy size={13} /> Copy

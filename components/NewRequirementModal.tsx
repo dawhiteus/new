@@ -372,7 +372,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
               <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
                 {draft.questions.map((q) => <li key={q}>{q}</li>)}
               </ol>
-              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>I'll save these with the requirement as an open-questions note.</div>
+              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>Saved with the requirement. You'll see them on it until you have the answers.</div>
             </div>
           )}
 
