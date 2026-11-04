@@ -260,3 +260,10 @@ export function collectionCityFor(url: string | undefined): string | undefined {
   if (real) return real;
   return url.includes('573e59b5-7b3f-43cb-a0f1-e8d341902c4c') ? 'lisbon' : undefined;
 }
+
+/** Collections the Collection Agent built (populated from the requirement). Others were curated by hand or arrived another way. */
+const AGENT_BUILT = [
+  '43b4f500-e474-4b36-b303-9f875980c51e', 'a09a0bd0-054b-4da8-89f0-ef9816a8c2fa', 'c9004465-1786-4ecf-a5bf-199d72cb4e6a',
+  '568ef221-1642-4822-b79f-3fe348062ccc', 'b6709b07-6512-4120-98b7-7a4dd7505bb4', '85361f6e-0113-4954-a782-54c933b5155c',
+];
+export const builtByAgent = (url: string | undefined) => !!url && AGENT_BUILT.some((id) => url.includes(id));

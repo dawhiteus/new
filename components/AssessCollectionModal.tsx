@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, Bot, ExternalLink, MapPin, DollarSign, Users, Building2, ChevronDown } from 'lucide-react';
-import { assess, ask, type Answer, type SpaceResult } from './data/assessmentAgent';
+import { assess, addedWhy, recordRun, type RunInfo, type SpaceResult } from './data/assessmentAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
@@ -11,21 +11,29 @@ const GREEN = '#0F7B4F';
 const money = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`;
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
-const sectionLabel: React.CSSProperties = { fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: BLUE, fontFamily: FONT };
-
 interface Props {
   requirement: MvpRequirement | null;
   onClose: () => void;
-  /** Pasting a link into Ask adds that space to the collection. */
-  onAddSpaces: (req: MvpRequirement, urls: string[]) => void;
+  /** Called when this run is the first, or the requirement or collection changed since the last one. */
+  onAssessed: (req: MvpRequirement, text: string) => void;
 }
 
-export function AssessCollectionModal({ requirement, onClose, onAddSpaces }: Props) {
-  const [chat, setChat] = useState<Answer[]>([]);
-  const [text, setText] = useState('');
+export function AssessCollectionModal({ requirement, onClose, onAssessed }: Props) {
+  const [run, setRun] = useState<RunInfo | null>(null);
   const [showSpaces, setShowSpaces] = useState(false);
+  const ran = useRef<string | null>(null);
 
-  useEffect(() => { setChat([]); setText(''); setShowSpaces(false); }, [requirement?.id]);
+  // Opening the assessment is a run. It is recorded once, so the next run can say what changed.
+  useEffect(() => {
+    if (!requirement || !requirement.collection) { ran.current = null; setRun(null); setShowSpaces(false); return; }
+    if (ran.current === requirement.id) return;
+    const a = assess(requirement);
+    if (!a) return;
+    ran.current = requirement.id;
+    const info = recordRun(requirement, a);
+    setRun(info);
+    if (info.log) onAssessed(requirement, info.log);
+  }, [requirement?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!requirement || !requirement.collection) return <Dialog open={false}><DialogContent className="hidden" /></Dialog>;
   const a = assess(requirement);
@@ -33,20 +41,15 @@ export function AssessCollectionModal({ requirement, onClose, onAddSpaces }: Pro
   const col = requirement.collection;
   const c = a.criteria;
 
-  const submit = () => {
-    const q = text.trim();
-    if (!q) return;
-    const ans = ask(q, requirement);
-    setChat((p) => [ans, ...p]);
-    setText('');
-    if (ans.added?.length) onAddSpaces(requirement, ans.added);
-  };
-
   // Color only for contrast: a criterion nobody meets stands out, one everybody meets is quietly confirmed.
   const numColor = (n: number, of: number) => (n === 0 ? '#B91C1C' : n === of ? '#15803D' : INK);
   const cardIcon = (label: string) => (/ mi of /.test(label) ? MapPin : /\/mo$/.test(label) ? DollarSign : /^For /.test(label) ? Users : Building2);
-  const headline = a.state === 'ok' && a.total > 0 ? `${a.confirmedFits} of ${a.total} ${a.total === 1 ? 'space matches' : 'spaces match'}` : a.state === 'unrecorded' ? 'These spaces are not available to the demo' : 'No spaces in this collection yet';
   const checked = a.state === 'ok' ? [c.capacity ? a.bandText : '', c.type, c.budget ? `under ${money(c.budget)}/mo` : '', `within ${c.radiusMi} miles of ${c.centerLabel}`].filter(Boolean).join(', ') : '';
+  const every = [c.capacity ? 'headcount' : '', c.type ? 'workspace type' : '', c.budget ? 'budget' : '', 'area'].filter(Boolean);
+  const thin = a.state === 'ok' && a.total > 0 && a.confirmedFits < 5;
+  const since = run?.since && run.since.changes.length ? run.since : null;
+
+  const big = (n: number) => <span style={{ fontSize: 40, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em', color: INK }}>{n}</span>;
 
   const spaceLine = (r: SpaceResult, i: number) => (
     <div key={`${r.space.id}-${i}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '12px 0', borderTop: i ? '1px solid #F1F3F5' : undefined }}>
@@ -78,10 +81,31 @@ export function AssessCollectionModal({ requirement, onClose, onAddSpaces }: Pro
             <div style={{ fontSize: 13, color: '#6B7280', textAlign: 'right' }}>{requirement.name} · {col.name}</div>
           </div>
 
-          {/* The finding */}
-          <div style={{ fontSize: 24, fontWeight: 700, color: INK, margin: '20px 0 6px', letterSpacing: '-0.01em' }}>{headline}</div>
-          <div style={{ fontSize: 15, color: '#374151', lineHeight: 1.55 }}>{a.verdict}</div>
+          {/* The two facts: what is in the collection, and how much of it meets every criterion */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, margin: '22px 0 0' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>{big(a.total)}<span style={{ fontSize: 16, fontWeight: 600, color: INK }}>{a.total === 1 ? 'space added' : 'spaces added'}</span></div>
+              <div style={{ fontSize: 13, color: '#6B7280', marginTop: 6, lineHeight: 1.5 }}>{addedWhy(requirement)}</div>
+            </div>
+            <div style={{ borderLeft: '1px solid #E5E7EB', paddingLeft: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontSize: 40, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em', color: a.confirmedFits === 0 ? '#B91C1C' : INK }}>{a.confirmedFits}</span>
+                <span style={{ fontSize: 16, fontWeight: 600, color: INK }}>{a.confirmedFits === 1 ? 'meets every criterion' : 'meet every criterion'}</span>
+              </div>
+              <div style={{ fontSize: 13, color: '#6B7280', marginTop: 6, lineHeight: 1.5 }}>{a.state === 'ok' ? `${every.slice(0, -1).join(', ')}${every.length > 1 ? ' and ' : ''}${every[every.length - 1]}` : 'Nothing to compare yet.'}</div>
+            </div>
+          </div>
+
+          {/* The summary */}
+          <div style={{ fontSize: 15, color: '#374151', lineHeight: 1.6, marginTop: 18 }}>
+            {a.verdict}{thin ? ' That is thin (fewer than 5 confirmed fits), so an RFP to venues is the next step.' : ''}
+          </div>
           {checked && <div style={{ fontSize: 13.5, color: '#6B7280', marginTop: 6, lineHeight: 1.5 }}>Checked against {checked}.</div>}
+          {since && (
+            <div style={{ fontSize: 13.5, color: '#374151', marginTop: 10, lineHeight: 1.5, paddingTop: 10, borderTop: '1px solid #F1F3F5' }}>
+              <b style={{ color: INK }}>Since last assessed on {since.at}:</b> {since.changes.join('; ')}. Matches {since.fitsBefore} → {since.fitsNow}.
+            </div>
+          )}
 
           {a.cards.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${a.cards.length}, 1fr)`, gap: 12, marginTop: 18 }}>
@@ -125,26 +149,6 @@ export function AssessCollectionModal({ requirement, onClose, onAddSpaces }: Pro
                 <ChevronDown size={16} color="#9CA3AF" style={{ transform: showSpaces ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} />
               </button>
               {showSpaces && <div style={{ marginTop: 6 }}>{a.results.map((r, i) => spaceLine(r, i))}</div>}
-            </div>
-          )}
-
-          {/* Ask me: one box, plain answers */}
-          {a.state !== 'unrecorded' && (
-            <div style={{ marginTop: 24 }}>
-              <div style={sectionLabel}>Ask me</div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } }}
-                  placeholder="Ask about this collection, or paste a link to a space to add it"
-                  style={{ flex: 1, height: 40, border: '1px solid #D1D5DB', borderRadius: 8, padding: '0 12px', fontSize: 14, fontFamily: FONT, outline: 'none', color: INK }} />
-                <button type="button" onClick={submit} disabled={!text.trim()}
-                  style={{ height: 40, padding: '0 18px', borderRadius: 8, border: 'none', background: BLUE, color: '#fff', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: text.trim() ? 'pointer' : 'default', opacity: text.trim() ? 1 : 0.5 }}>Ask</button>
-              </div>
-              {chat.map((m) => (
-                <div key={m.id} style={{ marginTop: 16 }}>
-                  <div style={{ fontSize: 13, color: '#6B7280' }}>{m.question}</div>
-                  <div style={{ fontSize: 14.5, color: INK, lineHeight: 1.6, marginTop: 2 }}>{m.text}</div>
-                </div>
-              ))}
             </div>
           )}
         </div>

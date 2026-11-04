@@ -22,8 +22,7 @@ import { capacityBand } from './data/collectionAgent';
 import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
 import { AssessCollectionModal } from './AssessCollectionModal';
-import { quickStatus, addedSpaces } from './data/assessmentAgent';
-import { listingByUrl } from './data/assessmentData';
+import { quickStatus } from './data/assessmentAgent';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
 import { useSearchParams } from 'react-router-dom';
 import { readHubOrigin, formatVerdict, formatPurpose, formatUsd } from './hubOrigin';
@@ -222,6 +221,7 @@ function CollectionPill({ req, onOpen, onAssess }: { req: MvpRequirement & { col
           <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2A3D' }}>{c.name}</div>
           <div style={{ fontSize: 13, color: '#6B7280' }}>{c.totalSpaces} spaces total</div>
           {status && <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginTop: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: status.status === 'Plenty' ? '#2E9D4A' : status.status === 'Few' ? '#E8A91C' : '#9CA3AF' }} />{status.text}</div>}
+          {status?.stale && <div style={{ fontSize: 12.5, color: '#B45309', marginTop: 3, lineHeight: 1.4 }}>Out of date: the requirement or collection has changed. Assess again.</div>}
         </div>
         <div style={{ borderTop: '1px solid #E5E7EB', padding: '8px 12px' }}>
           {row(MapPin, c.location, c.locationSpaces)}
@@ -541,19 +541,13 @@ export function RequirementsHome() {
     toast.success(o.method === 'agent' ? `“${o.name}” created and assessed.` : o.method === 'manual' ? `“${o.name}” created in LiquidSpace.` : `“${o.name}” linked.`);
   };
 
-  /** Adds spaces to the collection only. In the product this is add_workspace_to_collection, one space at a time; the demo records it for the session. */
-  const addSpacesToCollection = (req: MvpRequirement, urls: string[]) => {
-    const have = new Set(addedSpaces.get(req.id) ?? []);
-    const fresh = urls.filter((u) => !have.has(u) && listingByUrl(u));
-    if (!fresh.length) return;
-    addedSpaces.set(req.id, [...have, ...fresh]);
+  /** An assessment run is logged on the requirement's timeline (the first run, or one after something changed). */
+  const logAssessment = (req: MvpRequirement, text: string) => {
     const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    setRows((rs) => rs.map((r) => (r.id !== req.id || !r.collection ? r : {
+    setRows((rs) => rs.map((r) => (r.id !== req.id ? r : {
       ...r,
-      collection: { ...r.collection, totalSpaces: r.collection.totalSpaces + fresh.length, saved: r.collection.saved + fresh.length },
-      details: { ...r.details, events: [...r.details.events, { id: `e-${Date.now()}-s`, type: 'collection', title: 'Spaces Added', description: `${fresh.length} space${fresh.length === 1 ? '' : 's'} added to ${r.collection.name}.`, date: dispDate, actor: CURRENT_USER_EMAIL }] },
+      details: { ...r.details, events: [...r.details.events, { id: `e-${Date.now()}-as`, type: 'collection', title: 'Collection Assessed', description: text, date: dispDate, actor: 'assessment.agent@ai.liquidspace.com' }] },
     })));
-    toast.success(`${fresh.length} space${fresh.length === 1 ? '' : 's'} added to the collection.`);
   };
 
   const handleAction = (req: MvpRequirement, action: string) => {
@@ -736,7 +730,7 @@ export function RequirementsHome() {
       <AssessCollectionModal
         requirement={rows.find((r) => r.id === assessForId) ?? null}
         onClose={() => setAssessForId(null)}
-        onAddSpaces={addSpacesToCollection}
+        onAssessed={logAssessment}
       />
       <RequirementDetailsModal
         requirement={rows.find((r) => r.id === detailId) ?? null}
