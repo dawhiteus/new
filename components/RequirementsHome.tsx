@@ -21,6 +21,8 @@ import { AGENT_NAME, AGENT_EMAIL, DEMO_LICENSES } from './data/intakeAgent';
 import { capacityBand } from './data/collectionAgent';
 import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
+import { AssessCollectionModal } from './AssessCollectionModal';
+import { canAssess, quickStatus } from './data/assessmentAgent';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
 import { useSearchParams } from 'react-router-dom';
 import { readHubOrigin, formatVerdict, formatPurpose, formatUsd } from './hubOrigin';
@@ -120,7 +122,7 @@ function FilterButton({
   );
 }
 
-function RowMenu({ onAction, hasCollection }: { onAction: (a: string) => void; hasCollection: boolean }) {
+function RowMenu({ onAction, hasCollection, assessable }: { onAction: (a: string) => void; hasCollection: boolean; assessable: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -174,6 +176,7 @@ function RowMenu({ onAction, hasCollection }: { onAction: (a: string) => void; h
           {hasCollection ? (
             <>
               {item('View collection')}
+              {assessable && item('Assess collection')}
               {item('Update collection')}
               {item('Remove collection')}
             </>
@@ -186,8 +189,9 @@ function RowMenu({ onAction, hasCollection }: { onAction: (a: string) => void; h
   );
 }
 
-function CollectionPill({ req, onOpen }: { req: MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }; onOpen: () => void }) {
+function CollectionPill({ req, onOpen, onAssess }: { req: MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }; onOpen: () => void; onAssess: () => void }) {
   const c = req.collection;
+  const status = canAssess(req) ? quickStatus(req) : null;
   const [show, setShow] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const row = (Icon: typeof MapPin, label: string, n: number) => (
@@ -216,7 +220,7 @@ function CollectionPill({ req, onOpen }: { req: MvpRequirement & { collection: N
         <div style={{ padding: '12px 12px 10px' }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2A3D' }}>{c.name}</div>
           <div style={{ fontSize: 13, color: '#6B7280' }}>{c.totalSpaces} spaces total</div>
-          {c.note && <div style={{ fontSize: 12.5, color: '#374151', marginTop: 6, lineHeight: 1.4 }}>{c.note}</div>}
+          {status && <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginTop: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: status.status === 'Plenty' ? '#2E9D4A' : status.status === 'Few' ? '#E8A91C' : '#9CA3AF' }} />{status.text}</div>}
         </div>
         <div style={{ borderTop: '1px solid #E5E7EB', padding: '8px 12px' }}>
           {row(MapPin, c.location, c.locationSpaces)}
@@ -241,6 +245,14 @@ function CollectionPill({ req, onOpen }: { req: MvpRequirement & { collection: N
           >
             View Collection <ArrowRight size={14} />
           </button>
+          {status && (
+            <button
+              onClick={onAssess}
+              style={{ width: '100%', background: 'none', border: 'none', marginTop: 8, padding: '4px', fontSize: 13, fontWeight: 600, color: '#005B94', fontFamily: FONT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              Assess collection
+            </button>
+          )}
         </div>
       </div>
       </div>
@@ -271,6 +283,7 @@ export function RequirementsHome() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailIdRaw] = useState<string | null>(null);
   const [collectionForId, setCollectionForId] = useState<string | null>(null);
+  const [assessForId, setAssessForId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [fromLicense, setFromLicense] = useState('');
   useEffect(() => {
@@ -486,19 +499,6 @@ export function RequirementsHome() {
     const [lo, hi] = capacityBand(n);
     return `For ${lo}-${hi} people`;
   };
-  /** Say plainly when the fit is poor, instead of leaving silent zeros. */
-  const fitNote = (req: MvpRequirement, o: CollectionOutcome): string | undefined => {
-    if (o.method !== 'agent') return undefined;
-    const city = (req.details.location || req.city || '').split(',')[0];
-    if (o.spaces === 0) return city ? `No spaces were found in ${city}.` : undefined;
-    const none: string[] = [];
-    if (o.locationSpaces === 0 && city) none.push(`in ${city}`);
-    if (req.budget != null && o.budgetSpaces === 0) none.push('within budget');
-    if (req.details.capacity && o.peopleSpaces === 0) none.push('for the headcount');
-    if (!none.length) return undefined;
-    return `${o.spaces} space${o.spaces === 1 ? '' : 's'} added, none ${none.join(', none ')}.`;
-  };
-
   /** All creation paths end here: the Collection is associated with the requirement. */
   const applyCollection = (req: MvpRequirement, o: CollectionOutcome) => {
     const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -508,7 +508,6 @@ export function RequirementsHome() {
       budgetLabel: req.budget == null ? 'Budget not provided' : `Within ${money(req.budget)}/mo`, budgetSpaces: o.budgetSpaces,
       peopleLabel: capLabel(req.details.capacity), peopleSpaces: o.peopleSpaces,
       saved: o.saved, shortlisted: o.shortlisted, updated: dispDate,
-      note: fitNote(req, o),
     };
     const how = o.method === 'agent' ? `created by the Collection Agent`
       : o.method === 'manual' ? 'created in LiquidSpace by Sales' : 'linked by Sales';
@@ -543,6 +542,28 @@ export function RequirementsHome() {
     toast.success(o.method === 'agent' ? `“${o.name}” created and assessed.` : o.method === 'manual' ? `“${o.name}” created in LiquidSpace.` : `“${o.name}” linked.`);
   };
 
+  /** An accepted assessment proposal changes the Requirement (never the Collection) and is logged like any other field change. */
+  const applyAssessChange = (req: MvpRequirement, patch: { budget?: number; searchArea?: string }, summary: string) => {
+    const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    setRows((rs) => rs.map((r) => {
+      if (r.id !== req.id) return r;
+      const events: MvpRequirement['details']['events'] = [];
+      let next = { ...r, lastUpdated: new Date().toISOString().slice(0, 10) };
+      if (patch.budget != null) {
+        events.push({ id: `e-${Date.now()}-b`, type: 'update', title: 'Requirement Updated', description: `Budget changed from ${money(r.budget ?? 0)}/mo to ${money(patch.budget)}/mo, accepted from the collection assessment.`, date: dispDate, actor: CURRENT_USER_EMAIL });
+        next = { ...next, budget: patch.budget };
+      }
+      if (patch.searchArea) {
+        const kept = (r.details.otherFunctional || '').replace(/Search area:[^\n]*\n?/g, '').trim();
+        const line = `Search area: ${patch.searchArea}.`;
+        events.push({ id: `e-${Date.now()}-a`, type: 'update', title: 'Requirement Updated', description: `Search area set to ${patch.searchArea}, accepted from the collection assessment.`, date: dispDate, actor: CURRENT_USER_EMAIL });
+        next = { ...next, details: { ...next.details, otherFunctional: [kept, line].filter(Boolean).join('\n') } };
+      }
+      return { ...next, details: { ...next.details, events: [...next.details.events, ...events] } };
+    }));
+    toast.success(`Requirement updated: ${summary}.`);
+  };
+
   const handleAction = (req: MvpRequirement, action: string) => {
     if (action === 'Remove Requirement') {
       setRows((rs) => rs.filter((r) => r.id !== req.id));
@@ -554,6 +575,8 @@ export function RequirementsHome() {
       toast.success(`Collection for "${req.name}" removed.`);
     } else if (action === 'Create collection') {
       setCollectionForId(req.id);
+    } else if (action === 'Assess collection') {
+      setAssessForId(req.id);
     } else if (action === 'View collection' || action === 'Update collection') {
       openCollection(req);
     } else if (action === 'View Requirement') {
@@ -666,7 +689,7 @@ export function RequirementsHome() {
                       <td style={td}><Pill label={r.stage} bg="#E8A91C" color="#fff" /></td>
                       <td style={td}>{r.budget == null ? <NotProvided /> : money(r.budget)}</td>
                       <td style={td} onClick={(e) => e.stopPropagation()}>{r.collection ? (
-                          <CollectionPill req={r as MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }} onOpen={() => openCollection(r)} />
+                          <CollectionPill req={r as MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }} onOpen={() => openCollection(r)} onAssess={() => setAssessForId(r.id)} />
                         ) : (
                           <button
                             onClick={() => setCollectionForId(r.id)}
@@ -677,7 +700,7 @@ export function RequirementsHome() {
                         )}</td>
                       <td style={td}>{fmtDate(r.lastUpdated)}</td>
                       <td style={{ ...td, textAlign: 'right', padding: '14px 12px 14px 0' }} onClick={(e) => e.stopPropagation()}>
-                        <RowMenu hasCollection={!!r.collection} onAction={(a) => handleAction(r, a)} />
+                        <RowMenu hasCollection={!!r.collection} assessable={canAssess(r)} onAction={(a) => handleAction(r, a)} />
                       </td>
                     </tr>
                   ))
@@ -717,6 +740,11 @@ export function RequirementsHome() {
         requirement={rows.find((r) => r.id === collectionForId) ?? null}
         onClose={() => setCollectionForId(null)}
         onComplete={applyCollection}
+      />
+      <AssessCollectionModal
+        requirement={rows.find((r) => r.id === assessForId) ?? null}
+        onClose={() => setAssessForId(null)}
+        onApply={applyAssessChange}
       />
       <RequirementDetailsModal
         requirement={rows.find((r) => r.id === detailId) ?? null}

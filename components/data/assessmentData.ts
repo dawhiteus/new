@@ -1,0 +1,201 @@
+// Real data recorded from LiquidSpace (Pulse: Workspaces and Venues), for the Assessment prototype.
+// The browser demo cannot call Pulse, so each collection's spaces and a pool of nearby listings are recorded here.
+import { SAMPLE_INVENTORY, type Venue } from './collectionAgent';
+
+export interface AssessSpace {
+  id: string;
+  url: string;
+  venue: string;
+  title: string;
+  type: string;
+  desks: number;
+  rate: number | null; // monthly, local currency
+  lat: number;
+  lng: number;
+  modified: string; // ISO: listing last updated
+  booking?: string;
+  responseMin?: number; // venue's average lead response, minutes (0 = no data)
+  minTerm?: string;
+  inCollection: boolean;
+}
+
+/** Search centers: the city center. Used when a Requirement gives no search area. */
+export const CENTERS: Record<string, { lat: number; lng: number; label: string }> = {
+  austin: { lat: 30.2672, lng: -97.7431, label: 'downtown Austin' },
+  chicago: { lat: 41.8781, lng: -87.6298, label: 'the Loop' },
+  minneapolis: { lat: 44.9778, lng: -93.265, label: 'downtown Minneapolis' },
+  dallas: { lat: 32.7767, lng: -96.797, label: 'downtown Dallas' },
+  'new york': { lat: 40.758, lng: -73.9855, label: 'Midtown' },
+  porto: { lat: 41.1579, lng: -8.6291, label: 'central Porto' },
+  denver: { lat: 39.7508, lng: -104.9966, label: 'downtown Denver' },
+};
+
+// Collection members: url (after "https://liquidspace.c") | lat | lng | modified | booking | venue response (min)
+const MEMBER_META = `om/us/tx/austin/novel-coworking-north-austin/club-suite-200c-copy|30.4436|-97.6958|2026-11-03|Request to Book|1181
+om/us/tx/austin/dwell-coworking-downtown/office-suite-3|30.2597|-97.7326|2026-11-02|Request to Book|0
+om/us/tx/austin/expansive-austin-highland/club-suite-200e-copy|30.3304|-97.7105|2026-11-02|Request to Book|351
+om/us/tx/austin/indy-by-industrious/ausbur220|30.3467|-97.7361|2026-10-08|Inquire Now|0
+om/us/tx/austin/regus-westlake/team-office-3168|30.2810|-97.8238|2026-10-08|Inquire Now|0
+om/us/tx/austin/regus-aspen-lake-one/team-office-df64|30.4632|-97.7931|2026-10-08|Inquire Now|0
+om/us/tx/austin/regus-river-place/team-office-7a45|30.3966|-97.8519|2026-10-08|Inquire Now|0
+om/us/tx/austin/regus-dobie-center/team-office-ccd8|30.2832|-97.7415|2026-10-08|Inquire Now|8582
+om/us/il/chicago/level-office/office-suite-1300c-copy|41.8794|-87.6360|2026-11-04|Request to Book|16790
+om/us/il/chicago/expansive-river-north-superior/office-suite-100b-copy-37c1|41.8953|-87.6390|2026-11-03|Request to Book|428
+om/us/il/chicago/expansive-stetson-ave/team-suite-3300a-copy-1041|41.8854|-87.6227|2026-11-03|Request to Book|0
+om/us/il/chicago/working-from/private-studio-411|41.8859|-87.6488|2026-10-26|Request to Book|33983
+om/us/il/chicago/level-office-211-w-wacker/office-suite-1500a-copy-6189|41.8865|-87.6346|2026-11-04|Request to Book|33314
+om/us/il/chicago/workbox-the-loop/office-1-6146|41.8799|-87.6305|2026-11-02|Request to Book|0
+om/us/il/chicago/industrious-millennium-park-chicago/chi24e116|41.8833|-87.6270|2026-10-08|Inquire Now|0
+om/us/il/chicago/regus-west-loop-200-s-wacker/team-office-2c31|41.8792|-87.6374|2026-10-08|Inquire Now|0
+om/us/tx/dallas/8330-lbj-freeway/suite-b725ws|32.9229|-96.7590|2026-10-26|Inquire Now|8180
+om/us/tx/dallas/1910-pacific-place/suite-18100|32.7826|-96.7954|2026-10-30|Inquire Now|1048
+om/us/tx/dallas/carillon-towers/suite-w0900|32.9334|-96.8065|2026-11-04|Inquire Now|8182
+om/us/tx/dallas/boxer-northbrook-atrium-plaza/suite-1310|32.8612|-96.8858|2026-11-04|Inquire Now|0
+om/us/tx/dallas/4100-spring-valley-rd/suite-100ws|32.9394|-96.8372|2026-11-03|Inquire Now|6827
+om/us/tx/dallas/boxer-office-alpha/suite-405|32.9270|-96.7684|2026-10-07|Inquire Now|5354
+om/us/tx/dallas/boxer-14800-quorum/suite-200|32.9491|-96.8251|2026-10-26|Inquire Now|3025
+om/us/tx/dallas/level-office-701commerce/club-suite-200b-copy-2e9c|32.7788|-96.8057|2026-11-03|Request to Book|0
+om/us/mn/minneapolis/novel-coworking-minneapolis/office-suite-600b-copy-9c5a|44.9786|-93.2665|2026-11-04|Request to Book|0
+om/us/mn/minneapolis/industrious-minneapolis-north-loop/minlop002suite|44.9842|-93.2750|2026-10-08|Inquire Now|0
+om/us/mn/minneapolis/regus-minneapolis-washington-ave/team-office-c8ad|44.9845|-93.2739|2026-10-08|Inquire Now|0
+om/us/mn/minneapolis/regus-minnesota-center/team-office-6896|44.8612|-93.3315|2026-10-08|Inquire Now|8121
+om/us/mn/minneapolis/regus-spaces-north-loop/team-office-d119|44.9832|-93.2714|2026-10-08|Inquire Now|82699
+om/us/mn/minneapolis/regus-minnesota-bloomington-normandale-lake/team-office-1370|44.8532|-93.3556|2026-10-08|Inquire Now|0
+om/us/mn/minneapolis/regus-minneapolis-lagoon-ave/team-office-1bd5|44.9490|-93.2973|2026-10-08|Inquire Now|0
+om/us/mn/minneapolis/regus-mn-minneapolis-south-6th-st/team-office-b8bb|44.9774|-93.2688|2026-10-08|Inquire Now|0
+om/us/ny/new-york/jay-suites-chelsea/suite-802-abc|40.7453|-73.9939|2026-09-08|Request to Book|169
+om/us/ny/new-york/53-beach-street/office-suite-1|40.7209|-74.0094|2026-10-05|Request to Book|15
+om/us/ny/new-york/full-floor-penn-station-office/full-office-copy|40.7509|-73.9940|2026-10-05|Request to Book|19610
+om/us/ny/new-york/workville/team-office-18-person-capacity-copy-copy|40.7536|-73.9865|2026-04-06|Request to Book|37597
+om/us/ny/new-york/tower-49-by-industrious/nyctwr206|40.7572|-73.9770|2026-10-08|Inquire Now|17541
+om/us/ny/new-york/jay-suites-38th-street-new-york/private-office-suite-12-floor|40.7516|-73.9837|2026-09-08|Request to Book|16
+om/us/ny/new-york/bevmax-office-centers-plaza-district/suite-39|40.7646|-73.9701|2026-11-02|Request to Book|0
+om/us/ny/new-york/select-office-suites-flatiron/40-person-windowed-team-room|40.7429|-73.9893|2026-10-29|Request to Book|11711
+om/pt/porto/porto/vertical-coworking-dom-henrique/office-3|41.1523|-8.6072|2026-06-18|Request to Book|0
+om/pt/porto/porto/regus-regus-porto-s-bento/team-office-ee24|41.1438|-8.6081|2026-10-08|Inquire Now|0
+om/pt/porto-district/porto/regus-porto-batalha/team-office-0582|41.1575|-8.6279|2026-10-08|Inquire Now|0`;
+
+// Denver collection: venue | title | lat | lng | modified | booking | type | desks | rate
+const DENVER_MEMBERS = `om/us/co/denver/wework-the-circa-building/coworking-desk|WeWork | The Circa Building|Coworking Desk|39.7579|-105.0080|2026-04-02|Request to Book|Coworking|35|
+om/us/co/denver/venture-x-denver-downtown-16th-street/dedicated-desk-1|Venture X | Denver - Uptown|Dedicated Desk|39.7415|-104.9878|2026-01-05|Request to Book|Dedicated Desk|10|299
+om/us/co/denver/venture-x-lodo/dedicated-desk-1|Venture X | LoDo|Dedicated Desk 1|39.7534|-104.9968|2026-10-05|Request to Book|Dedicated Desk|6|599
+om/us/co/denver/industrious-lohi/denlohi136|Industrious - LoHi|DenLoHi136|39.7619|-105.0127|2026-10-08|Inquire Now|Private Office|5|4783
+om/us/co/denver/industrious-lohi/denlohi210|Industrious - LoHi|DenLoHi210|39.7619|-105.0127|2026-10-08|Inquire Now|Private Office|5|5115`;
+
+// Nearby public monthly listings (nearest first). Pool lines: url (after "https://liquidspace.co") | venue | title | type | desks | rate | lat | lng | modified
+const POOL: Record<string, string> = {
+  chicago: `m/us/il/chicago/regus-111-w-jackson/team-office-bb83|Regus | 111 W. Jackson|Team Office|Team Office|15|4046|41.878|-87.631|2026-10-08
+m/us/il/chicago/regus-111-w-jackson/team-office-9d23|Regus | 111 W. Jackson|Team Office|Team Office|5|1438|41.878|-87.631|2026-10-08
+m/us/il/chicago/regus-111-w-jackson/private-office-1d56|Regus | 111 W. Jackson|Private Office|Private Office|4|1079|41.878|-87.631|2026-10-08
+m/us/il/chicago/regus-111-w-jackson/team-office-fdd4|Regus | 111 W. Jackson|Team Office|Team Office|10|2697|41.878|-87.631|2026-10-08
+m/us/il/chicago/industrious-chicago-central-loop/chisla094|Industrious - Central Loop|CHISLA094|Private Office|10|8662|41.879|-87.632|2026-10-08
+m/us/il/chicago/industrious-chicago-central-loop/chisla093|Industrious - Central Loop|CHISLA093|Private Office|8|5756|41.879|-87.632|2026-10-08
+m/us/il/chicago/industrious-chicago-central-loop/chisla085|Industrious - Central Loop|CHISLA085|Private Office|4|4209|41.879|-87.632|2026-10-08
+m/us/il/chicago/industrious-chicago-central-loop/chisla077|Industrious - Central Loop|CHISLA077|Private Office|5|3843|41.879|-87.632|2026-10-08
+m/us/il/chicago/industrious-chicago-central-loop/chisla071|Industrious - Central Loop|CHISLA071|Private Office|4|3365|41.879|-87.632|2026-10-08
+m/us/il/chicago/industrious-chicago-central-loop/chisla054|Industrious - Central Loop|CHISLA054|Private Office|4|4721|41.879|-87.632|2026-10-08
+m/us/il/chicago/industrious-chicago-central-loop/chisla051|Industrious - Central Loop|CHISLA051|Private Office|6|4709|41.879|-87.632|2026-10-08
+m/us/il/chicago/industrious-chicago-central-loop/chisla045|Industrious - Central Loop|CHISLA045|Private Office|8|5406|41.879|-87.632|2026-10-08
+m/us/il/chicago/industrious-chicago-central-loop/chisla033|Industrious - Central Loop|CHISLA033|Private Office|7|5095|41.879|-87.632|2026-10-08
+m/us/il/chicago/industrious-chicago-central-loop/chisla023|Industrious - Central Loop|CHISLA023|Private Office|6|5063|41.879|-87.632|2026-10-08`,
+  porto: `m/pt/porto-district/porto/regus-porto-batalha/team-office-8911|Regus | Porto, Batalha|Team Office|Team Office|5|1018|41.157|-8.628|2026-10-08
+m/pt/porto-district/porto/regus-porto-batalha/team-office-6505|Regus | Porto, Batalha|Team Office|Team Office|10|1907|41.157|-8.628|2026-10-08
+m/pt/porto/vila-nova-de-gaia/regus-gaia-arrabida/team-office-de19|Regus | GAIA, Arrabida|Team Office|Team Office|15|3776|41.143|-8.640|2026-10-08
+m/pt/porto/vila-nova-de-gaia/regus-gaia-arrabida/team-office|Regus | GAIA, Arrabida|Team Office|Team Office|5|1198|41.143|-8.640|2026-10-08
+m/pt/porto/porto/vertical-coworking-dom-henrique/office-2|Vertical Coworking Dom Henrique|Office 2|Private Office|10|3517|41.152|-8.607|2026-06-18
+m/pt/porto/porto/vertical-coworking-dom-henrique/office-1|Vertical Coworking Dom Henrique|Office 1|Private Office|8|2395|41.152|-8.607|2026-06-18
+m/pt/porto/porto/work-wise-co-working-offices/office-1|Work Wise | Co-Working & Offices|Bright start-up Private Office|Private Office|22|1500|41.152|-8.606|2024-05-06
+m/pt/porto/porto/regus-regus-porto-s-bento/team-office-5bdc|Regus | Regus Porto S. Bento|Team Office|Team Office|10|1718|41.144|-8.608|2026-10-08
+m/pt/porto/matosinhos/spaces-matosinhos-spaces-matosinhos/team-office-dafb|SPACES | Matosinhos|Team Office|Team Office|15|4136|41.179|-8.685|2026-10-08
+m/pt/porto/matosinhos/spaces-matosinhos-spaces-matosinhos/team-office-b8f0|SPACES | Matosinhos|Team Office|Team Office|10|2757|41.179|-8.685|2026-10-08`,
+  denver: `m/us/co/denver/regus-denver-place-denver-1/team-office-2815|Regus || Denver Place|Team Office|Team Office|15|3176|39.749|-104.991|2026-10-08
+m/us/co/denver/regus-denver-place-denver-1/team-office-4ce7|Regus || Denver Place|Team Office|Team Office|10|1786|39.749|-104.991|2026-10-08
+m/us/co/denver/candy-factory-coworking/private-office-for-8-10-people|Candy Factory Coworking|Large Office in Historic Building|Private Office|12|3000|39.746|-104.995|2026-03-02
+m/us/co/denver/candy-factory-coworking/office-for-6-copy|Candy Factory Coworking|Office for 6|Private Office|6|1348|39.746|-104.995|2024-10-07
+m/us/co/denver/serendipity-labs-denver-lodo/20-person-offices|Serendipity Labs - Denver - LoDo|20 Person Office|Team Office|20|9980|39.756|-105.000|2026-11-02
+m/us/co/denver/serendipity-labs-denver-lodo/10-person-office|Serendipity Labs - Denver - LoDo|10 Person Office|Team Office|10|4990|39.756|-105.000|2026-11-02
+m/us/co/denver/serendipity-labs-denver-lodo/8-person-office|Serendipity Labs - Denver - LoDo|8 Person Office|Team Office|8|3992|39.756|-105.000|2026-11-02
+m/us/co/denver/serendipity-labs-denver-lodo/5-person-office|Serendipity Labs - Denver - LoDo|5 Person Office|Team Office|5|2495|39.756|-105.000|2026-11-02
+m/us/co/denver/industrious-denver/dencal091|Industrious - Central Business District|DENCAL091|Private Office|7|6693|39.748|-104.989|2026-10-08
+m/us/co/denver/industrious-denver/dencal060|Industrious - Central Business District|DENCAL060|Private Office|6|5176|39.748|-104.989|2026-10-08
+m/us/co/denver/industrious-denver/dencal040|Industrious - Central Business District|DENCAL040|Private Office|4|3765|39.748|-104.989|2026-10-08`,
+  dallas: `m/us/tx/dallas/1910-pacific-place/suite-1100|Boxer - Pacific Place|Suite 1100|Office Suite|27|3699|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-15400|Boxer - Pacific Place|Suite 15400|Office Suite|21|2899|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-10500|Boxer - Pacific Place|Suite 10500|Office Suite|35|4677|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-12030|Boxer - Pacific Place|Suite 12030|Office Suite|20|2777|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-9350|Boxer - Pacific Place|Suite 9350|Office Suite|19|2509|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-9050|Boxer - Pacific Place|Suite 9050|Office Suite|11|1615|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-5045|Boxer - Pacific Place|Suite 5045|Office Suite|52|6831|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-6050|Boxer - Pacific Place|Suite 6050|Office Suite|19|2652|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-14250-cffe|Boxer - Pacific Place|Suite 14250|Office Suite|22|3229|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-11400|Boxer - Pacific Place|Suite 11400|Office Suite|38|5289|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-2090-8537|Boxer - Pacific Place|Suite 2090|Office Suite|40|5163|32.783|-96.795|2026-10-30
+m/us/tx/dallas/1910-pacific-place/suite-8065|Boxer - Pacific Place|Suite 8065|Office Suite|16|2231|32.783|-96.795|2026-10-30`,
+  austin: `m/us/tx/austin/industrious-austin/ausdtn097|Industrious - 5th and Colorado|AUSDTN097|Private Office|4|4484|30.267|-97.745|2026-10-08
+m/us/tx/austin/industrious-austin/ausdtn094|Industrious - 5th and Colorado|AUSDTN094|Private Office|6|6762|30.267|-97.745|2026-10-08
+m/us/tx/austin/industrious-austin/ausdtn092|Industrious - 5th and Colorado|AUSDTN092|Private Office|8|7617|30.267|-97.745|2026-10-08
+m/us/tx/austin/industrious-austin/ausdtn128|Industrious - 5th and Colorado|AUSDTN128|Private Office|8|11107|30.267|-97.745|2026-10-08
+m/us/tx/austin/industrious-austin/ausdtn117|Industrious - 5th and Colorado|AUSDTN117|Private Office|7|10517|30.267|-97.745|2026-10-08
+m/us/tx/austin/industrious-austin/ausdtn079|Industrious - 5th and Colorado|AUSDTN079|Private Office|6|7366|30.267|-97.745|2026-10-08
+m/us/tx/austin/industrious-austin/ausdtn078|Industrious - 5th and Colorado|AUSDTN078|Private Office|4|3770|30.267|-97.745|2026-10-08
+m/us/tx/austin/industrious-austin/ausdtn031|Industrious - 5th and Colorado|AUSDTN031|Private Office|4|5633|30.267|-97.745|2026-10-08
+m/us/tx/austin/industrious-austin/ausdtn024|Industrious - 5th and Colorado|AUSDTN024|Private Office|4|5893|30.267|-97.745|2026-10-08
+m/us/tx/austin/industrious-austin/ausdtn016|Industrious - 5th and Colorado|AUSDTN016|Private Office|8|9607|30.267|-97.745|2026-10-08`,
+  minneapolis: `m/us/mn/minneapolis/novel-coworking-minneapolis/office-suite-500c-copy|Expansive - TriTech Center|Office Suite 500I|Office Suite|34|6499|44.979|-93.266|2026-11-04
+m/us/mn/minneapolis/novel-coworking-minneapolis/office-suite-500b-copy|Expansive - TriTech Center|Office Suite 500E|Office Suite|21|3624|44.979|-93.266|2026-11-04
+m/us/mn/minneapolis/novel-coworking-minneapolis/office-suite-600e-copy-2|Expansive - TriTech Center|Office Suite 700D|Office Suite|15|1999|44.979|-93.266|2026-11-04
+m/us/mn/minneapolis/novel-coworking-minneapolis/office-suite-600d-copy|Expansive - TriTech Center|Office Suite 500H|Office Suite|17|2999|44.979|-93.266|2026-11-04
+m/us/mn/minneapolis/novel-coworking-minneapolis/office-suite-600c-copy|Expansive - TriTech Center|Office Suite 700C|Office Suite|24|4249|44.979|-93.266|2026-11-04
+m/us/mn/minneapolis/novel-coworking-minneapolis/office-suite-500h-copy|Expansive - TriTech Center|Office Suite 500B|Office Suite|21|3999|44.979|-93.266|2026-11-04
+m/us/mn/minneapolis/novel-coworking-minneapolis/office-suite-7|Expansive - TriTech Center|Office Suite 500G|Office Suite|16|2124|44.979|-93.266|2026-11-04
+m/us/mn/minneapolis/novel-coworking-minneapolis/club-suite-107-copy-95d1|Expansive - TriTech Center|Club Suite 700E|Office Suite|18|2624|44.979|-93.266|2026-11-04
+m/us/mn/minneapolis/regus-mn-minneapolis-south-6th-st/team-office|Regus | MN, Minneapolis - South 6th St|Team Office|Team Office|5|1887|44.977|-93.269|2026-10-08
+m/us/mn/minneapolis/regus-mn-minneapolis-south-6th-st/team-office-db31|Regus | MN, Minneapolis - South 6th St|Team Office|Team Office|10|3676|44.977|-93.269|2026-10-08
+m/us/mn/minneapolis/industrious-minneapolis-downtown/mindtn040|Industrious - Downtown Minneapolis|MINDTN040|Private Office|13|9802|44.978|-93.271|2026-10-08`,
+  'new york': `m/us/ny/new-york/emerge212-1185-avenue-of-the-americas/team-room-215217|Emerge212 - 1185 Avenue of the Americas|Team Room #215/217|Team Office|22|20000|40.758|-73.982|2026-10-13
+m/us/ny/new-york/emerge212-1185-avenue-of-the-americas/team-room-311-with-interior-call-room|Emerge212 - 1185 Avenue of the Americas|Team Room #311|Team Office|9|9900|40.758|-73.982|2026-10-13
+m/us/ny/new-york/emerge212-1185-avenue-of-the-americas/team-room-219|Emerge212 - 1185 Avenue of the Americas|Team Room #219|Private Office|17|18500|40.758|-73.982|2026-10-13
+m/us/ny/new-york/regus-americas-tower/team-office-c7b9|Regus | Americas Tower|Team Office|Team Office|15|7716|40.757|-73.982|2026-10-08
+m/us/ny/new-york/regus-americas-tower/team-office-d03a|Regus | Americas Tower|Team Office|Team Office|10|5236|40.757|-73.982|2026-10-08
+m/us/ny/new-york/regus-americas-tower/team-office-2f1f|Regus | Americas Tower|Team Office|Team Office|5|2418|40.757|-73.982|2026-10-08
+m/us/ny/new-york/industrious-indy-by-industrious-times-square/nyctim2110|Indy by Industrious Times Square|NYCTIM2110|Private Office|8|11289|40.755|-73.988|2026-10-08
+m/us/ny/new-york/jay-suites/windowed-team-office-for-up-to-15-people|Jay Suites - Bryant Park|Windowed Team office for up to 15|Team Office|15|10000|40.755|-73.987|2026-11-02
+m/us/ny/new-york/jay-suites/team-office-3049-for-up-to-6|Jay Suites - Bryant Park|Team office #3049 for up to 6|Team Office|6|2500|40.755|-73.987|2026-11-02
+m/us/ny/new-york/1501-broadway/private-office-96f6|Bevmax Office Centers - Times Square|Private office|Private Office|6|3500|40.757|-73.986|2026-11-02`,
+};
+
+const urlMember = (suffix: string) => `https://liquidspace.c${suffix}`;
+const urlPool = (suffix: string) => `https://liquidspace.co${suffix}`;
+
+/** Spaces in a city's real collection, with the recorded Pulse facts. */
+export function collectionSpaces(city: string): AssessSpace[] {
+  const key = city.toLowerCase().split(',')[0].trim();
+  if (key === 'denver') {
+    return DENVER_MEMBERS.split('\n').map((l, i) => {
+      const [u, venue, title, lat, lng, modified, booking, type, desks, rate] = l.split('|');
+      return { id: `den-m${i}`, url: urlMember(u), venue, title, type, desks: +desks, rate: rate ? +rate : null, lat: +lat, lng: +lng, modified, booking, inCollection: true };
+    });
+  }
+  const inv: Venue[] = SAMPLE_INVENTORY[key] ?? [];
+  const meta = new Map(MEMBER_META.split('\n').map((l) => { const p = l.split('|'); return [urlMember(p[0]), p] as const; }));
+  const out: AssessSpace[] = [];
+  inv.forEach((v) => {
+    const m = v.url ? meta.get(v.url) : undefined;
+    if (!m || !v.url) return;
+    out.push({ id: v.id, url: v.url, venue: v.operator, title: v.name, type: v.type, desks: v.desks, rate: v.monthlyPrice, lat: +m[1], lng: +m[2], modified: m[3], booking: m[4], responseMin: +m[5] || undefined, minTerm: v.minTerm, inCollection: true });
+  });
+  return out;
+}
+
+/** Nearby real listings that are not in the collection. */
+export function marketPool(city: string): AssessSpace[] {
+  const key = city.toLowerCase().split(',')[0].trim();
+  const raw = POOL[key];
+  if (!raw) return [];
+  return raw.split('\n').map((l, i) => {
+    const [u, venue, title, type, desks, rate, lat, lng, modified] = l.split('|');
+    return { id: `${key}-p${i}`, url: urlPool(u), venue, title, type, desks: +desks, rate: +rate, lat: +lat, lng: +lng, modified, inCollection: false };
+  });
+}
+
+export const hasAssessmentData = (city: string) => collectionSpaces(city).length > 0;
