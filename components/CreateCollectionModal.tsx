@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, Link2, Bot, ExternalLink, ChevronLeft, Loader2, Sparkles, Check, MapPin, DollarSign, Users } from 'lucide-react';
 import {
-  COLLECTION_AGENT, criteriaFor, sourceCollection, resolveCollectionUrl, newCollectionUrl, realCollectionFor,
+  COLLECTION_AGENT, criteriaFor, sourceCollection, reasonsFor, resolveCollectionUrl, newCollectionUrl, realCollectionFor,
   type SourcingResult,
 } from './data/collectionAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
@@ -34,7 +34,7 @@ interface Props {
 }
 
 type View = 'choose' | 'existing' | 'agent' | 'manual';
-type AgentStage = 'setup' | 'working' | 'done' | 'none';
+type AgentStage = 'setup' | 'working' | 'propose' | 'done' | 'none';
 
 const input: React.CSSProperties = { width: '100%', border: '1.5px solid #0F2A3D', borderRadius: 8, padding: '11px 14px', fontSize: 15, fontFamily: FONT, color: INK, background: '#fff', outline: 'none' };
 const lbl: React.CSSProperties = { display: 'block', fontSize: 14, fontWeight: 600, color: INK, marginBottom: 8, fontFamily: FONT };
@@ -56,6 +56,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
   const [workMsg, setWorkMsg] = useState('');
   const [result, setResult] = useState<SourcingResult | null>(null);
   const [outcome, setOutcome] = useState<CollectionOutcome | null>(null);
+  const [picked, setPicked] = useState<Record<string, boolean>>({});
 
   const open = requirement !== null;
   useEffect(() => {
@@ -88,45 +89,52 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
   const criteria = criteriaFor(requirement);
   const canSource = criteria.location !== '';
 
-  const runAgent = () => {
+  const findSpaces = () => {
     if (!name.trim() || !canSource) return;
     setStage('working');
     const steps = [
       `Searching LiquidSpace inventory in ${criteria.location.split(',')[0]}…`,
       'Matching spaces against the requirement…',
       'Assessing fit, gaps and trade-offs…',
-      'Creating the collection…',
     ];
     setWorkMsg(steps[0]);
     steps.forEach((s, i) => setTimeout(() => setWorkMsg(s), i * 650));
     setTimeout(() => {
-      const realC = realCollectionFor(criteria.location);
-      const r = sourceCollection(criteria, realC ? realC.name : name.trim());
-      if (!r) {
-        // No suitable inventory: still create an empty Collection and explain the result.
-        const empty: CollectionOutcome = {
-          method: 'agent', name: name.trim(), url: newCollectionUrl(name.trim()), spaces: 0, saved: 0, shortlisted: 0,
-          locationSpaces: 0, budgetSpaces: 0, peopleSpaces: 0,
-          assessment: { summary: `I found no suitable LiquidSpace inventory in ${criteria.location.split(',')[0]}, so “${name.trim()}” was created empty.`, gaps: [`Overall: No suitable inventory was found in ${criteria.location.split(',')[0]}. Add spaces in LiquidSpace or link another Collection.`] },
-        };
-        setResult(null);
-        setOutcome(empty);
-        onComplete(requirement, empty);
-        setStage('none');
-        return;
-      }
-      const real = realCollectionFor(criteria.location);
-      const collectionUrl = real ? real.url : newCollectionUrl(name.trim());
-      const o: CollectionOutcome = {
-        method: 'agent', name: real ? real.name : name.trim(), url: collectionUrl, spaces: r.found, saved: 0, shortlisted: 0,
-        locationSpaces: r.inMarket, budgetSpaces: r.withinBudget, peopleSpaces: r.fitsPeople,
-        assessment: { summary: r.summary, gaps: r.gaps.map((g) => `${g.label}: ${g.text}`) },
-      };
+      const r = sourceCollection(criteria, name.trim());
       setResult(r);
-      setOutcome(o);
-      onComplete(requirement, o); // associated as soon as it is created
-      setStage('done');
+      setPicked(Object.fromEntries((r?.spaces ?? []).map((v) => [v.id, true])));
+      setStage('propose');
     }, steps.length * 650);
+  };
+
+  const realC = realCollectionFor(criteria.location);
+  const finalName = realC ? realC.name : name.trim();
+
+  const confirmCreate = () => {
+    const ids = result ? result.spaces.filter((v) => picked[v.id]).map((v) => v.id) : [];
+    const r = result && ids.length ? sourceCollection(criteria, finalName, ids) : null;
+    if (!r) {
+      // Nothing proposed or nothing chosen: create an empty Collection and say so.
+      const empty: CollectionOutcome = {
+        method: 'agent', name: finalName, url: realC ? realC.url : newCollectionUrl(finalName), spaces: 0, saved: 0, shortlisted: 0,
+        locationSpaces: 0, budgetSpaces: 0, peopleSpaces: 0,
+        assessment: { summary: `No spaces were added, so “${finalName}” was created empty.`, gaps: [`Overall: No spaces were added in ${criteria.location.split(',')[0]}. Add spaces in LiquidSpace or link another Collection.`] },
+      };
+      setResult(null);
+      setOutcome(empty);
+      onComplete(requirement, empty);
+      setStage('none');
+      return;
+    }
+    const o: CollectionOutcome = {
+      method: 'agent', name: finalName, url: realC ? realC.url : newCollectionUrl(finalName), spaces: r.found, saved: 0, shortlisted: 0,
+      locationSpaces: r.inMarket, budgetSpaces: r.withinBudget, peopleSpaces: r.fitsPeople,
+      assessment: { summary: r.summary, gaps: r.gaps.map((g) => `${g.label}: ${g.text}`) },
+    };
+    setResult(r);
+    setOutcome(o);
+    onComplete(requirement, o);
+    setStage('done');
   };
 
   const Option = ({ icon, title, desc, onClick }: { icon: React.ReactNode; title: string; desc: string; onClick: () => void }) => (
@@ -217,9 +225,9 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
           {view === 'agent' && (
             <>
               {stage === 'setup' && backBtn}
-              <div style={{ border: '1.5px solid #BFE5CC', background: '#F0FAF4', borderRadius: 16, padding: 16 }}>
+              <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 16, padding: 16 }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {stage === 'working' ? <Loader2 size={22} color="#059669" className="animate-spin" /> : <Bot size={24} color="#059669" />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0, fontFamily: FONT }}>
@@ -248,6 +256,14 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
 
                     {stage === 'working' && <div style={{ fontSize: 14, color: '#374151', padding: '6px 0' }}>{workMsg}</div>}
 
+                    {stage === 'propose' && (
+                      <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.5 }}>
+                        {result
+                          ? <>I found <b>{result.found}</b> space{result.found === 1 ? '' : 's'} in {criteria.location.split(',')[0]}. {realC ? 'Review them, then create the Collection.' : 'Untick any you don\u2019t want, then create the Collection.'}</>
+                          : <>I found no suitable LiquidSpace inventory in <b>{criteria.location.split(',')[0]}</b>. I can still create an empty Collection and link it, or you can go back.</>}
+                      </div>
+                    )}
+
                     {stage === 'none' && (
                       <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.55 }}>
                         I found no suitable LiquidSpace inventory in <b>{criteria.location.split(',')[0]}</b>, so I created an empty “{outcome?.name}” Collection and linked it to this requirement. You can add spaces in LiquidSpace, or link a different Collection.
@@ -260,6 +276,34 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                   </div>
                 </div>
               </div>
+
+              {stage === 'propose' && result && (
+                <div style={{ marginTop: 12, fontFamily: FONT }}>
+                  <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden' }}>
+                    {result.spaces.map((v, i) => (
+                      <label key={v.id} style={{ display: 'flex', gap: 12, padding: '10px 14px', borderTop: i ? '1px solid #F1F3F5' : undefined, alignItems: 'flex-start', cursor: realC ? 'default' : 'pointer' }}>
+                        <input type="checkbox" checked={realC ? true : !!picked[v.id]} disabled={!!realC} onChange={(e) => setPicked((p) => ({ ...p, [v.id]: e.target.checked }))} style={{ marginTop: 3 }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: INK, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {v.name}
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: TIER_STYLE[v.tier].bg }} title={`${v.tier} match`} />
+                          </div>
+                          <div style={{ fontSize: 12.5, color: '#6B7280' }}>{v.operator} · {v.area}</div>
+                          <div style={{ fontSize: 12.5, color: '#374151', marginTop: 2 }}>
+                            {[...reasonsFor(v, criteria), ...v.notes.map((n) => n.text)].join(' · ')}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 12, padding: '10px 14px', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 12, fontSize: 13, color: '#374151' }}>
+                    <div style={{ fontWeight: 700, color: INK, marginBottom: 4 }}>This will</div>
+                    <div>1. {realC ? <>Link the existing Collection “{finalName}”</> : <>Create the Collection “{finalName}” in LiquidSpace</>}</div>
+                    <div>2. Add {realC ? result.spaces.length : result.spaces.filter((v) => picked[v.id]).length} workspace{(realC ? result.spaces.length : result.spaces.filter((v) => picked[v.id]).length) === 1 ? '' : 's'} to it, one at a time</div>
+                    <div>3. Link it to this requirement</div>
+                  </div>
+                </div>
+              )}
 
               {stage === 'done' && result && outcome && (
                 <>
@@ -306,7 +350,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                       </div>
                     </>
                   )}
-                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 12, fontFamily: FONT }}>{realCollectionFor(criteria.location) ? 'Prototype: the agent run is simulated; the Collection and its spaces are real and open in LiquidSpace. ' : 'Prototype: simulated sourcing from fictitious sample inventory. '}Browse the individual spaces in LiquidSpace. The assessment is saved to this requirement's sourcing tasks.</div>
+                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 12, fontFamily: FONT }}>Browse the individual spaces in LiquidSpace. The assessment is saved to this requirement's sourcing tasks.</div>
                 </>
               )}
 
@@ -314,8 +358,18 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                 {stage === 'setup' && (
                   <>
                     <button type="button" onClick={onClose} style={secondary}>Cancel</button>
-                    <button type="button" onClick={runAgent} disabled={!canSource || !name.trim()} style={{ ...primary, opacity: canSource && name.trim() ? 1 : 0.5, cursor: canSource && name.trim() ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      <Sparkles size={16} /> Create Collection
+                    <button type="button" onClick={findSpaces} disabled={!canSource || !name.trim()} style={{ ...primary, opacity: canSource && name.trim() ? 1 : 0.5, cursor: canSource && name.trim() ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <Sparkles size={16} /> Find spaces
+                    </button>
+                  </>
+                )}
+                {stage === 'propose' && (
+                  <>
+                    <button type="button" onClick={() => setStage('setup')} style={secondary}>Back</button>
+                    <button type="button" onClick={confirmCreate}
+                      disabled={!!result && !realC && !result.spaces.some((v) => picked[v.id])}
+                      style={{ ...primary, display: 'inline-flex', alignItems: 'center', gap: 8, opacity: result && !realC && !result.spaces.some((v) => picked[v.id]) ? 0.5 : 1 }}>
+                      <Sparkles size={16} /> {result ? 'Create Collection' : 'Create empty Collection'}
                     </button>
                   </>
                 )}

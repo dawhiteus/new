@@ -138,10 +138,10 @@ export interface SourcingResult {
 }
 
 /** Returns null when sample inventory has nothing for this location (the agent then says so and creates nothing). */
-export function sourceCollection(c: SourcingCriteria, collectionName: string): SourcingResult | null {
+export function sourceCollection(c: SourcingCriteria, collectionName: string, only?: string[]): SourcingResult | null {
   const key = c.location.toLowerCase().split(',')[0].trim();
-  const venues = SAMPLE_INVENTORY[key];
-  if (!venues || !venues.length) return null;
+  const venues = (SAMPLE_INVENTORY[key] ?? []).filter((v) => !only || only.includes(v.id));
+  if (!venues.length) return null;
 
   const scored: ScoredVenue[] = venues.map((v) => {
     let pts = 0;
@@ -277,4 +277,16 @@ export function resolveCollectionUrl(raw: string): LinkedCollection | { error: s
 export function newCollectionUrl(name: string): string {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'collection';
   return `https://liquidspace.com/collections/${slug}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Why a space is proposed, in plain words. Positives first, then the trade-offs already found by scoring. */
+export function reasonsFor(v: ScoredVenue, c: SourcingCriteria): string[] {
+  const out: string[] = [];
+  const city = c.location.split(',')[0];
+  if (city) out.push(`In ${city}`);
+  if (c.capacity != null && v.fitsPeople) out.push(`Holds ${v.desks} (needs ${c.capacity})`);
+  if (c.budget != null && v.withinBudget) out.push(`${money(v.monthlyPrice as number)}/mo, within budget`);
+  if (c.workspaceType && v.type === c.workspaceType) out.push(v.type);
+  if (c.startDate && v.availableFrom != null && v.availableFrom <= c.startDate) out.push(`Available by ${fmtLong(c.startDate)}`);
+  return out;
 }
