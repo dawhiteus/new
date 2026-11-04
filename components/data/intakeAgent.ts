@@ -207,8 +207,7 @@ function questionsFor(city: string, f: IntakeFields, hedged: boolean, startMonth
   if (!f.startDate) q.push(startMonthOnly ? `Which day in ${startMonthOnly} do they need to start${where}?` : `What start date do they need${where}?`);
   if (!f.termLength) q.push(`How long a term are they planning${where}?`);
   if (!f.capacity) q.push(`How many people will the space need to hold${where}?`);
-  else if (hedged) q.push(`Is ${f.capacity} people${where} the day-one headcount or a projection?`);
-  if (!f.workspaceType) q.push(`What type of space do they want${where} (private offices, team office, coworking)?`);
+  if (!f.workspaceType) q.push(`What type of space do they want${where} (office suite, private office, team office, coworking, or meeting space)?`);
   if (!f.size && q.length < 5) q.push(`Do they have a size in mind${where} (sq ft)?`);
   return q.slice(0, 5);
 }
