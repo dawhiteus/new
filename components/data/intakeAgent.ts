@@ -4,6 +4,8 @@
 // sample inputs below. The agent never invents values: anything it cannot
 // find in the source stays empty and becomes a question for the customer.
 
+import { LICENSE_REGISTRY } from './licenseRegistry';
+
 export const AGENT_NAME = 'Requirements Intake Agent';
 export const AGENT_EMAIL = 'requirements.agent@ai.liquidspace.com';
 
@@ -50,6 +52,8 @@ export interface LicenseRecord {
   renewalMechanism: string;
   notificationPeriod: string;
   termEnd: string; // ISO
+  customer?: string;
+  noticeDate?: string; // ISO
 }
 
 export interface IntakeResult {
@@ -72,16 +76,7 @@ export const FIELD_LABEL: Record<FieldKey, string> = {
 const ATTEMPTED: FieldKey[] = ['company', 'name', 'location', 'workspaceType', 'capacity', 'size', 'programNeeds', 'amenityNeeds', 'configuration', 'otherFunctional', 'startDate', 'termLength', 'budget'];
 
 // Demo license fixtures (License Administrator is not connected in the prototype).
-export const DEMO_LICENSES: Record<string, LicenseRecord> = {
-  'SLA-2024-014': {
-    licenseId: 'SLA-2024-014', operator: 'Hays Office Properties', city: 'Minneapolis', state: 'MN', seats: 28, sizeSf: 4200,
-    monthlyCost: 7200, contractType: 'Fixed-Term', renewalMechanism: 'Auto-Renewal', notificationPeriod: '90 Days', termEnd: '2027-03-31',
-  },
-  'SLA-2023-007': {
-    licenseId: 'SLA-2023-007', operator: 'Regus', city: 'Dallas', state: 'TX', seats: 40, sizeSf: 5000,
-    monthlyCost: 11800, contractType: 'Fixed-Term', renewalMechanism: 'Renewal by Mutual Agreement', notificationPeriod: '60 Days', termEnd: '2027-01-31',
-  },
-};
+export const DEMO_LICENSES: Record<string, LicenseRecord> = Object.fromEntries(LICENSE_REGISTRY.map((l) => [l.licenseId, l]));
 
 export const SAMPLE_EMAIL = `Hi Brent,
 
@@ -257,6 +252,7 @@ export function runIntake(text: string, licenseIdRaw: string): IntakeResult {
       prov.name = { kind: 'source', note: `Named after the location (${city})` };
     }
     if (company) { f.company = company.value; prov.company = { kind: 'source', note: company.quote }; }
+    else if (license?.customer) { f.company = license.customer; prov.company = { kind: 'license', note: `License ${license.licenseId}: customer ${license.customer}` }; }
 
     if (!f.name && f.company) { f.name = `${f.company} requirement`; prov.name = { kind: 'suggested', note: 'Named after the company. Please edit.' }; }
 
@@ -297,4 +293,5 @@ export const licenseTermsReference = (l: LicenseRecord) => [
   { label: 'Contract type', value: l.contractType },
   { label: 'Renewal mechanism', value: l.renewalMechanism },
   { label: 'Notice period', value: l.notificationPeriod },
+  ...(l.noticeDate ? [{ label: 'Customer must decide by', value: fmtLong(l.noticeDate) }] : []),
 ];

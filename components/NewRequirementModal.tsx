@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+import { LICENSE_REGISTRY, needingDecision, byNoticeDate, daysUntil } from './data/licenseRegistry';
 import { X, ChevronsUpDown, Bot, Loader2, Sparkles, Copy, ArrowUp, Paperclip } from 'lucide-react';
 import { toast } from './ui/toast';
 import {
@@ -11,6 +12,7 @@ import {
 const FONT = 'Inter, sans-serif';
 const BLUE = '#0D619B';
 const INK = '#0F2A3D';
+const fmtShort = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const GREEN = '#0F7B4F';
 const STATUSES = ['Active', 'Draft', 'Executed', 'Archived'];
 const WORKSPACE_TYPES = ['Office Suite', 'Private Office', 'Team Office', 'Coworking', 'Meeting Space'];
@@ -66,6 +68,8 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
   const [phase, setPhase] = useState<Phase>('closed');
   const [text, setText] = useState('');
   const [licenseId, setLicenseId] = useState('');
+  const [licOpen, setLicOpen] = useState(false);
+  const [showAllLic, setShowAllLic] = useState(false);
   const [fileName, setFileName] = useState('');
   const [fileText, setFileText] = useState('');
   const [fileUnreadable, setFileUnreadable] = useState(false);
@@ -289,13 +293,55 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
                         )}
                         {fileUnreadable && <span style={{ fontSize: 12.5, color: '#B45309' }}>The prototype can only read text files (.txt, .eml, .md). Paste this file's text instead.</span>}
                       </div>
-                      <input
-                        value={licenseId}
-                        onChange={(e) => setLicenseId(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); startAgent(); } }}
-                        placeholder="License ID (optional, for renewals)"
-                        style={{ ...inputStyle, background: '#fff', marginTop: 10, padding: '8px 12px', maxWidth: 300 }}
-                      />
+                      <div style={{ position: 'relative', marginTop: 10, maxWidth: 420 }}>
+                        <input
+                          value={licenseId}
+                          onChange={(e) => { setLicenseId(e.target.value); setLicOpen(true); }}
+                          onFocus={() => setLicOpen(true)}
+                          onBlur={() => setTimeout(() => setLicOpen(false), 150)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); startAgent(); } if (e.key === 'Escape') setLicOpen(false); }}
+                          placeholder="Pick or enter a License ID (optional, for renewals)"
+                          style={{ ...inputStyle, background: '#fff', padding: '8px 12px', width: '100%' }}
+                        />
+                        {licOpen && (() => {
+                          const q = licenseId.trim().toLowerCase();
+                          const rows = (q
+                            ? LICENSE_REGISTRY.filter((l) => `${l.licenseId} ${l.customer} ${l.city}`.toLowerCase().includes(q))
+                            : showAllLic ? [...LICENSE_REGISTRY].sort(byNoticeDate) : needingDecision(6));
+                          return (
+                            <div style={{ position: 'absolute', zIndex: 20, left: 0, right: 0, top: '100%', marginTop: 4, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', maxHeight: 280, overflowY: 'auto', fontFamily: FONT }}>
+                              <div style={{ padding: '8px 12px', fontSize: 12, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                                {q ? 'Matching licenses' : showAllLic ? 'All licenses, by notification date' : 'Licenses needing a decision in the next 6 months'}
+                              </div>
+                              {rows.length === 0 && <div style={{ padding: '8px 12px', fontSize: 13, color: '#6B7280' }}>No licenses match.</div>}
+                              {rows.map((l) => {
+                                const d = daysUntil(l.noticeDate);
+                                const late = d < 0;
+                                return (
+                                  <button key={l.licenseId} type="button" onMouseDown={(e) => { e.preventDefault(); setLicenseId(l.licenseId); setLicOpen(false); }}
+                                    className="hover:bg-gray-50"
+                                    style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', gap: 12, textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', borderTop: '1px solid #F3F4F6', cursor: 'pointer' }}>
+                                    <span>
+                                      <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: INK }}>{l.customer} · {l.city}</span>
+                                      <span style={{ display: 'block', fontSize: 12.5, color: '#6B7280' }}>{l.licenseId} · ends {fmtShort(l.termEnd)}</span>
+                                    </span>
+                                    <span style={{ fontSize: 12.5, fontWeight: 600, color: late ? '#B91C1C' : '#374151', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                                      Notify by {fmtShort(l.noticeDate)}
+                                      <span style={{ display: 'block', fontWeight: 400, color: late ? '#B91C1C' : '#6B7280' }}>{late ? `${-d} days overdue` : d === 0 ? 'today' : `in ${d} days`}</span>
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                              {!q && (
+                                <button type="button" onMouseDown={(e) => { e.preventDefault(); setShowAllLic((v) => !v); }}
+                                  style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', borderTop: '1px solid #F3F4F6', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>
+                                  {showAllLic ? 'Show only the next 6 months' : 'Show all licenses'}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </>
                   )}
 
@@ -309,7 +355,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
                       I filled <b>{result.filledCount} of {result.totalCount}</b> fields, marked <span style={{ color: GREEN, fontWeight: 600 }}>✦</span>. Review and edit anything, then create.
                       {result.license && (
                         <div style={{ fontSize: 13, color: '#6B7280', marginTop: 6 }}>
-                          I used the location, seats and size from license <b>{result.license.licenseId}</b>, but not its commercial terms.
+                          I used the customer, location, seats and size from license <b>{result.license.licenseId}</b>{result.license.noticeDate ? <> (customer must decide by {fmtShort(result.license.noticeDate)})</> : null}, but not its commercial terms.
                         </div>
                       )}
                       {result.licenseError && <div style={{ fontSize: 13, color: '#B45309', marginTop: 6 }}>{result.licenseError}</div>}
