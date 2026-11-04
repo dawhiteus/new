@@ -69,6 +69,8 @@ export interface Assessment {
   widen: Widen[];
   criteria: AssessCriteria;
   bandText: string | null;
+  /** Set when there is nothing to score: the collection is empty, or its spaces aren't available to the demo. */
+  limited?: 'empty' | 'unrecorded';
 }
 
 const money = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`;
@@ -97,7 +99,8 @@ export function criteriaForAssessment(r: MvpRequirement): AssessCriteria | null 
 }
 
 /** Can this requirement's collection be assessed from recorded data? */
-export const canAssess = (r: MvpRequirement) => !!r.collection && !!criteriaForAssessment(r) && collectionSpaces(cityKey(criteriaFor(r).location)).length > 0;
+/** Every requirement that has a collection can be assessed; when there is nothing to score the result says so. */
+export const canAssess = (r: MvpRequirement) => !!r.collection;
 
 function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, number>): SpaceResult {
   const mi = miles(sp, c);
@@ -158,7 +161,27 @@ function context(r: MvpRequirement) {
 
 export function assess(r: MvpRequirement): Assessment | null {
   const x = context(r);
-  return x ? run(x.c, x.members, x.pool) : null;
+  if (x) return run(x.c, x.members, x.pool);
+  if (!r.collection) return null;
+  return limitedAssessment(r);
+}
+
+/** A collection with nothing the demo can score: an empty one, or one whose spaces have not been recorded. */
+function limitedAssessment(r: MvpRequirement): Assessment {
+  const col = r.collection!;
+  const cc = criteriaFor(r);
+  const empty = col.totalSpaces === 0;
+  const loc = (cc.location || r.city || 'the requirement location').split(',')[0];
+  const c: AssessCriteria = { city: cityKey(cc.location), centerLabel: loc, lat: 0, lng: 0, radiusMi: 5, radiusIsDefault: true, capacity: cc.capacity, budget: cc.budget, type: cc.workspaceType, termMonths: null };
+  return {
+    status: 'None',
+    headline: empty ? 'This collection has no spaces yet.' : "This collection's spaces aren't available to the demo, so they can't be assessed here.",
+    total: col.totalSpaces, inArea: 0, withinBudget: null, forPeople: null,
+    tiers: { Strong: 0, Partial: 0, Weak: 0 },
+    confirmedFits: 0, unconfirmedFits: 0, marketMore: 0, marketFits: [], results: [], funnel: [],
+    gaps: [{ label: 'Overall', text: empty ? 'Nothing to assess. Use Update collection to fill it with spaces that match the requirement.' : 'Spaces from this collection have not been recorded for the demo.' }],
+    widen: [], criteria: c, bandText: null, limited: empty ? 'empty' : 'unrecorded',
+  };
 }
 
 function run(c: AssessCriteria, members: AssessSpace[], pool: AssessSpace[]): Assessment {
@@ -265,7 +288,9 @@ function gainText(coll: number, mkt: number) {
 /** One short line for the hover card. */
 export function quickStatus(r: MvpRequirement): { status: Status; text: string } | null {
   const a = assess(r);
-  return a ? { status: a.status, text: a.status === 'Plenty' ? 'Plenty of matches' : a.status === 'Few' ? 'Few matches' : 'No matches' } : null;
+  if (!a) return null;
+  if (a.limited === 'unrecorded') return { status: a.status, text: 'Not assessed' };
+  return { status: a.status, text: a.status === 'Plenty' ? 'Plenty of matches' : a.status === 'Few' ? 'Few matches' : 'No matches' };
 }
 
 // ── Ask ─────────────────────────────────────────────────────────────────────

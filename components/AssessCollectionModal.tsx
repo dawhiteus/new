@@ -128,7 +128,7 @@ export function AssessCollectionModal({ requirement, onClose, onApply, onAddSpac
           {/* Result */}
           <div style={{ ...box, background: '#F9FAFB', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 18, fontWeight: 700, color: INK }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_DOT[a.status] }} /> {a.status === 'None' ? 'No matches' : a.status === 'Few' ? 'Few matches' : 'Plenty of matches'}
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_DOT[a.status] }} /> {a.limited === 'unrecorded' ? 'Not assessed' : a.status === 'None' ? 'No matches' : a.status === 'Few' ? 'Few matches' : 'Plenty of matches'}
             </div>
             <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.5, marginTop: 6 }}>{a.headline}</div>
             {a.funnel.length > 0 && (
@@ -220,7 +220,7 @@ export function AssessCollectionModal({ requirement, onClose, onApply, onAddSpac
             </>
           )}
 
-          {/* Overview (original structure) */}
+          {!a.limited && (
           <div style={{ ...box, marginTop: 14 }}>
             <div style={{ padding: '14px 16px 10px' }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>{col.name}</div>
@@ -242,6 +242,8 @@ export function AssessCollectionModal({ requirement, onClose, onApply, onAddSpac
               ))}
             </div>
           </div>
+
+          )}
 
           {/* Gaps and trade-offs (original structure) */}
           <div style={sectionTitle}>Gaps and trade-offs</div>
@@ -306,7 +308,8 @@ export function AssessCollectionModal({ requirement, onClose, onApply, onAddSpac
             </>
           )}
 
-          {/* Spaces, evidence on demand */}
+          {!a.limited && (
+            <>
           <div style={sectionTitle}>Spaces in this collection</div>
           <div style={box}>
             {a.results.map((r, i) => {
@@ -331,9 +334,13 @@ export function AssessCollectionModal({ requirement, onClose, onApply, onAddSpac
               );
             })}
           </div>
+            </>
+          )}
         </div>
 
         <div style={{ padding: '12px 24px 14px', borderTop: '1px solid #E5E7EB', background: '#F9FAFB' }}>
+          {!a.limited && (
+            <>
           <div style={{ fontSize: 12.5, fontWeight: 600, color: '#374151', marginBottom: 6, fontFamily: FONT }}>Ask about this collection</div>
           {chips.length > 0 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -347,9 +354,13 @@ export function AssessCollectionModal({ requirement, onClose, onApply, onAddSpac
               placeholder="Ask a question, or paste a link to a space to add it" className="focus:!border-[#0D619B]"
               style={{ flex: 1, height: 40, border: '1px solid #D1D5DB', borderRadius: 10, padding: '0 14px', fontSize: 14, fontFamily: FONT, outline: 'none', background: '#fff' }} />
             <button type="button" onClick={() => submitQuestion(text)} disabled={!text.trim()} style={{ ...primary, height: 40, opacity: text.trim() ? 1 : 0.5, cursor: text.trim() ? 'pointer' : 'default' }}>Ask</button>
+          </div>
+            </>
+          )}
+          <div style={{ display: 'flex', justifyContent: a.limited ? 'flex-end' : 'space-between', alignItems: 'center', marginTop: a.limited ? 0 : 8 }}>
+            {!a.limited && <button type="button" onClick={() => setText(a.marketFits[0]?.space.url ?? exampleLink(a.criteria.city))} style={{ background: 'none', border: 'none', padding: 0, color: BLUE, fontSize: 12, cursor: 'pointer', fontFamily: FONT }}>Use an example link</button>}
             <button type="button" onClick={onClose} style={secondary}>Close</button>
           </div>
-          <button type="button" onClick={() => setText(a.marketFits[0]?.space.url ?? exampleLink(a.criteria.city))} style={{ background: 'none', border: 'none', padding: 0, marginTop: 6, color: BLUE, fontSize: 12, cursor: 'pointer', fontFamily: FONT }}>Use an example link</button>
         </div>
       </DialogContent>
     </Dialog>

@@ -177,7 +177,7 @@ function RowMenu({ onAction, hasCollection, assessable }: { onAction: (a: string
           {hasCollection ? (
             <>
               {item('View collection')}
-              {assessable && item('Assess collection')}
+              {item('Assess collection')}
               {item('Update collection')}
               {item('Remove collection')}
             </>
@@ -192,7 +192,7 @@ function RowMenu({ onAction, hasCollection, assessable }: { onAction: (a: string
 
 function CollectionPill({ req, onOpen, onAssess }: { req: MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }; onOpen: () => void; onAssess: () => void }) {
   const c = req.collection;
-  const status = canAssess(req) ? quickStatus(req) : null;
+  const status = quickStatus(req);
   const [show, setShow] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const row = (Icon: typeof MapPin, label: string, n: number) => (
@@ -246,14 +246,12 @@ function CollectionPill({ req, onOpen, onAssess }: { req: MvpRequirement & { col
           >
             View Collection <ArrowRight size={14} />
           </button>
-          {status && (
-            <button
+          <button
               onClick={onAssess}
               style={{ width: '100%', background: 'none', border: 'none', marginTop: 8, padding: '4px', fontSize: 13, fontWeight: 600, color: '#005B94', fontFamily: FONT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
               Assess collection
-            </button>
-          )}
+          </button>
         </div>
       </div>
       </div>
