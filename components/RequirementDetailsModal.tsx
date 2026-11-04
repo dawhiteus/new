@@ -163,7 +163,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
   };
 
   const REPLY_FIELDS: FieldKey[] = ['workspaceType', 'capacity', 'size', 'programNeeds', 'amenityNeeds', 'configuration', 'otherFunctional', 'startDate', 'termLength', 'budget'];
-  const Q_FIELD: [RegExp, FieldKey][] = [[/budget/i, 'budget'], [/start/i, 'startDate'], [/term|long/i, 'termLength'], [/headcount|people|seats|capacity/i, 'capacity'], [/type/i, 'workspaceType'], [/size|square/i, 'size']];
+  const Q_FIELD: [RegExp, FieldKey][] = [[/budget/i, 'budget'], [/start/i, 'startDate'], [/term|long/i, 'termLength'], [/how many people/i, 'capacity'], [/type/i, 'workspaceType'], [/size|square/i, 'size']];
   const reviewReply = () => {
     const d = runIntake(replyText, '').drafts[0];
     const found = REPLY_FIELDS.filter((k) => d.fields[k] && String(d.fields[k]) !== String((f as any)[k] ?? ''))
@@ -346,7 +346,12 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                     </button>
                   </div>
                   <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
-                    {f.intake.questions.map((q) => <li key={q}>{q}</li>)}
+                    {f.intake.questions.map((q) => (
+                      <li key={q}>{q}{' '}
+                        <button type="button" onClick={() => commit({ intake: { ...f.intake!, questions: f.intake!.questions.filter((x) => x !== q) } }, [])}
+                          style={{ background: 'none', border: 'none', color: BLUE, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Mark answered</button>
+                      </li>
+                    ))}
                   </ol>
                   {!replyOpen ? (
                     <button type="button" onClick={() => setReplyOpen(true)} style={{ marginTop: 10, background: 'none', border: 'none', padding: 0, color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>

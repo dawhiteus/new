@@ -168,8 +168,10 @@ function parseSegment(seg: string, city: string) {
     set('budget', String(n), annual ? `${bud[0]} (annual, converted to monthly)` : bud[0]);
   }
 
-  const term = seg.match(/(?:for|term of)\s+(\d{1,3})\s*(months?|years?)/i);
-  if (term) set('termLength', String(/year/i.test(term[2]) ? parseInt(term[1], 10) * 12 : parseInt(term[1], 10)), term[0]);
+  const term = seg.match(/(?:for|term of|term:|lease of|commit(?:ment)? of)\s+(?:about |around |roughly )?(\d{1,3})\s*[- ]?(months?|mos?|years?|yrs?)/i)
+    ?? seg.match(/(\d{1,3})\s*[- ]?(months?|mos?|years?|yrs?)\s+(?:term|lease|commitment)/i)
+    ?? seg.match(/\b(\d{1,2})\s*(years?|yrs?)\b/i);
+  if (term) set('termLength', String(/y/i.test(term[2]) ? parseInt(term[1], 10) * 12 : parseInt(term[1], 10)), term[0]);
 
   const full = seg.match(new RegExp(`(?:starting|start|from|beginning|begin|by)\\s+(?:on\\s+)?(${MONTHS.join('|')})\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(\\d{4})`, 'i'));
   if (full) set('startDate', iso(parseInt(full[3], 10), MONTHS.indexOf(full[1].toLowerCase()) + 1, parseInt(full[2], 10)), full[0]);
