@@ -195,10 +195,10 @@ function parseSegment(seg: string, city: string) {
   return out;
 }
 
-function questionsFor(city: string, f: IntakeFields, hedged: boolean, startMonthOnly: string | null, multi: boolean): string[] {
+function questionsFor(city: string, f: IntakeFields, hedged: boolean, startMonthOnly: string | null, multi: boolean, license?: LicenseRecord): string[] {
   const where = multi ? ` for ${city}` : '';
   const q: string[] = [];
-  if (!f.budget) q.push(`What monthly budget should we plan around${where}?`);
+  if (!f.budget) q.push(`What monthly budget should we plan around${where}?${license ? ` (Current license: ${fmtMoney(license.monthlyCost)}/mo)` : ''}`);
   if (!f.startDate) q.push(startMonthOnly ? `Which day in ${startMonthOnly} do they need to start${where}?` : `What start date do they need${where}?`);
   if (!f.termLength) q.push(`How long a term are they planning${where}?`);
   if (!f.capacity) q.push(`How many people will the space need to hold${where}?`);
@@ -278,7 +278,7 @@ export function runIntake(text: string, licenseIdRaw: string): IntakeResult {
       label: city || 'Requirement',
       fields: f,
       prov,
-      questions: questionsFor(city || 'this location', f, parsed.hedged, startMonthOnly, multi),
+      questions: questionsFor(city || 'this location', f, parsed.hedged, startMonthOnly, multi, license && (!city || city.toLowerCase() === license.city.toLowerCase()) ? license : undefined),
       _filled: filled,
     } as IntakeDraft & { _filled: number };
   });

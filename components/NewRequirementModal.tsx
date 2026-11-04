@@ -5,7 +5,7 @@ import { X, ChevronsUpDown, Bot, Loader2, Sparkles, Copy, ArrowUp, Paperclip } f
 import { toast } from './ui/toast';
 import {
   AGENT_NAME, REQUIRED, FIELD_LABEL,
-  runIntake, licenseTermsReference,
+  runIntake,
   type IntakeDraft, type IntakeFields, type IntakeResult, type FieldKey, type Provenance,
 } from './data/intakeAgent';
 
@@ -393,23 +393,6 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
                   {d.label}
                 </button>
               ))}
-            </div>
-          )}
-
-          {/* License reference */}
-          {agentRun && result?.license && (
-            <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: BLUE, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-                Current license {result.license.licenseId} · reference only, not applied
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 24px' }}>
-                {licenseTermsReference(result.license).map((t) => (
-                  <div key={t.label}>
-                    <div style={{ fontSize: 11, color: '#6B7280' }}>{t.label}</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>{t.value}</div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
