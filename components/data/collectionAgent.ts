@@ -37,33 +37,6 @@ export const SAMPLE_INVENTORY: Record<string, Venue[]> = {
     V('lis5', 'Alvalade Cowork', 'Alvalade Works', 'Alvalade', 'Coworking', 15, 6800, '2026-09-01'),
     V('lis6', 'Pombal Tower Floor', 'Tower Offices', 'Marquês de Pombal', 'Office Suite', 60, 45000, '2027-01-15'),
   ],
-  porto: [
-    V('opo1', 'Ribeira Offices', 'Douro Workspaces', 'Ribeira', 'Private Office', 14, 7800, '2026-11-01'),
-    V('opo2', 'Boavista Cowork', 'Boavista Works', 'Boavista', 'Coworking', 20, 6200, '2026-09-01'),
-    V('opo3', 'Casa da Música Suites', 'Porto Suites', 'Casa da Música', 'Office Suite', 12, 8400, '2027-02-01'),
-    V('opo4', 'Foz Team Office', 'Foz Spaces', 'Foz', 'Team Office', 25, 12500, '2026-10-15'),
-  ],
-  // Austin and Chicago: REAL workspaces recorded from LiquidSpace (Pulse), curated to a range of sizes and prices.
-  austin: [
-    R('aus-1', 'Expansive - North Austin', 'Club Suite 400G', '14205 North Mopac Expressway', 'Office Suite', 39, 12250, '1 month', 'https://liquidspace.com/us/tx/austin/novel-coworking-north-austin/club-suite-200c-copy'),
-    R('aus-2', 'Dwell Coworking Downtown', 'Office Suite 3', '1201 East Cesar Chavez Street', 'Office Suite', 25, 8000, '1 month', 'https://liquidspace.com/us/tx/austin/dwell-coworking-downtown/office-suite-3'),
-    R('aus-3', 'Expansive - Austin Highland', 'Club Suite 200F', '305 East Huntland Drive', 'Office Suite', 22, 8999, '1 month', 'https://liquidspace.com/us/tx/austin/expansive-austin-highland/club-suite-200e-copy'),
-    R('aus-4', 'Regus | Dobie Center', 'Team Office', '2021 Guadalupe Street', 'Team Office', 15, 5816, '1 month', 'https://liquidspace.com/us/tx/austin/regus-dobie-center/team-office-ccd8'),
-    R('aus-5', 'Industrious - 9th and Congress', 'AUSCON022', '823 Congress Avenue', 'Private Office', 14, 19350, '1 month', 'https://liquidspace.com/us/tx/austin/industrious-austin-9th-congress/auscon022'),
-    R('aus-6', 'The Malin East Austin', '12 Person Office', '1515 East Cesar Chavez Street', 'Private Office', 12, 11300, '12 months', 'https://liquidspace.com/us/tx/austin/the-malin-south-austin/12-person-office'),
-    R('aus-7', 'The Cathedral', 'Monthly Private Office B', '2403 East 16th Street', 'Private Office', 10, 3750, '3 months', 'https://liquidspace.com/us/tx/austin/the-cathedral/monthly-private-office-copy'),
-    R('aus-8', 'Regus | Westlake', 'Team Office', '1250 Capital of Texas Highway South', 'Team Office', 10, 3127, '1 month', 'https://liquidspace.com/us/tx/austin/regus-westlake/team-office-1c18'),
-  ],
-  chicago: [
-    R('chi-1', 'Expansive - West Loop', 'Office Suite 800C', '318 West Adams Street', 'Office Suite', 41, 10374, '1 month', 'https://liquidspace.com/us/il/chicago/level-office/office-suite-1300c-copy'),
-    R('chi-2', 'Expansive - River North – Superior', 'Office Suite 100A', '405 West Superior Street', 'Office Suite', 37, 8249, '1 month', 'https://liquidspace.com/us/il/chicago/expansive-river-north-superior/office-suite-100b-copy-37c1'),
-    R('chi-3', 'Expansive - West Loop', 'Office Suite 700D', '318 West Adams Street', 'Office Suite', 34, 6124, '1 month', 'https://liquidspace.com/us/il/chicago/level-office/office-suite-1300c-copy-4'),
-    R('chi-4', 'Expansive - Pru', 'Team Suite 3300D', '180 North Stetson Avenue', 'Office Suite', 33, 15749, '1 month', 'https://liquidspace.com/us/il/chicago/expansive-stetson-ave/team-suite-3300a-copy-1041'),
-    R('chi-5', 'Workbox - The Loop', 'Office 1', '125 South Clark Street', 'Office Suite', 25, 11685, '2 months', 'https://liquidspace.com/us/il/chicago/workbox-the-loop/office-1-6146'),
-    R('chi-6', 'Industrious - Millennium Park', 'CHI24E116', '24 East Washington Street', 'Private Office', 24, 26831, '1 month', 'https://liquidspace.com/us/il/chicago/industrious-millennium-park-chicago/chi24e116'),
-    R('chi-7', 'Industrious - North LaSalle', 'CHILAS225', '33 North LaSalle Street', 'Private Office', 15, 11076, '1 month', 'https://liquidspace.com/us/il/chicago/industrious-north-lasalle/chilas225'),
-    R('chi-8', 'Regus | North LaSalle', 'Team Office', '203 North LaSalle Street', 'Team Office', 15, 3778, '1 month', 'https://liquidspace.com/us/il/chicago/regus-north-lasalle/team-office-c926'),
-  ],
   // Denver: REAL workspaces at the four venues the Hub Locator analysis lists, as read from LiquidSpace.
   denver: [
     V('den-circa', 'Coworking Desk', 'WeWork | The Circa Building', 'Platte Street', 'Coworking', 35, null, null),
@@ -72,30 +45,73 @@ export const SAMPLE_INVENTORY: Record<string, Venue[]> = {
     V('den-lohi136', 'DenLoHi136', 'Industrious - LoHi', 'LoHi', 'Private Office', 5, 4784, null),
     V('den-lohi210', 'DenLoHi210', 'Industrious - LoHi', 'LoHi', 'Private Office', 5, 5115, null),
   ],
-  minneapolis: [
-    V('msp1', 'North Loop Offices', 'Mill City Works', 'North Loop', 'Private Office', 20, 6900, '2027-01-01'),
-    V('msp2', 'Downtown Suites', 'Nicollet Offices', 'Downtown', 'Office Suite', 22, 7400, '2027-03-15'),
-    V('msp3', 'Uptown Cowork', 'Lake Street Works', 'Uptown', 'Coworking', 30, 5800, '2026-09-01'),
-    V('msp4', 'Warehouse District Floor', 'Warehouse Spaces', 'Warehouse District', 'Team Office', 28, 9800, '2027-02-01'),
+  // REAL workspaces (LiquidSpace / Pulse), each city backed by a real collection in the demo account (see REAL_COLLECTIONS).
+  austin: [
+    R('aus-1', 'Expansive - North Austin', 'Club Suite 400G', '14205 North Mopac Expressway', 'Office Suite', 39, 12250, '1 month', 'https://liquidspace.com/us/tx/austin/novel-coworking-north-austin/club-suite-200c-copy'),
+    R('aus-2', 'Dwell Coworking Downtown', 'Office Suite 3', '1201 East Cesar Chavez Street', 'Office Suite', 25, 8000, '1 month', 'https://liquidspace.com/us/tx/austin/dwell-coworking-downtown/office-suite-3'),
+    R('aus-3', 'Expansive - Austin Highland', 'Club Suite 200F', '305 East Huntland Drive', 'Office Suite', 22, 8999, '1 month', 'https://liquidspace.com/us/tx/austin/expansive-austin-highland/club-suite-200e-copy'),
+    R('aus-4', 'Indy by Industrious Burnet Rd', 'AUSBUR220', '7001 Burnet Road', 'Private Office', 18, 26570, '1 month', 'https://liquidspace.com/us/tx/austin/indy-by-industrious/ausbur220'),
+    R('aus-5', 'Regus | Westlake', 'Team Office', '1250 Capital of Texas Highway South', 'Team Office', 15, 4994, '1 month', 'https://liquidspace.com/us/tx/austin/regus-westlake/team-office-3168'),
+    R('aus-6', 'Regus | Aspen Lake One', 'Team Office', '13785 Research Blvd', 'Team Office', 15, 5275, '1 month', 'https://liquidspace.com/us/tx/austin/regus-aspen-lake-one/team-office-df64'),
+    R('aus-7', 'Regus | River Place', 'Team Office', '6500 River Place Blvd, Building 7', 'Team Office', 15, 5716, '1 month', 'https://liquidspace.com/us/tx/austin/regus-river-place/team-office-7a45'),
+    R('aus-8', 'Regus | Dobie Center', 'Team Office', '2021 Guadalupe Street', 'Team Office', 15, 5816, '1 month', 'https://liquidspace.com/us/tx/austin/regus-dobie-center/team-office-ccd8'),
   ],
-  'new york': [
-    V('nyc1', 'Midtown Executive Suites', 'Fifth Ave Offices', 'Midtown', 'Office Suite', 42, 85000, '2026-10-01'),
-    V('nyc2', 'Financial District Floor', 'Downtown Works', 'Financial District', 'Team Office', 87, 145000, '2026-11-01'),
-    V('nyc3', 'Park Avenue Private Offices', 'Park Offices', 'Midtown East', 'Private Office', 18, 38000, '2026-09-15'),
-    V('nyc4', 'Times Square Cowork', 'Broadway Works', 'Times Square', 'Coworking', 55, 72000, '2026-09-01'),
-    V('nyc5', 'Flatiron Team Office', 'Flatiron Spaces', 'Flatiron', 'Team Office', 65, 98000, '2027-02-01'),
+  chicago: [
+    R('chi-1', 'Expansive - West Loop', 'Office Suite 800C', '318 West Adams Street', 'Office Suite', 41, 10374, '1 month', 'https://liquidspace.com/us/il/chicago/level-office/office-suite-1300c-copy'),
+    R('chi-2', 'Expansive - River North – Superior', 'Office Suite 100A', '405 West Superior Street', 'Office Suite', 37, 8249, '1 month', 'https://liquidspace.com/us/il/chicago/expansive-river-north-superior/office-suite-100b-copy-37c1'),
+    R('chi-3', 'Expansive - Pru', 'Team Suite 3300D', '180 North Stetson Avenue', 'Office Suite', 33, 15749, '1 month', 'https://liquidspace.com/us/il/chicago/expansive-stetson-ave/team-suite-3300a-copy-1041'),
+    R('chi-4', 'Working From_', 'Premium 30-Person Private Studio #411', '200 North Green Street', 'Team Office', 30, 26400, '12 months', 'https://liquidspace.com/us/il/chicago/working-from/private-studio-411'),
+    R('chi-5', 'Expansive - Wacker', 'Office Suite 1500B', '211 West Upper Wacker Drive', 'Office Suite', 25, 11586, '12 months', 'https://liquidspace.com/us/il/chicago/level-office-211-w-wacker/office-suite-1500a-copy-6189'),
+    R('chi-6', 'Workbox - The Loop', 'Office 1', '125 South Clark Street', 'Office Suite', 25, 11685, '2 months', 'https://liquidspace.com/us/il/chicago/workbox-the-loop/office-1-6146'),
+    R('chi-7', 'Industrious - Millennium Park', 'CHI24E116', '24 East Washington Street', 'Private Office', 24, 29581, '1 month', 'https://liquidspace.com/us/il/chicago/industrious-millennium-park-chicago/chi24e116'),
+    R('chi-8', 'Regus | West Loop 200 S. Wacker', 'Team Office', '200 South Wacker Drive', 'Team Office', 15, 2457, '1 month', 'https://liquidspace.com/us/il/chicago/regus-west-loop-200-s-wacker/team-office-2c31'),
+  ],
+  minneapolis: [
+    R('min-1', 'Expansive - TriTech Center', 'Office Suite 700B', '331 2nd Avenue South', 'Office Suite', 48, 8249, '1 month', 'https://liquidspace.com/us/mn/minneapolis/novel-coworking-minneapolis/office-suite-600b-copy-9c5a'),
+    R('min-2', 'Industrious - North Loop', 'MINLOP002Suite', '323 North Washington Avenue', 'Private Office', 35, 39373, '1 month', 'https://liquidspace.com/us/mn/minneapolis/industrious-minneapolis-north-loop/minlop002suite'),
+    R('min-3', 'Regus || Minneapolis - Washington Ave', 'Team Office', '333 N Washington Ave', 'Team Office', 15, 3427, '1 month', 'https://liquidspace.com/us/mn/minneapolis/regus-minneapolis-washington-ave/team-office-c8ad'),
+    R('min-4', 'Regus | Minnesota Center', 'Team Office', '7760 France Avenue South', 'Team Office', 15, 3496, '1 month', 'https://liquidspace.com/us/mn/minneapolis/regus-minnesota-center/team-office-6896'),
+    R('min-5', 'SPACES || North Loop', 'Team Office', '121 Washington Ave. N', 'Team Office', 15, 3926, '1 month', 'https://liquidspace.com/us/mn/minneapolis/regus-spaces-north-loop/team-office-d119'),
+    R('min-6', 'Regus | Minnesota, Bloomington - Normandale Lake', 'Team Office', '8400 Normandale Lake Blvd.', 'Team Office', 15, 4466, '1 month', 'https://liquidspace.com/us/mn/minneapolis/regus-minnesota-bloomington-normandale-lake/team-office-1370'),
+    R('min-7', 'Regus | Minneapolis - Lagoon Ave', 'Team Office', '1330 Lagoon Ave', 'Team Office', 15, 4806, '1 month', 'https://liquidspace.com/us/mn/minneapolis/regus-minneapolis-lagoon-ave/team-office-1bd5'),
+    R('min-8', 'Regus | MN, Minneapolis - South 6th St', 'Team Office', '120 South 6th St', 'Team Office', 15, 6126, '1 month', 'https://liquidspace.com/us/mn/minneapolis/regus-mn-minneapolis-south-6th-st/team-office-b8bb'),
   ],
   dallas: [
-    V('dal1', 'Uptown Dallas Floor', 'Uptown Spaces', 'Uptown', 'Team Office', 58, 48000, '2026-10-01'),
-    V('dal2', 'Deep Ellum Suites', 'Ellum Offices', 'Deep Ellum', 'Office Suite', 24, 32000, '2026-11-01'),
-    V('dal3', 'Legacy West Cowork', 'Legacy Works', 'Plano', 'Coworking', 40, 28000, '2026-09-01'),
-    V('dal4', 'Preston Center Offices', 'Preston Offices', 'Preston Center', 'Private Office', 20, 22000, '2027-01-15'),
+    R('dal-1', 'Expansive - Katy Building', 'Office Suite 400A', '701 Commerce Street', 'Office Suite', 42, 8624, '1 month', 'https://liquidspace.com/us/tx/dallas/level-office-701commerce/club-suite-200b-copy-2e9c'),
+    R('dal-2', 'Boxer - 4100 Spring Valley Rd', 'Suite 100.WS', '4100 Spring Valley Road', 'Office Suite', 45, 12792, '12 months', 'https://liquidspace.com/us/tx/dallas/4100-spring-valley-rd/suite-100ws'),
+    R('dal-3', 'Boxer - Northbrook Atrium Plaza', 'Suite 1310', '2351 West Northwest Highway', 'Office Suite', 45, 5629, '12 months', 'https://liquidspace.com/us/tx/dallas/boxer-northbrook-atrium-plaza/suite-1310'),
+    R('dal-4', 'Boxer - Pacific Place', 'Suite 18100', '1910 Pacific Avenue', 'Office Suite', 55, 7212, '12 months', 'https://liquidspace.com/us/tx/dallas/1910-pacific-place/suite-18100'),
+    R('dal-5', 'Boxer - 14800 Quorum', 'Suite 200', '14800 Quorum Drive', 'Office Suite', 44, 7256, '12 months', 'https://liquidspace.com/us/tx/dallas/boxer-14800-quorum/suite-200'),
+    R('dal-6', 'Boxer - Office Alpha', 'Suite 405', '13140 Coit Road', 'Office Suite', 44, 6530, '12 months', 'https://liquidspace.com/us/tx/dallas/boxer-office-alpha/suite-405'),
+    R('dal-7', 'Boxer - 8330-8360 LBJ Freeway', 'Suite B725.WS', '8330-8360 Lyndon B Johnson Freeway', 'Office Suite', 60, 11551, '12 months', 'https://liquidspace.com/us/tx/dallas/8330-lbj-freeway/suite-b725ws'),
+    R('dal-8', 'Boxer - Carillon Towers', 'Suite W0900', '13601 Preston Road', 'Office Suite', 55, 7983, '12 months', 'https://liquidspace.com/us/tx/dallas/carillon-towers/suite-w0900'),
+  ],
+  'new york': [
+    R('new-1', 'Fully Furnished Prime Tribeca Offices', '3rd Floor Fully Furnished Office', '53 Beach Street', 'Office Suite', 60, 47000, '1 month', 'https://liquidspace.com/us/ny/new-york/53-beach-street/office-suite-1'),
+    R('new-2', 'Select Office Suites - 1115 Broadway Flatiron NYC', '50 Person Windowed Team Room', '1115 Broadway', 'Team Office', 40, 24500, '12 months', 'https://liquidspace.com/us/ny/new-york/select-office-suites-flatiron/40-person-windowed-team-room'),
+    R('new-3', 'Workville', 'Enterprise Team Office (50 Person)', '1412 Broadway', 'Private Office', 50, 38000, '12 months', 'https://liquidspace.com/us/ny/new-york/workville/team-office-18-person-capacity-copy-copy'),
+    R('new-4', 'Chelsea by Penn', 'Full Floor Office', '143 West 29th Street', 'Team Office', 50, 23000, '1 month', 'https://liquidspace.com/us/ny/new-york/full-floor-penn-station-office/full-office-copy'),
+    R('new-5', 'Tower 49® by Industrious', 'NYCTWR206', '12 East 49th Street', 'Private Office', 48, 67941, '1 month', 'https://liquidspace.com/us/ny/new-york/tower-49-by-industrious/nyctwr206'),
+    R('new-6', 'Jay Suites & Jay Conference @ Fifth Avenue', 'Private Office Suite 1/2 Floor', '15 West 38th Street', 'Private Office', 45, 25000, '1 month', 'https://liquidspace.com/us/ny/new-york/jay-suites-38th-street-new-york/private-office-suite-12-floor'),
+    R('new-7', 'Bevmax Office Centers - Plaza District', 'Suite 39', '667 Madison Avenue', 'Office Suite', 45, 45000, '12 months', 'https://liquidspace.com/us/ny/new-york/bevmax-office-centers-plaza-district/suite-39'),
+    R('new-8', 'Jay Suites & Jay Conference @ Chelsea', 'Suite 802-A/B/C', '159 West 25th Street', 'Private Office', 60, 32000, '6 months', 'https://liquidspace.com/us/ny/new-york/jay-suites-chelsea/suite-802-abc'),
+  ],
+  porto: [
+    R('por-1', 'Vertical Coworking Dom Henrique', 'Office 3', 'Rua do Bolhão 221', 'Private Office', 16, 5994, '1 month', 'https://liquidspace.com/pt/porto/porto/vertical-coworking-dom-henrique/office-3'),
+    R('por-2', 'Regus | Regus Porto S. Bento', 'Team Office', 'Rua Augusto Rosa 79', 'Team Office', 15, 2567, '1 month', 'https://liquidspace.com/pt/porto/porto/regus-regus-porto-s-bento/team-office-ee24'),
+    R('por-3', 'Regus | Porto, Batalha', 'Team Office', 'Praça Mouzinho de Albuquerque 113', 'Team Office', 15, 2926, '1 month', 'https://liquidspace.com/pt/porto-district/porto/regus-porto-batalha/team-office-0582'),
   ],
 };
 
 /** Cities where the simulated agent run resolves to a real, pre-built LiquidSpace collection. */
 export const REAL_COLLECTIONS: Record<string, { name: string; url: string }> = {
   denver: { name: 'Denver Hub Collection', url: 'https://liquidspace.com/collections/44f4f9b4-9e80-4abc-a97a-cec2baa5ea99' },
+  austin: { name: 'Austin Collection', url: 'https://liquidspace.com/collections/43b4f500-e474-4b36-b303-9f875980c51e' },
+  chicago: { name: 'Chicago Collection', url: 'https://liquidspace.com/collections/a09a0bd0-054b-4da8-89f0-ef9816a8c2fa' },
+  minneapolis: { name: 'Minneapolis Collection', url: 'https://liquidspace.com/collections/c9004465-1786-4ecf-a5bf-199d72cb4e6a' },
+  dallas: { name: 'Dallas Collection', url: 'https://liquidspace.com/collections/568ef221-1642-4822-b79f-3fe348062ccc' },
+  'new york': { name: 'New York Collection', url: 'https://liquidspace.com/collections/b6709b07-6512-4120-98b7-7a4dd7505bb4' },
+  porto: { name: 'Porto Collection', url: 'https://liquidspace.com/collections/85361f6e-0113-4954-a782-54c933b5155c' },
 };
 export const realCollectionFor = (location: string) => REAL_COLLECTIONS[location.toLowerCase().split(',')[0].trim()];
 
@@ -264,6 +280,12 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string, on
 const KNOWN: Record<string, { name: string; spaces: number; saved: number; shortlisted: number }> = {
   '44f4f9b4-9e80-4abc-a97a-cec2baa5ea99': { name: 'Denver Hub Collection', spaces: 5, saved: 5, shortlisted: 0 },
   // Real collections in the demo LiquidSpace account.
+  '43b4f500-e474-4b36-b303-9f875980c51e': { name: 'Austin Collection', spaces: 8, saved: 8, shortlisted: 0 },
+  'a09a0bd0-054b-4da8-89f0-ef9816a8c2fa': { name: 'Chicago Collection', spaces: 8, saved: 8, shortlisted: 0 },
+  'c9004465-1786-4ecf-a5bf-199d72cb4e6a': { name: 'Minneapolis Collection', spaces: 8, saved: 8, shortlisted: 0 },
+  '568ef221-1642-4822-b79f-3fe348062ccc': { name: 'Dallas Collection', spaces: 8, saved: 8, shortlisted: 0 },
+  'b6709b07-6512-4120-98b7-7a4dd7505bb4': { name: 'New York Collection', spaces: 8, saved: 8, shortlisted: 0 },
+  '85361f6e-0113-4954-a782-54c933b5155c': { name: 'Porto Collection', spaces: 3, saved: 3, shortlisted: 0 },
   '573e59b5-7b3f-43cb-a0f1-e8d341902c4c': { name: 'Lisbon Collection', spaces: 6, saved: 2, shortlisted: 4 },
   '7d10724b-d1b0-41ce-8840-dff497cddae0': { name: 'Chicago Spaces', spaces: 2, saved: 2, shortlisted: 0 },
   '5a3c1c41-0645-46b3-9aec-bbc314c9b748': { name: 'Test', spaces: 5, saved: 4, shortlisted: 1 },
