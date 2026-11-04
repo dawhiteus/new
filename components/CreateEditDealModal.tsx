@@ -207,7 +207,7 @@ export function CreateEditDealModal({ isOpen, onClose, deal }: CreateEditDealMod
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 88px)' }}>
 
-          {/* ── Requirements Intake Agent Panel ── */}
+          {/* ── Requirement Agent Panel ── */}
           <div
             className="rounded-xl mb-6 p-4"
             style={{ border: '2px dashed #93C5FD', backgroundColor: '#F0F7FF' }}
@@ -216,7 +216,7 @@ export function CreateEditDealModal({ isOpen, onClose, deal }: CreateEditDealMod
             <div className="flex items-center gap-2 mb-1">
               <Bot className="h-4 w-4" style={{ color: '#005B94' }} />
               <span style={{ fontSize: '13px', fontWeight: 600, color: '#1E3A5F', fontFamily: 'Inter, sans-serif' }}>
-                Requirements Intake Agent
+                Requirement Agent
               </span>
               <span
                 className="px-2 py-0.5 rounded-full"

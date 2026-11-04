@@ -156,7 +156,7 @@ const stageTasksData: Record<string, Task[]> = {
       headline: 'Define business and commercial requirements',
       dueDate: '2025-10-16',
       status: 'Completed',
-      assignedTo: 'Requirements Intake Agent',
+      assignedTo: 'Requirement Agent',
       taskType: 'agent',
       agentState: 'completed',
       executionTimestamp: 'Oct 16, 11:20 AM',

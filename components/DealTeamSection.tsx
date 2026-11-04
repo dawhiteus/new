@@ -76,7 +76,7 @@ export const sampleTeamMembers: TeamMember[] = [
   },
   {
     id: '5',
-    name: 'Requirements Intake Agent',
+    name: 'Requirement Agent',
     role: 'Structure requirement',
     organization: 'LiquidSpace AI',
     email: 'requirements.agent@ai.liquidspace.com',

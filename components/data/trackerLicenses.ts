@@ -1,4 +1,4 @@
-// License rows shown in the License Tracker demo (shared with the Intake Agent's license picker).
+// License rows shown in the License Tracker demo (shared with the Requirement Agent's license picker).
 // Dates are relative to today so the term-end filters always have something to show in the demo.
 export const DAY_MS = 86400000;
 export const toISO = (d: Date) => d.toISOString().slice(0, 10);

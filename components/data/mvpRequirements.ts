@@ -94,7 +94,7 @@ export function defaultTeam(): TeamMember[] {
       description: 'Searches the LiquidSpace marketplace and builds a comprehensive first-pass candidate set — not a curated shortlist. Its purpose is to give the Collection Assessment Agent and human reviewers a full option set to work from. After this task completes, the Collection Assessment Agent runs automatically and the Collection tab becomes visible on the requirement.',
     },
     {
-      id: 'm-intake', name: 'Requirements Intake Agent', email: 'requirements.agent@ai.liquidspace.com', role: 'RequirementsAgent',
+      id: 'm-intake', name: 'Requirement Agent', email: 'requirements.agent@ai.liquidspace.com', role: 'RequirementsAgent',
       type: 'Agent', organization: 'LiquidSpace AI', phone: '', taskLabel: 'Structure requirement',
       description: 'Convert natural language descriptions, uploaded briefs, or reference spaces into structured requirement drafts.',
     },
@@ -155,7 +155,7 @@ export interface RequirementDetails {
   team: TeamMember[];
   documents: RequirementDocument[];
   events: TimelineEvent[];
-  /** Which fields the Requirements Intake Agent filled, and where from. Cleared per field when Sales edits it. */
+  /** Which fields the Requirement Agent filled, and where from. Cleared per field when Sales edits it. */
   provenance?: Record<string, FieldProvenance>;
   /** The original customer input and the agent's follow-up questions, kept with the requirement. */
   intake?: { sourceText: string; questions: string[]; licenseId?: string };

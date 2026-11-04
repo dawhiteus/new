@@ -171,14 +171,14 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
   const reviewReply = () => {
     const d = runIntake(replyText, '').drafts[0];
     const found = REPLY_FIELDS.filter((k) => d.fields[k] && String(d.fields[k]) !== String((f as any)[k] ?? ''))
-      .map((k) => ({ k, from: String((f as any)[k] ?? ''), to: String(d.fields[k]), note: d.prov[k]?.note ?? 'Stated in the reply', accept: true }));
+      .map((k) => ({ k, from: String((f as any)[k] ?? ''), to: String(d.fields[k]), note: d.prov[k]?.note ?? 'Stated in the text you pasted', accept: true }));
     setProposals(found);
   };
   const applyReply = () => {
     const chosen = (proposals ?? []).filter((x) => x.accept);
     const patch: any = {};
     const prov = { ...(f.provenance ?? {}) } as any;
-    chosen.forEach((x) => { patch[x.k] = x.to; prov[x.k] = { kind: 'source', note: 'From the customer\u2019s reply' }; });
+    chosen.forEach((x) => { patch[x.k] = x.to; prov[x.k] = { kind: 'source', note: 'From the text you pasted' }; });
     const next = { ...f, ...patch };
     const stillOpen = (f.intake?.questions ?? []).filter((q) => {
       const hit = Q_FIELD.find(([re]) => re.test(q));
@@ -187,7 +187,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
     const answered = (f.intake?.questions.length ?? 0) - stillOpen.length;
     commit(
       { ...patch, provenance: prov, intake: f.intake ? { ...f.intake, questions: stillOpen } : f.intake },
-      chosen.length ? [ev('update', 'Requirement Updated', `${chosen.map((x) => FIELD_LABEL[x.k]).join(', ')} updated from the customer's reply.`)] : [],
+      chosen.length ? [ev('update', 'Requirement Updated', `${chosen.map((x) => FIELD_LABEL[x.k]).join(', ')} updated from pasted text.`)] : [],
     );
     toast.success(chosen.length ? `${chosen.length} field${chosen.length === 1 ? '' : 's'} updated. ${answered} question${answered === 1 ? '' : 's'} answered.` : 'No changes made.');
     setProposals(null); setReplyText(''); setReplyOpen(false);
@@ -340,6 +340,48 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                 Authoritative summary of client requirements and deal parameters
               </div>
 
+              <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '10px 16px', marginBottom: 16, fontFamily: FONT }}>
+                  {!replyOpen ? (
+                    <button type="button" onClick={() => setReplyOpen(true)} style={{ background: 'none', border: 'none', padding: 0, color: '#0F7B4F', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Sparkles size={14} /> Update from text
+                    </button>
+                  ) : !proposals ? (
+                    <div>
+                      <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Paste a reply, call notes or a revised brief."
+                        style={{ width: '100%', minHeight: 90, border: '1px solid #D1D5DB', borderRadius: 8, padding: 10, fontSize: 14, fontFamily: FONT, background: '#fff' }} />
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                        <button type="button" disabled={!replyText.trim()} onClick={reviewReply} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: replyText.trim() ? 1 : 0.5 }}>Review changes</button>
+                        <button type="button" onClick={() => { setReplyOpen(false); setReplyText(''); }} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: 12 }}>
+                      {proposals.length === 0 ? (
+                        <div style={{ fontSize: 13, color: '#374151' }}>I didn't find anything new in that text.</div>
+                      ) : proposals.map((x, i) => (
+                        <div key={x.k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderTop: i ? '1px solid #F3F4F6' : 'none', fontSize: 13 }}>
+                          <div>
+                            <div style={{ fontWeight: 600, color: '#111827' }}>{FIELD_LABEL[x.k]}</div>
+                            <div style={{ color: '#374151' }}>{x.from ? <span style={{ textDecoration: 'line-through', color: '#9CA3AF' }}>{x.from}</span> : <span style={{ color: '#9CA3AF' }}>Empty</span>} → <b>{x.to}</b></div>
+                            <div style={{ color: '#6B7280', fontSize: 12 }}>{x.note}</div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            {(['Accept', 'Keep mine'] as const).map((lbl) => {
+                              const on = (lbl === 'Accept') === x.accept;
+                              return <button key={lbl} type="button" onClick={() => setProposals((p) => p && p.map((y) => y.k === x.k ? { ...y, accept: lbl === 'Accept' } : y))}
+                                style={{ border: `1px solid ${on ? BLUE : '#D1D5DB'}`, background: on ? BLUE : '#fff', color: on ? '#fff' : '#374151', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{lbl}</button>;
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                        <button type="button" onClick={applyReply} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Apply</button>
+                        <button type="button" onClick={() => setProposals(null)} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer' }}>Back</button>
+                      </div>
+                    </div>
+                  )}
+              </div>
+
               {f.intake && f.intake.questions.length > 0 && (
                 <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -363,45 +405,6 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
                       </li>
                     ))}
                   </ol>
-                  {!replyOpen ? (
-                    <button type="button" onClick={() => setReplyOpen(true)} style={{ marginTop: 10, background: 'none', border: 'none', padding: 0, color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                      Paste the customer's reply
-                    </button>
-                  ) : !proposals ? (
-                    <div style={{ marginTop: 10 }}>
-                      <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Paste what the customer sent back."
-                        style={{ width: '100%', minHeight: 90, border: '1px solid #D1D5DB', borderRadius: 8, padding: 10, fontSize: 14, fontFamily: FONT, background: '#fff' }} />
-                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                        <button type="button" disabled={!replyText.trim()} onClick={reviewReply} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: replyText.trim() ? 1 : 0.5 }}>Review changes</button>
-                        <button type="button" onClick={() => { setReplyOpen(false); setReplyText(''); }} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ marginTop: 10, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: 12 }}>
-                      {proposals.length === 0 ? (
-                        <div style={{ fontSize: 13, color: '#374151' }}>I didn't find anything new in that reply.</div>
-                      ) : proposals.map((x, i) => (
-                        <div key={x.k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderTop: i ? '1px solid #F3F4F6' : 'none', fontSize: 13 }}>
-                          <div>
-                            <div style={{ fontWeight: 600, color: '#111827' }}>{FIELD_LABEL[x.k]}</div>
-                            <div style={{ color: '#374151' }}>{x.from ? <span style={{ textDecoration: 'line-through', color: '#9CA3AF' }}>{x.from}</span> : <span style={{ color: '#9CA3AF' }}>Empty</span>} → <b>{x.to}</b></div>
-                            <div style={{ color: '#6B7280', fontSize: 12 }}>{x.note}</div>
-                          </div>
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            {(['Accept', 'Keep mine'] as const).map((lbl) => {
-                              const on = (lbl === 'Accept') === x.accept;
-                              return <button key={lbl} type="button" onClick={() => setProposals((p) => p && p.map((y) => y.k === x.k ? { ...y, accept: lbl === 'Accept' } : y))}
-                                style={{ border: `1px solid ${on ? BLUE : '#D1D5DB'}`, background: on ? BLUE : '#fff', color: on ? '#fff' : '#374151', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{lbl}</button>;
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                        <button type="button" onClick={applyReply} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Apply</button>
-                        <button type="button" onClick={() => setProposals(null)} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer' }}>Back</button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 

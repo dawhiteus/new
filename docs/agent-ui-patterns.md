@@ -1,12 +1,12 @@
-# Agent UI patterns (from the Requirements Intake Agent)
+# Agent UI patterns (from the Requirement Agent)
 
-Reusable patterns proved in the Intake Agent prototype (create from pasted text or a file, then update from the customer's reply). Written to carry over to the Collection Builder and Assessment work. Each pattern says what it is, where it lives in the prototype, and what it needs from MCP.
+Reusable patterns proved in the Requirement Agent prototype: create a requirement from pasted text, a file or a license, then update it from any pasted text (a reply, call notes, a revised brief). Written to carry over to the Collection Builder and Assessment work. Each pattern says what it is, where it lives in the prototype, and what it needs from MCP.
 
 Ground rule for all of them: the agent proposes, a person decides, and nothing is written until they do. Every write must be one that MCP actually supports.
 
 ## 1. Opt-in, not default
 
-The agent is offered, never imposed. A quiet bar at the top ("Use Requirement Intake Agent") opens the agent composer; the normal manual form is always there and unchanged.
+The agent is offered, never imposed. A quiet bar at the top ("Use Requirement Requirement Agent") opens the agent composer; the normal manual form is always there and unchanged.
 
 - Prototype: closed bar in `NewRequirementModal.tsx`.
 - Why: people who know what they want shouldn't be slowed down, and the manual path stays the source of truth.

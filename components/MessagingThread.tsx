@@ -50,7 +50,7 @@ const sampleMessages: Message[] = [
   },
   {
     id: '5',
-    author: 'Requirements Intake Agent',
+    author: 'Requirement Agent',
     authorInitials: 'RI',
     content: `I reviewed the current deal requirements for Tel Tech NYC Expansion.
 

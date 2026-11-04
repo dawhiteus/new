@@ -1,4 +1,4 @@
-// PROTOTYPE ONLY. A scripted stand-in for the Requirements Intake Agent.
+// PROTOTYPE ONLY. A scripted stand-in for the Requirement Agent.
 // It uses simple pattern matching so the *experience* can be demonstrated
 // end-to-end; it is not an extraction implementation and is tuned for the
 // sample inputs below. The agent never invents values: anything it cannot
@@ -6,7 +6,7 @@
 
 import { LICENSE_REGISTRY } from './licenseRegistry';
 
-export const AGENT_NAME = 'Requirements Intake Agent';
+export const AGENT_NAME = 'Requirement Agent';
 export const AGENT_EMAIL = 'requirements.agent@ai.liquidspace.com';
 
 export interface IntakeFields {

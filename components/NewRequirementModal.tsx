@@ -19,7 +19,7 @@ const WORKSPACE_TYPES = ['Office Suite', 'Private Office', 'Team Office', 'Cowor
 const CONFIGURATIONS = ['Single space', 'Collection of spaces'];
 
 export type NewRequirementData = IntakeFields & {
-  /** Present when the Requirements Intake Agent drafted this requirement. */
+  /** Present when the Requirement Agent drafted this requirement. */
   intake?: { sourceText: string; sourceLabel: string; questions: string[]; licenseId?: string };
   /** Fields the agent filled, with their sources. */
   prov?: Partial<Record<FieldKey, Provenance>>;
@@ -60,7 +60,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onCreate?: (items: NewRequirementData[]) => void;
-  /** When set, the Intake Agent opens and drafts straight from this license. */
+  /** When set, the Requirement Agent opens and drafts straight from this license. */
   initialLicenseId?: string;
 }
 
@@ -240,7 +240,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
         </div>
 
         <form onSubmit={submit} style={{ padding: '16px 20px 28px', overflowY: 'auto', maxHeight: 'calc(92vh - 72px)' }}>
-          {/* ── Requirements Intake Agent (optional) ── */}
+          {/* ── Requirement Agent (optional) ── */}
           {phase === 'closed' && (
             <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 14, padding: '10px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
               <AgentAvatar small />
@@ -250,7 +250,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
               </div>
               <button type="button" onClick={() => setPhase('open')}
                 style={{ background: '#fff', border: `1px solid ${GREEN}`, color: GREEN, borderRadius: 8, padding: '8px 14px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={14} /> Use Requirement Intake Agent
+                <Sparkles size={14} /> Use Requirement Agent
               </button>
             </div>
           )}
