@@ -228,7 +228,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
     const color = p.kind === 'source' ? '#0F7B4F' : p.kind === 'license' ? BLUE : '#B45309';
     const what = p.kind === 'source' ? 'from the customer input' : p.kind === 'license' ? 'from the license' : 'suggested, please confirm';
     return (
-      <span title={`${what}: ${p.note}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color, background: '#F0FAF4', border: `1px solid ${color}33`, borderRadius: 999, padding: '2px 6px', marginLeft: 8, cursor: 'help', verticalAlign: 'middle' }}>
+      <span title={`${what}: ${p.note}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color, padding: '0 2px', marginLeft: 8, cursor: 'help', verticalAlign: 'middle' }}>
         <Sparkles size={11} />
       </span>
     );
@@ -341,9 +341,9 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
               </div>
 
               {f.intake && f.intake.questions.length > 0 && (
-                <div style={{ border: '1px solid #F5C27A', background: '#FFF9ED', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
+                <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>Open questions <span style={{ fontWeight: 400, color: '#B45309', fontSize: 12 }}>· saved with this requirement</span></div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Open questions <span style={{ fontWeight: 400, color: '#6B7280', fontSize: 12 }}>· saved with this requirement</span></div>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                     <button type="button" onClick={() => { navigator.clipboard?.writeText(f.intake!.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')); toast.success('Questions copied.'); }}
                       style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>

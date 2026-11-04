@@ -48,7 +48,7 @@ const MARK: Record<Provenance['kind'], { color: string; text: string }> = {
 function AgentAvatar({ spinning, small }: { spinning?: boolean; small?: boolean }) {
   const size = small ? 34 : 40;
   return (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: '50%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       {spinning ? <Loader2 size={22} color="#059669" className="animate-spin" /> : <Bot size={small ? 20 : 24} color="#059669" />}
     </div>
   );
@@ -158,7 +158,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
     if (!p) return null;
     const m = MARK[p.kind];
     return (
-      <span title={`${m.text}: ${p.note}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: m.color, background: '#F0FAF4', border: `1px solid ${m.color}33`, borderRadius: 999, padding: '2px 6px', cursor: 'help' }}>
+      <span title={`${m.text}: ${p.note}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: m.color, padding: '0 2px', cursor: 'help' }}>
         <Sparkles size={11} />
       </span>
     );
@@ -180,7 +180,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
         type={type}
         value={draft.fields[k]}
         onChange={(e) => setField(k, e.target.value)}
-        style={{ ...inputStyle, borderColor: draft.prov[k] ? `${MARK[draft.prov[k]!.kind].color}66` : missingFlag(k) ? '#F5C27A' : '#D1D5DB' }}
+        style={{ ...inputStyle, borderColor: draft.prov[k] ? `${MARK[draft.prov[k]!.kind].color}66` : missingFlag(k) ? '#E5E7EB' : '#D1D5DB' }}
       />
       {missingFlag(k) && <div style={{ fontSize: 12, color: '#B45309', marginTop: 5, fontFamily: FONT }}>Not provided</div>}
     </div>
@@ -228,7 +228,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
         <form onSubmit={submit} style={{ padding: '16px 20px 28px', overflowY: 'auto', maxHeight: 'calc(92vh - 72px)' }}>
           {/* ── Requirements Intake Agent (optional) ── */}
           {phase === 'closed' && (
-            <div style={{ border: '1px solid #BFE5CC', background: '#F0FAF4', borderRadius: 14, padding: '10px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 14, padding: '10px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
               <AgentAvatar small />
               <div style={{ flex: 1, minWidth: 0, fontFamily: FONT }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{AGENT_NAME}</div>
@@ -242,7 +242,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
           )}
 
           {phase !== 'closed' && (
-            <div style={{ border: '1.5px solid #BFE5CC', background: '#F0FAF4', borderRadius: 16, padding: 16, marginBottom: 20 }}>
+            <div style={{ border: '1.5px solid #E5E7EB', background: '#F9FAFB', borderRadius: 16, padding: 16, marginBottom: 20 }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <AgentAvatar spinning={phase === 'working'} />
                 <div style={{ flex: 1, minWidth: 0, fontFamily: FONT }}>
@@ -277,7 +277,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
                         <input ref={fileRef} type="file" accept=".txt,.eml,.md,.csv,.rtf,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={(e) => attachFile(e.target.files?.[0])} />
                         {fileName ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid #BFE5CC', borderRadius: 999, padding: '4px 6px 4px 10px', fontSize: 13, color: INK }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 999, padding: '4px 6px 4px 10px', fontSize: 13, color: INK }}>
                             <Paperclip size={13} /> {fileName}
                             <button type="button" onClick={removeFile} aria-label="Remove file" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', display: 'inline-flex', padding: 2 }}><X size={13} /></button>
                           </span>
@@ -342,7 +342,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
 
           {/* License reference */}
           {agentRun && result?.license && (
-            <div style={{ border: '1px dashed #9CC3E0', background: '#F5FAFE', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
+            <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: BLUE, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
                 Current license {result.license.licenseId} · reference only, not applied
               </div>
@@ -359,9 +359,9 @@ export function NewRequirementModal({ isOpen, onClose, onCreate }: Props) {
 
           {/* Open questions */}
           {agentRun && draft.questions.length > 0 && (
-            <div style={{ border: '1px solid #F5C27A', background: '#FFF9ED', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontFamily: FONT }}>
+            <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontFamily: FONT }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
                   Open questions{drafts.length > 1 ? ` (${draft.label})` : ''}
                 </div>
                 <button type="button" onClick={() => { navigator.clipboard?.writeText(draft.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')); toast.success('Questions copied.'); }}
