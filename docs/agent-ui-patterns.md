@@ -78,9 +78,27 @@ Before any write, list the actual operations that will happen, in the system's o
 
 One accent colour identifies the agent: green, used only on the agent icon, the opt-in button and the field markers. Panels are neutral gray. No "Agent" badges or labels on content; the marker is the identity.
 
+## 11. Ask: a scoped question about one object
+
+A question box attached to one object (a collection, a requirement, a list). The answer is computed from data, and any change is offered as a separate proposal.
+
+- **Scope is visible.** The box names its object ("Ask about this collection") and shows suggested questions that reflect the current state. It never opens blank.
+- **Answers are computed, not written.** Every number comes from a query, shows its source on demand (pattern 5), and says so when it cannot be answered. No guessing.
+- **A small, fixed set of question types.** Count, what-if, explain, find and add. Each has defined parameters and a deterministic query. Free text is only translated into one of them: the agent makes input easy, and the output maps to a structured backend.
+- **Hypothetical and committed are separate.** An answer is read-only and labelled "if". A change is a proposal with Accept / Keep mine (pattern 3) that lists its real operations first (pattern 9).
+- **One answer shape:** the answer, the evidence, then an optional proposed action.
+- **Not a chat thread.** Each question and answer is a card that stacks. Follow-ups are "refine" chips on the last answer; there is no conversational memory in V1.
+- **Accepted changes are logged** on the object's own timeline.
+
+To reuse it somewhere new, supply four things: a scope, its question types, its data queries, and its allowed writes. The card layout and the proposal step are shared.
+
+- Prototype: Assessment (see collection-assessment-spec.md).
+- Candidate homes: License Tracker ("Which Dallas licenses need a decision this quarter?"), Requirements list ("Which drafts are missing a budget?"), Requirement details ("What would a 90-day earlier start change?").
+- MCP: reads come from Pulse and MCP reads; writes use only supported operations.
+
 ## Constraints these patterns respect
 
 - Nothing the MCP can't do is shown as if it can: no later notes, tasks, events or team writes, no assessment beyond counts, collections add one workspace at a time.
 - Intake focuses on expressed customer needs. Where the customer should book is the Strategist's job, not Intake's.
-- Assessment is mostly a human judgment; V1 shows tiers and gaps at creation and does not re-run an agent.
+- Creating a collection shows only a link and a short summary. Assessment is a separate agent that tells Sales whether the candidate list is enough; choosing among candidates stays with people.
 - Specs stay separate: Intake, Collection and HubSpot each have their own.
