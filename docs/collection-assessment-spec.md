@@ -19,10 +19,15 @@ Held back for now: a button on the "Collection populated" confirmation, the Work
 The agent is marked with the agent icon pattern used elsewhere: the green agent icon in a neutral circle, named **Collection Assessment Agent**, and it speaks in the first person ("I checked the 8 spaces…"). No badges, pills or colored tags are used.
 
 ## 3. What the page shows
-**What I see.** A card with the plain result (Plenty of matches, Few matches, No matches, Empty collection, or Not assessed) and a summary in the agent's voice: what it checked, how many fit and why the rest do not. It also gives one sentence for the next best change and a link to add the matching nearby spaces. Beneath it:
-* Three counts: spaces in the search area, within budget, and for the headcount band.
-* **Gaps and trade-offs** (or **Why it's empty**), one plain sentence per row: Area, Budget, Capacity, Workspace type, Rate (more than 15% over market), Listings (not updated in 90 days), Term, Not assessed.
-* The spaces, collapsed, each with distance, seats, rate, listing age and reason, and a link to its listing.
+**Heading.** A band in the product's header blue that opens the conversation. It leads with a **match score** (0 to 100) and the **number of matches** ("3 of 6 spaces match"), with the result label colored by outcome (green for plenty, amber for few, red for none, neutral when empty). One verdict line follows ("None fit. Capacity and area are the main gaps."), then the next best change and a link to add the matching nearby spaces.
+
+The score is 60% how many of the 5 spaces you need fit (confirmed fits, capped at 5) and 40% how close the best five spaces come to fitting (area, size, budget and type, with partial credit). An empty collection scores 0. When nothing can be scored (an unknown location, or spaces the demo does not have) the score shows a dash.
+
+**Criteria cards.** One card per criterion the requirement gives (area, budget, headcount, workspace type), each showing how many spaces meet it ("4 of 8"). Cards use the design system's tints: green when every space meets the criterion, red when none does, amber in between.
+
+**Gaps and trade-offs** (or **Why it's empty**). One plain sentence per row, giving the detail behind the cards and not repeating their counts: the nearest and farthest distance, the lowest price over budget, the size range against the size needed, the workspace type mix, spaces over the market rate, stale listings, term, and what was not assessed.
+
+The spaces follow, collapsed, each with distance, seats, rate, listing age and reason, and a link to its listing.
 
 **Ask me.** A conversation with the agent, with a few example questions shown as plain text before the first question. Each answer is short, with the spaces behind it. Questions and answers appear as a simple conversation; the input is fixed at the bottom.
 

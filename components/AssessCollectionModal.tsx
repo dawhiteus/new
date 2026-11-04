@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, Bot, ExternalLink, MapPin, DollarSign, Users, ChevronDown, ArrowUp, Check } from 'lucide-react';
+import { X, Bot, ExternalLink, MapPin, DollarSign, Users, Building2, ChevronDown, ArrowUp, Check } from 'lucide-react';
 import { assess, ask, suggestions, type Answer, type AnswerAction, type ReqPatch, type SpaceResult } from './data/assessmentAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
 
@@ -77,66 +77,95 @@ export function AssessCollectionModal({ requirement, onClose, onApply, onAddSpac
     </div>
   );
 
-  const stat = (Icon: typeof MapPin, n: number | null, caption: string) => (
-    <div style={{ ...card, padding: '14px 16px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9CA3AF' }}><Icon size={14} /></div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: INK, lineHeight: 1.15, marginTop: 6, letterSpacing: '-0.02em' }}>{n == null ? '—' : n}</div>
-      <div style={{ fontSize: 12.5, color: '#6B7280', marginTop: 3, lineHeight: 1.35 }}>{caption}</div>
-    </div>
-  );
+  // LS design system tints: green when every space meets the criterion, red when none does, amber in between.
+  const tone = (n: number, of: number) => (n === of ? { bg: '#f0fdf4', border: '#bbf7d0', text: '#15803d' } : n === 0 ? { bg: '#fef2f2', border: '#fecaca', text: '#b91c1c' } : { bg: '#fffbeb', border: '#fde68a', text: '#b45309' });
+  const cardIcon = (label: string) => (/ mi of /.test(label) ? MapPin : /\/mo$/.test(label) ? DollarSign : /^For /.test(label) ? Users : Building2);
+  const statusTone = a.state !== 'ok' || a.total === 0 ? '#CCE3F1' : a.status === 'Plenty' ? '#BBF7D0' : a.status === 'Few' ? '#FDE68A' : '#FECACA';
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden [&>button]:hidden gap-0" style={{ borderRadius: 18, border: 'none', maxHeight: '92vh', boxShadow: '0 24px 60px rgba(15,42,61,0.28)', background: '#F6F8FA' }}>
+      <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden [&>button]:hidden gap-0" style={{ borderRadius: 16, border: 'none', maxHeight: '92vh', boxShadow: '0 20px 60px rgba(0,0,0,.15)', background: '#f8f9fa', display: 'flex', flexDirection: 'column' }}>
         <DialogDescription className="sr-only">The Collection Assessment Agent explains how well this collection covers the requirement</DialogDescription>
 
-        {/* Header */}
-        <div style={{ padding: '18px 24px', background: '#fff', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <AgentAvatar size={42} />
-            <div>
-              <DialogTitle style={{ fontSize: 18, fontWeight: 700, color: INK, fontFamily: FONT, letterSpacing: '-0.01em' }}>Collection Assessment Agent</DialogTitle>
-              <div style={{ fontSize: 13.5, color: '#6B7280', marginTop: 2, fontFamily: FONT }}>{requirement.name}{requirement.company ? ` · ${requirement.company}` : ''} · {col.name}</div>
+        {/* Heading band */}
+        <div style={{ background: 'linear-gradient(135deg,#004A7C 0%,#005B94 60%,#0071B8 100%)', color: '#fff', padding: '18px 24px 22px', fontFamily: FONT }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <AgentAvatar size={32} />
+              <div>
+                <DialogTitle style={{ fontSize: 15, fontWeight: 600, color: '#fff', fontFamily: FONT }}>Collection Assessment Agent</DialogTitle>
+                <div style={{ fontSize: 12.5, color: '#CCE3F1', marginTop: 1 }}>{requirement.name}{requirement.company ? ` · ${requirement.company}` : ''} · {col.name}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button type="button" onClick={() => onEditRequirement(requirement)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: FONT, padding: 0 }}>Edit requirement</button>
+              <button type="button" onClick={onClose} aria-label="Close" className="hover:bg-white/10" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 8, padding: 6 }}><X size={18} /></button>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button type="button" style={linkBtn} onClick={() => onEditRequirement(requirement)}>Edit requirement</button>
-            <button type="button" onClick={onClose} aria-label="Close" className="hover:bg-gray-100" style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', borderRadius: 8, padding: 6 }}><X size={18} /></button>
+
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 28, marginTop: 20 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#99C7E3' }} title="60% how many of the 5 spaces you need fit, 40% how close the best five come">Match score</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginTop: 2 }}>
+                <span style={{ fontSize: 56, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em' }}>{a.score ?? '—'}</span>
+                {a.score != null && <span style={{ fontSize: 18, color: '#99C7E3', fontWeight: 500 }}>/100</span>}
+              </div>
+            </div>
+            <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,0.25)' }} />
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: statusTone }}>{a.statusText}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+                <span style={{ fontSize: 56, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em' }}>{a.confirmedFits}</span>
+                <span style={{ fontSize: 18, color: '#99C7E3', fontWeight: 500 }}>{a.total > 0 ? `of ${a.total} ${a.total === 1 ? 'space matches' : 'spaces match'}` : 'spaces in this collection'}</span>
+              </div>
+            </div>
           </div>
+
+          <div style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.45, marginTop: 16 }}>{a.verdict}</div>
+          {(a.next || a.marketMore > 0) && (
+            <div style={{ fontSize: 13.5, color: '#CCE3F1', marginTop: 6, lineHeight: 1.5 }}>
+              {a.next}
+              {a.marketMore > 0 && (
+                <>{a.next ? ' ' : ''}<button type="button" onClick={() => onAddSpaces(requirement, a.marketFits.map((x) => x.space.url))} style={{ background: 'none', border: 'none', padding: 0, color: '#fff', fontSize: 13.5, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer', fontFamily: FONT }}>Add the {plural(a.marketMore, 'matching nearby space')} to this collection</button></>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Body */}
-        <div style={{ padding: '20px 24px 8px', overflowY: 'auto', maxHeight: 'calc(92vh - 160px)', fontFamily: FONT }}>
-          {/* What I see */}
-          <div style={{ ...card, padding: '20px 22px', borderLeft: `4px solid ${ACCENT[a.status]}` }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: INK, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{a.statusText}</div>
-            <p style={{ fontSize: 15, color: '#374151', lineHeight: 1.65, margin: '10px 0 0' }}>{a.summary}</p>
-            {a.next && <p style={{ fontSize: 14, color: '#374151', margin: '10px 0 0', lineHeight: 1.55 }}><b style={{ color: INK }}>Next best change.</b> {a.next}</p>}
-            {a.marketMore > 0 && (
-              <div style={{ marginTop: 12 }}>
-                <button type="button" style={linkBtn} onClick={() => onAddSpaces(requirement, a.marketFits.map((x) => x.space.url))}>Add the {plural(a.marketMore, 'matching nearby space')} to this collection</button>
-              </div>
-            )}
-          </div>
-
-          {a.state === 'ok' && a.total > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 12 }}>
-              {stat(MapPin, a.inArea, `Within ${c.radiusMi} mi of ${c.centerLabel}`)}
-              {stat(DollarSign, a.withinBudget, c.budget ? `Within ${money(c.budget)}/mo` : 'Budget not provided')}
-              {stat(Users, a.forPeople, a.bandText ? `For ${a.bandText}` : 'Headcount not provided')}
+        <div style={{ padding: '18px 24px 8px', overflowY: 'auto', flex: 1, minHeight: 0, fontFamily: FONT }}>
+          {a.cards.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${a.cards.length}, 1fr)`, gap: 12 }}>
+              {a.cards.map((k) => {
+                const t = tone(k.n, k.of);
+                const Icon = cardIcon(k.label);
+                return (
+                  <div key={k.label} style={{ background: t.bg, border: `1px solid ${t.border}`, borderRadius: 12, padding: '14px 16px' }}>
+                    <Icon size={16} color={t.text} />
+                    <div style={{ marginTop: 8, color: t.text, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                      <span style={{ fontSize: 28, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em' }}>{k.n}</span>
+                      <span style={{ fontSize: 14, fontWeight: 500 }}>of {k.of}</span>
+                    </div>
+                    <div style={{ fontSize: 12.5, color: '#374151', marginTop: 6, lineHeight: 1.35 }}>{k.label}</div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
           {/* Gaps and trade-offs, or why it's empty */}
-          <div style={{ ...card, padding: '16px 22px 6px', marginTop: 12 }}>
-            <div style={heading}>{a.gapsTitle}</div>
-            <div style={{ marginTop: 6 }}>
-              {a.gaps.map((g, i) => (
-                <div key={g.label} style={{ display: 'flex', gap: 16, padding: '11px 0', borderTop: i ? '1px solid #F1F3F5' : undefined }}>
-                  <div style={{ width: 118, flexShrink: 0, fontSize: 13.5, fontWeight: 600, color: INK }}>{g.label}</div>
-                  <div style={{ flex: 1, fontSize: 13.5, color: '#374151', lineHeight: 1.55 }}>{g.text}</div>
-                </div>
-              ))}
+          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)', padding: '14px 20px 4px', marginTop: a.cards.length ? 14 : 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#005B94' }}>{a.gapsTitle}</div>
+            <div style={{ marginTop: 4 }}>
+              {a.gaps.map((g, i) => {
+                const muted = g.label === 'Not assessed';
+                return (
+                  <div key={g.label} style={{ display: 'flex', gap: 16, padding: '11px 0', borderTop: i ? '1px solid #f3f4f6' : undefined }}>
+                    <div style={{ width: 118, flexShrink: 0, fontSize: 13.5, fontWeight: 600, color: muted ? '#6b7280' : INK }}>{g.label}</div>
+                    <div style={{ flex: 1, fontSize: 13.5, color: muted ? '#6b7280' : '#374151', lineHeight: 1.55 }}>{g.text}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
