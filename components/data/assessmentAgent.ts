@@ -173,7 +173,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   const marketFits = poolResults.filter((x) => x.fit && x.confirmed).sort((a, b) => a.miles - b.miles);
   const status: Status = confirmedFits >= 5 ? 'Plenty' : confirmedFits >= 1 ? 'Few' : 'None';
   const band = c.capacity ? `${capacityBand(c.capacity).join('-')} people` : null;
-  const statusText = total === 0 ? 'Empty collection' : status === 'Plenty' ? 'Plenty of matches' : status === 'Few' ? 'Few matches' : 'No matches';
+  const statusText = total === 0 ? 'Empty collection' : `${confirmedFits} of ${total} meet every criterion`;
 
   // What would help: one plain sentence, from the same rules with a single change.
   const gainOf = (cc: AssessCriteria) => {
@@ -218,7 +218,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
     const summary = F > 0
       ? `${col.name} is empty, but it doesn't need to be. I looked at the ${M} listings recorded near ${c.centerLabel} and ${plural(F, 'space')} meet every criterion (${phrase(c, band)}).${budgetSet ? ' ' + populateNote : ''}`
       : `${col.name} is empty, and I can see why. I looked at the ${M} listings recorded near ${c.centerLabel} and none meet every criterion (${phrase(c, band)}). The biggest blocker is ${worst ? worst.label.toLowerCase() : 'the combination of criteria'}.${budgetSet ? ' ' + populateNote : ''}`;
-    const verdict = F > 0 ? `${plural(F, 'matching space')} ${F === 1 ? 'exists' : 'exist'} nearby, so it doesn't need to be empty.` : `Nothing nearby meets every criterion. ${worst ? worst.label : 'The combination of criteria'} is the biggest blocker.`;
+    const verdict = `${F} of ${M} nearby listings meet every criterion.`;
     return { ...base, verdict, summary, gapsTitle: "Why it's empty", gaps: [...rows.map(({ label, text }) => ({ label, text })), { label: 'Together', text: `${F} of ${M} meet all of them.` }, ...(budgetSet ? [{ label: 'Platform', text: populateNote }] : [])] };
   }
 
@@ -258,7 +258,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   ].filter((x) => x.n > 0).sort((x, y) => y.n - x.n).slice(0, 2);
   const names = reasons.map((x) => x.name);
   const gapPhrase = names.length ? `${names.join(' and ').replace(/^./, (m) => m.toUpperCase())} ${names.length > 1 ? 'are' : 'is'} the main gap${names.length > 1 ? 's' : ''}.` : '';
-  const verdict = confirmedFits === 0 ? `None fit. ${gapPhrase}`.trim() : status === 'Plenty' ? `${confirmedFits} of ${total} fit. Plenty to work with.` : `${confirmedFits} of ${total} fit. ${gapPhrase}`.trim();
+  const verdict = unconfirmed ? `${plural(unconfirmed, 'more space')} would meet every criterion, but ${unconfirmed === 1 ? 'its listing is' : 'their listings are'} over 90 days old.` : '';
   const fitSentence = confirmedFits === 0 ? 'None of them fit.' : `${confirmedFits} ${confirmedFits === 1 ? 'fits' : 'fit'}.${unconfirmed ? ` ${plural(unconfirmed, 'more')} would, but ${unconfirmed === 1 ? 'its listing is' : 'their listings are'} over 90 days old.` : ''}`;
   const why = reasons.length ? ` ${confirmedFits === 0 ? 'They miss' : 'The rest miss'} on ${reasons.map((x) => x.text).join(' and ')}.` : '';
   const more = marketFits.length ? ` ${plural(marketFits.length, 'more matching space')} nearby ${marketFits.length === 1 ? "isn't" : "aren't"} in the collection.` : '';

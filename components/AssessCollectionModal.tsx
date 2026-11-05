@@ -48,7 +48,6 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
   const numColor = (n: number, of: number) => (n === 0 ? '#B91C1C' : n === of ? '#15803D' : INK);
   const checked = a.state === 'ok' ? [c.capacity ? a.bandText : '', c.type, c.budget ? `under ${money(c.budget)}/mo` : '', `within ${c.radiusMi} miles of ${c.centerLabel}`].filter(Boolean).join(', ') : '';
   const every = [c.capacity ? 'headcount' : '', c.type ? 'workspace type' : '', c.budget ? 'budget' : '', 'area'].filter(Boolean);
-  const thin = a.state === 'ok' && a.total > 0 && a.confirmedFits < 5;
   const since = run?.since && run.since.changes.length ? run.since : null;
 
   const big = (n: number, color: string = INK) => <span style={{ fontSize: 44, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em', color }}>{n}</span>;
@@ -99,10 +98,8 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
 
           {/* Summary */}
           <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 15.5, color: INK, lineHeight: 1.6 }}>
-              {a.verdict}{thin ? ' That is thin (fewer than 5 confirmed fits), so an RFP to venues is the next step.' : ''}
-            </div>
-            {checked && <div style={{ fontSize: 13, color: '#6B7280', marginTop: 8, lineHeight: 1.5 }}>Checked against {checked}.</div>}
+            {a.verdict && <div style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{a.verdict}</div>}
+            {checked && <div style={{ fontSize: 13, color: '#6B7280', marginTop: a.verdict ? 8 : 0, lineHeight: 1.5 }}>Checked against {checked}.</div>}
             {since && (
               <div style={{ fontSize: 13, color: '#374151', marginTop: 12, lineHeight: 1.5, paddingLeft: 12, borderLeft: `2px solid ${BLUE}` }}>
                 <b style={{ color: INK }}>Since last assessed on {since.at}:</b> {since.changes.join('; ')}. Matches {since.fitsBefore} → {since.fitsNow}.

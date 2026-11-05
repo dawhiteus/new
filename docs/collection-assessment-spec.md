@@ -21,7 +21,7 @@ The agent is marked with the agent icon pattern used elsewhere: the green agent 
 * **Spaces added:** how many spaces are in the collection and, when the Collection Agent built it, why ("matched on location, headcount and workspace type when the collection was built"). For a collection built another way it says it cannot say why.
 * **Meet every criterion:** how many of those spaces meet the area, headcount, budget and workspace type of the Requirement together, with the criteria named.
 
-Below them, a short summary: the verdict ("None fit. Capacity and area are the main gaps."), the next step when the result is thin ("That is thin (fewer than 5 confirmed fits), so an RFP to venues is the next step"), and what was checked. If the assessment has run before and something changed, one more line says what changed and how the matches moved. There is no score.
+Below them, only what can be observed: what was checked, and any spaces that would meet every criterion except for a stale listing. The agent does not judge the result ("none fit", "thin") or recommend a next step; the counts and gaps tell the story and people decide. If the assessment has run before and something changed, one more line says what changed and how the matches moved. There is no score.
 
 **Criteria cards.** One card per criterion the requirement gives (area, budget, headcount, workspace type), each showing how many spaces meet it ("4 of 8"). Cards are plain white with a thin border. Color is used only for contrast: the number is red when no space meets the criterion and green when every space does.
 
