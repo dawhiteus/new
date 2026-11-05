@@ -248,18 +248,17 @@ function CollectionPill({ req, onOpen, onAssess, onAdd }: { req: MvpRequirement 
           >
             View Collection <ArrowRight size={14} />
           </button>
-          <button
-              onClick={onAssess}
-              style={{ width: '100%', background: 'none', border: 'none', marginTop: 8, padding: '4px', fontSize: 13, fontWeight: 600, color: '#005B94', fontFamily: FONT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
-              Assess collection
-          </button>
-          <button
-              onClick={onAdd}
-              style={{ width: '100%', background: 'none', border: 'none', marginTop: 2, padding: '4px', fontSize: 13, fontWeight: 600, color: '#005B94', fontFamily: FONT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
-              Add space
-          </button>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            {([['Assess collection', onAssess], ['Add space', onAdd]] as const).map(([label, fn]) => (
+              <button
+                key={label}
+                onClick={fn}
+                style={{ flex: 1, background: '#fff', color: '#005B94', border: '1px solid #005B94', borderRadius: 4, padding: '7px 8px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       </div>
