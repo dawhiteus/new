@@ -69,7 +69,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   // ── Table layout: a row per space, a column per criterion ──────────────────────────────────────────────────────
   const metCount = (r: SpaceResult) => [r.pass.area, r.pass.capacity, r.pass.budget, r.pass.type].filter((x) => x === true).length;
   const rows = [...a.results].sort((x, y) => metCount(y) - metCount(x) || x.miles - y.miles);
-  const colHead = (t: string, sub?: string) => <th style={{ textAlign: 'left', padding: '10px 10px 8px', fontWeight: 400, verticalAlign: 'bottom' }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280' }}>{t}</div>{sub && <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{sub}</div>}</th>;
+  const colHead = (t: string, sub?: string) => <th style={{ textAlign: 'left', padding: '12px 10px 10px', fontWeight: 400, verticalAlign: 'top', whiteSpace: 'nowrap' }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280' }}>{t}</div><div style={{ fontSize: 12, color: '#6B7280', marginTop: 3, minHeight: 16 }}>{sub}</div></th>;
   const td = (v: React.ReactNode, fail: boolean) => <td style={{ padding: '12px 10px', fontSize: 13.5, color: fail ? '#B91C1C' : '#374151', fontWeight: fail ? 600 : 400, verticalAlign: 'top', whiteSpace: 'nowrap' }}>{v}</td>;
   const shortDate = (d?: string) => (d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '');
   const total = a.total;
@@ -87,7 +87,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
       {sub && <div style={{ fontSize: 12.5, color: '#6B7280' }}>{sub}</div>}
     </td>
   );
-  const nCols = 5 + (c.capacity ? 1 : 0) + (c.budget ? 1 : 0) + (c.type ? 1 : 0);
+  const nCols = 6 + (c.capacity ? 1 : 0) + (c.budget ? 1 : 0) + (c.type ? 1 : 0);
   const tableBody = (
     <>
       <div style={SECTION}>The {plural(total, 'space')}, against the requirement</div>
@@ -98,12 +98,12 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
               <tr style={{ borderBottom: '1px solid #E5E7EB', background: '#F9FAFB' }}>
                 {colHead('Space')}
                 {colHead('Distance', `within ${c.radiusMi} mi`)}
-                {c.capacity ? colHead('Seats', a.bandText ?? undefined) : null}
+                {c.capacity ? colHead('Seats', a.bandText ? a.bandText.replace(/ people$/, '') : undefined) : null}
                 {c.budget ? colHead('Price', `up to ${money(c.budget)}/mo`) : null}
                 {c.type ? colHead('Type', c.type) : null}
                 {colHead('Amenities')}
                 {colHead('Meets', 'criteria')}
-                {colHead('Listing')}
+                {colHead('Listing')}<th />
               </tr>
             </thead>
             <tbody>
@@ -140,7 +140,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                             aria-expanded={open}
                             style={{ borderTop: '1px solid #F1F3F5', cursor: 'grab', opacity: dragId === id ? 0.45 : 1, background: open ? '#F9FAFB' : over ? '#F5F9FD' : undefined }}
                           >
-                            <td style={{ padding: '12px 10px', verticalAlign: 'top', minWidth: 210 }}>
+                            <td style={{ padding: '12px 10px', verticalAlign: 'top', minWidth: 180 }}>
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
                                 <GripVertical size={16} color="#9CA3AF" style={{ marginTop: 1, flexShrink: 0 }} />
                                 <div>
@@ -153,31 +153,36 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                             {c.capacity ? crit(r.space.desks, r.pass.capacity) : null}
                             {c.budget ? crit(r.space.rate != null ? money(r.space.rate) : 'n/a', r.pass.budget, r.costPP != null ? `${money(r.costPP)} per person${r.detail.some((d) => d.k === 'Rate') ? ' · over market' : ''}` : undefined) : null}
                             {c.type ? crit(r.space.type, r.pass.type) : null}
-                            <td style={{ padding: '12px 10px', verticalAlign: 'top', fontSize: 13, color: '#374151', maxWidth: 180 }}>{r.amenities || <span style={{ color: '#9CA3AF' }}>None recorded</span>}</td>
+                            <td style={{ padding: '12px 10px', verticalAlign: 'top', fontSize: 13, color: '#374151', maxWidth: 150 }}>{r.amenities || <span style={{ color: '#9CA3AF' }}>None recorded</span>}</td>
                             <td style={{ padding: '12px 10px', verticalAlign: 'top', fontSize: 13.5, fontWeight: 600, color: n === k ? GREEN : INK, whiteSpace: 'nowrap' }}>{n} of {k}</td>
                             <td style={{ padding: '12px 10px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
                               <div style={{ fontSize: 13.5, color: '#374151' }}>{priv ? 'Private' : 'Public'}</div>
                               <div style={{ fontSize: 12.5, color: r.confirmed ? '#6B7280' : '#B91C1C' }}>{priv ? (r.space.validUntil ? `quote to ${shortDate(r.space.validUntil)}` : 'no quote date') : `${r.ageDays} d ago`}</div>
                             </td>
+                            <td style={{ padding: '12px 12px 12px 0', verticalAlign: 'top', width: 28 }}><ChevronDown size={16} color="#6B7280" style={{ transform: open ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} /></td>
                           </tr>
                           {open && (
                             <tr style={{ background: '#F9FAFB' }}>
-                              <td colSpan={nCols} style={{ padding: '4px 10px 14px 32px' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 32, rowGap: 6 }}>
-                                  <div style={{ display: 'flex', gap: 12, fontSize: 13, alignItems: 'center' }}>
-                                    <div style={{ width: 130, flexShrink: 0, color: '#6B7280' }}>Group</div>
-                                    <select value={g} onClick={(e) => e.stopPropagation()} onChange={(e) => move(r, e.target.value as Group)} aria-label="Move to group" style={{ border: '1px solid #D1D5DB', borderRadius: 6, padding: '3px 8px', fontSize: 13, fontFamily: FONT, color: INK, background: '#fff' }}>
-                                      {GROUPS.map((x) => <option key={x}>{x}</option>)}
-                                    </select>
+                              <td colSpan={nCols} style={{ padding: '4px 14px 16px 32px' }}>
+                                <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, padding: '14px 18px' }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 36 }}>
+                                    {r.detail.map((d) => (
+                                      <div key={d.k} style={{ display: 'flex', gap: 12, fontSize: 13, padding: '6px 0', borderBottom: '1px solid #F1F3F5' }}>
+                                        <div style={{ width: 120, flexShrink: 0, color: '#6B7280' }}>{d.k}</div>
+                                        <div style={{ color: INK, minWidth: 0, overflowWrap: 'anywhere' }}>{d.v}</div>
+                                      </div>
+                                    ))}
                                   </div>
-                                  {r.detail.map((d) => (
-                                    <div key={d.k} style={{ display: 'flex', gap: 12, fontSize: 13 }}>
-                                      <div style={{ width: 130, flexShrink: 0, color: '#6B7280' }}>{d.k}</div>
-                                      <div style={{ color: '#374151' }}>{d.v}</div>
-                                    </div>
-                                  ))}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, fontSize: 13 }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6B7280' }}>Group
+                                      <select value={g} onClick={(e) => e.stopPropagation()} onChange={(e) => move(r, e.target.value as Group)} aria-label="Move to group" style={{ border: '1px solid #D1D5DB', borderRadius: 6, padding: '4px 8px', fontSize: 13, fontFamily: FONT, color: INK, background: '#fff' }}>
+                                        {GROUPS.map((x) => <option key={x}>{x}</option>)}
+                                      </select>
+                                    </label>
+                                    {r.space.url && <a href={r.space.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 600, color: BLUE, textDecoration: 'none' }}>Open listing <ExternalLink size={12} /></a>}
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); setOpenRow(null); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 0, fontWeight: 600, fontSize: 13, fontFamily: FONT, color: BLUE, cursor: 'pointer' }}>Hide details</button>
+                                  </div>
                                 </div>
-                                {r.space.url && <a href={r.space.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none', marginTop: 10 }}>Open listing <ExternalLink size={12} /></a>}
                               </td>
                             </tr>
                           )}
@@ -197,6 +202,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                 <td />
                 <td style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(a.confirmedFits, total), whiteSpace: 'nowrap' }}>{a.confirmedFits} of {total} meet all</td>
                 <td style={{ padding: '12px 10px', fontSize: 13.5, color: '#6B7280', whiteSpace: 'nowrap' }}>{a.results.filter((x) => x.confirmed).length} of {total} current</td>
+                <td />
               </tr>
             </tfoot>
           </table>
