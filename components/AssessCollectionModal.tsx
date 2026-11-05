@@ -63,7 +63,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   const since = run?.since && run.since.changes.length ? run.since : null;
 
   const useTable = ASSESS_LAYOUT === 'table' && a.state === 'ok' && a.total > 0;
-  const big = (n: number, color: string = INK) => <span style={{ fontSize: 44, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em', color }}>{n}</span>;
+  const big = (n: number, color: string = INK) => <span style={{ fontSize: 32, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em', color }}>{n}</span>;
 
 
   // ── Table layout: a row per space, a column per criterion ──────────────────────────────────────────────────────
