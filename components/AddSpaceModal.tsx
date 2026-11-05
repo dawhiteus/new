@@ -41,7 +41,7 @@ export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props
   };
   const addLink = () => {
     const hit = listingByUrl(url);
-    if (!hit) { setMsg("I can't find that listing in the demo."); return; }
+    if (!hit) { setMsg("I can't find that listing."); return; }
     if (hasSpace(requirement, hit.space)) { setMsg('That space is already in this collection.'); return; }
     finish(hit.space);
   };

@@ -191,7 +191,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   const blank = { verdict: '', cards: [] as { label: string; n: number; of: number }[], total: members.length || col.totalSpaces, inArea: 0, withinBudget: null, forPeople: null, confirmedFits: 0, marketMore: 0, marketFits: [] as SpaceResult[], results: [] as SpaceResult[], criteria: c, bandText: c.capacity ? capacityBand(c.capacity).join('-') + ' people' : null };
 
   if (!recorded) {
-    return { ...blank, state: 'unrecorded', status: 'None', statusText: 'Not assessed', empty: false, gapsTitle: 'Gaps and trade-offs', gaps: [{ label: 'Not assessed', text: "This collection's spaces aren't available to the demo, so I can't compare them to the requirement here." }], verdict: "I can't see this collection's spaces in the demo.", summary: `${col.name} has ${plural(col.totalSpaces, 'space')}, but I can't see them in the demo, so I can't assess it.` };
+    return { ...blank, state: 'unrecorded', status: 'None', statusText: 'Not assessed', empty: false, gapsTitle: 'Gaps and trade-offs', gaps: [{ label: 'Not assessed', text: "I can't read this collection's spaces, so I can't compare them to the requirement." }], verdict: "I can't read this collection's spaces.", summary: `${col.name} has ${plural(col.totalSpaces, 'space')}, but I can't read them, so I can't assess it.` };
   }
   if (!center) {
     const loc = v.location.trim();
@@ -311,7 +311,6 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   const rtc = results.filter((x) => x.space.booking).reduce((m: Record<string, number>, x) => { m[x.space.booking as string] = (m[x.space.booking as string] ?? 0) + 1; return m; }, {});
   const withResp = venues.filter((v) => v.st?.responseMin).length;
   if (Object.keys(rtc).length) gaps.push({ label: 'Booking', text: `${Object.entries(rtc).map(([k, n]) => `${n} ${n === 1 ? 'is' : 'are'} ${k}`).join(', ')}. Average lead response is on record for ${withResp} of ${V} venues.` });
-  gaps.push({ label: 'Platform count', text: "The platform's own Assess tool can't be called from the demo. In production its counts appear here beside these, so the two can be compared." });
   const missing = [!c.capacity ? 'headcount' : '', !c.budget ? 'budget' : '', !c.type ? 'workspace type' : ''].filter(Boolean);
   const sd = r.details.startDate ? new Date(r.details.startDate + 'T00:00:00') : null;
   const startTxt = sd && !isNaN(+sd) ? `Availability for the ${sd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} start isn't in the available data. ` : "Availability isn't in the available data. ";
@@ -336,8 +335,8 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
 export function addedWhy(r: MvpRequirement): string {
   if ((r.collection?.totalSpaces ?? 0) === 0) return 'Nothing has been added yet.';
   const n = addedCount(r.id);
-  const base = builtByAgent(r.collection?.url) ? 'Matched on location, headcount and workspace type when the collection was built.' : 'Added outside the agent, so I can\'t say why.';
-  return n ? `${base} ${n} added by hand since.` : base;
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `Assessed ${today} against the requirement as it stands.${n ? ` ${n} added by hand.` : ''}`;
 }
 
 // ── Re-running ──────────────────────────────────────────────────────────────

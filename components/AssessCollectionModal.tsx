@@ -63,8 +63,8 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
   const td = (v: React.ReactNode, fail: boolean) => <td style={{ padding: '12px 10px', fontSize: 13.5, color: fail ? '#B91C1C' : '#374151', fontWeight: fail ? 600 : 400, verticalAlign: 'top', whiteSpace: 'nowrap' }}>{v}</td>;
   const shortDate = (d?: string) => (d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '');
   const total = a.total;
-  const footnotes = a.gaps.filter((g) => g.label === 'Not assessed' || g.label === 'Platform count');
-  const nCols = 3 + (c.capacity ? 1 : 0) + (c.budget ? 1 : 0) + (c.type ? 1 : 0) + 1;
+  const footnotes = a.gaps.filter((g) => g.label === 'Not assessed');
+  const nCols = 3 + (c.capacity ? 1 : 0) + (c.budget ? 1 : 0) + (c.type ? 1 : 0) + 2;
   const tableBody = (
     <>
       <div style={SECTION}>The {plural(total, 'space')}, against the requirement</div>
@@ -78,6 +78,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
                 {c.capacity ? colHead('Seats', a.bandText ?? undefined) : null}
                 {c.budget ? colHead('Price', `up to ${money(c.budget)}/mo`) : null}
                 {c.type ? colHead('Type', c.type) : null}
+                {colHead('Meets', 'criteria')}
                 {colHead('Listing')}
               </tr>
             </thead>
@@ -90,18 +91,19 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
                     <tr onClick={() => setOpenRow(open ? null : id)} aria-expanded={open} style={{ borderTop: '1px solid #F1F3F5', cursor: 'pointer', background: open ? '#F9FAFB' : undefined }}>
                       <td style={{ padding: '12px 10px', verticalAlign: 'top', minWidth: 200 }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                          <ChevronDown size={14} color="#9CA3AF" style={{ marginTop: 2, flexShrink: 0, transform: open ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} />
+                          <ChevronDown size={16} color="#6B7280" style={{ marginTop: 1, flexShrink: 0, transform: open ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} />
                           <div>
                             <div style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{r.space.title}</div>
-                            <div style={{ fontSize: 12.5, color: '#6B7280' }}>{r.space.venue}</div>
+                            <div style={{ fontSize: 12.5, color: '#6B7280' }}>{r.space.venue}{!c.type ? ` · ${r.space.type}` : ''}</div>
                             {all && <div style={{ fontSize: 12.5, color: GREEN, marginTop: 2 }}>Meets every criterion</div>}
                           </div>
                         </div>
                       </td>
                       {td(`${r.miles.toFixed(1)} mi`, !r.pass.area)}
                       {c.capacity ? td(r.space.desks, r.pass.capacity === false) : null}
-                      {c.budget ? td(r.space.rate != null ? money(r.space.rate) : 'n/a', r.pass.budget === false) : null}
+                      {c.budget ? <td style={{ padding: '12px 10px', verticalAlign: 'top', whiteSpace: 'nowrap' }}><div style={{ fontSize: 13.5, color: r.pass.budget === false ? '#B91C1C' : '#374151', fontWeight: r.pass.budget === false ? 600 : 400 }}>{r.space.rate != null ? money(r.space.rate) : 'n/a'}</div>{r.detail.some((d) => d.k === 'Rate') && <div style={{ fontSize: 12.5, color: '#6B7280' }}>over market</div>}</td> : null}
                       {c.type ? td(r.space.type, r.pass.type === false) : null}
+                      {(() => { const k = [r.pass.area, r.pass.capacity, r.pass.budget, r.pass.type].filter((x) => x !== null).length; const n = metCount(r); return <td style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 600, color: n === k ? GREEN : INK, verticalAlign: 'top', whiteSpace: 'nowrap' }}>{n} of {k}</td>; })()}
                       <td style={{ padding: '12px 10px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
                         <div style={{ fontSize: 13.5, color: '#374151' }}>{priv ? 'Private' : 'Public'}</div>
                         <div style={{ fontSize: 12.5, color: r.confirmed ? '#6B7280' : '#B91C1C' }}>{priv ? (r.space.validUntil ? `quote to ${shortDate(r.space.validUntil)}` : 'no quote date') : `${r.ageDays} d ago`}</div>
@@ -132,6 +134,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
                 {[a.inArea, c.capacity ? a.forPeople : null, c.budget ? a.withinBudget : null, c.type ? a.results.filter((x) => x.space.type === c.type).length : null].filter((x, i) => i === 0 || x !== null).map((n, i) => (
                   <td key={i} style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(n as number, total), whiteSpace: 'nowrap' }}>{n} of {total}</td>
                 ))}
+                <td style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(a.confirmedFits, total), whiteSpace: 'nowrap' }}>{a.confirmedFits} of {total}</td>
                 <td style={{ padding: '12px 10px', fontSize: 13.5, color: '#6B7280', whiteSpace: 'nowrap' }}>{a.results.filter((x) => x.confirmed).length} of {total} current</td>
               </tr>
             </tfoot>
@@ -181,7 +184,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
           {/* Result: the two facts in one panel, same structure each */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #E5E7EB', borderRadius: 12, marginTop: 16 }}>
             <div style={{ padding: '18px 24px' }}>
-              <div style={EYEBROW_GRAY}>Spaces added</div>
+              <div style={EYEBROW_GRAY}>Spaces in collection</div>
               <div style={{ marginTop: 8 }}>{big(a.total)}</div>
               <div style={{ fontSize: 13, color: '#6B7280', marginTop: 8, lineHeight: 1.5 }}>{addedWhy(requirement)}</div>
             </div>
