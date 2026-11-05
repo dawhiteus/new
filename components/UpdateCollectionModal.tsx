@@ -41,10 +41,8 @@ export function UpdateCollectionModal({ requirement, onClose, onConfirm }: Props
           <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, marginTop: 16 }}>
             {!p
               ? "I can't search for spaces until the requirement has a location I can find."
-              : p.keep.length === 0
-                ? `I'll search again with the current requirement. No nearby listing meets every criterion, so ${plural(p.remove, 'space')} would be removed and none added.`
-                : `I'll search again with the current requirement. ${plural(p.keep.length, 'space')} meet every criterion: ${p.add} would be added and ${p.remove} removed.`}
-            {p && p.handAdded > 0 ? ` The ${plural(p.handAdded, 'space')} you added by hand will be added back.` : ''}
+              : `I'll search again with the current requirement and replace the Recommendations: ${plural(p.keepRecs.length, 'space')} meet every criterion, ${p.add} would be added and ${p.remove} removed.`}
+            {p && p.curated.length > 0 ? ` The ${plural(p.curated.length, 'space')} in your Shortlist and Favorites stay as they are.` : ''}
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22 }}>

@@ -358,3 +358,116 @@ export function venueStats(url: string): VenueStats | null {
 }
 /** Venue key: the listing path without its last segment. */
 export const venueKey = (url: string) => url.replace(/^https?:\/\/liquidspace\.com\//, '').replace(/[?#].*$/, '').replace(/\/+$/, '').split('/').slice(0, -1).join('/');
+
+/** Each space's amenities recorded from Pulse (Workspaces.Amenities) on 2026-11-05: path|how many|first three. Blank when the listing has none recorded. */
+const AMENITIES = `us/mn/minneapolis/industrious-minneapolis-north-loop/minlop002suite|10|24/7 Access, Door w/Lock, Furnished
+pt/porto/porto/work-wise-co-working-offices/office-1|10|24/7 Access, Door w/Lock, Furnished
+us/ny/new-york/53-beach-street/office-suite-1|10|24/7 Access, Door w/Lock, Furnished
+us/ny/new-york/jay-suites-38th-street-new-york/private-office-suite-12-floor|10|24/7 Access, Door w/Lock, Furnished
+us/ny/new-york/jay-suites-chelsea/suite-802-abc|9|24/7 Access, Door w/Lock, Furnished
+pt/lisboa/lisboa/av-republic/office-17-6-person-office-copy|8|24/7 Access, Door w/Lock, Furnished
+us/ny/new-york/select-office-suites-flatiron/40-person-windowed-team-room|8|24/7 Access, Door w/Lock, Furnished
+pt/lisboa/lisboa/venture-x-portugal/office-18-copy|9|24/7 Access, Door w/Lock, Furnished
+pt/lisboa/lisboa/venture-x-portugal/office-4|8|24/7 Access, Door w/Lock, Furnished
+us/tx/austin/dwell-coworking-downtown/office-suite-3|8|24/7 Access, Door w/Lock, Furnished
+us/il/chicago/expansive-stetson-ave/team-suite-3300a-copy-1041|8|24/7 Access, Door w/Lock, Furnished
+us/il/chicago/level-office-211-w-wacker/office-suite-1500a-copy-6189|8|24/7 Access, Door w/Lock, Furnished
+us/co/denver/candy-factory-coworking/office-for-6-copy|6|24/7 Access, Door w/Lock, Furnished
+pt/lisboa/lisboa/venture-x-portugal/office-2|6|24/7 Access, Door w/Lock, Furnished
+pt/lisboa/lisboa/maleo-saldanha/office-suite-1|7|24/7 Access, Door w/Lock, Furnished
+us/co/denver/candy-factory-coworking/private-office-for-8-10-people|7|24/7 Access, Door w/Lock, Furnished
+pt/lisboa/lisboa/av-republic/office-1|7|24/7 Access, Door w/Lock, Furnished
+us/tx/austin/novel-coworking-north-austin/club-suite-200c-copy|6|24/7 Access, Door w/Lock, Furnished
+us/mn/minneapolis/novel-coworking-minneapolis/club-suite-107-copy-95d1|6|24/7 Access, Door w/Lock, Furnished
+us/tx/austin/expansive-austin-highland/club-suite-200e-copy|6|24/7 Access, Door w/Lock, Furnished
+us/tx/dallas/level-office-701commerce/club-suite-200b-copy-2e9c|6|24/7 Access, Door w/Lock, Furnished
+us/il/chicago/expansive-river-north-superior/office-suite-100b-copy-37c1|6|24/7 Access, Door w/Lock, Furnished
+us/mn/minneapolis/novel-coworking-minneapolis/office-suite-7|6|24/7 Access, Door w/Lock, Furnished
+us/mn/minneapolis/novel-coworking-minneapolis/office-suite-600b-copy-9c5a|6|24/7 Access, Door w/Lock, Furnished
+us/mn/minneapolis/novel-coworking-minneapolis/office-suite-500h-copy|6|24/7 Access, Door w/Lock, Furnished
+us/il/chicago/level-office/office-suite-1300c-copy|6|24/7 Access, Door w/Lock, Furnished
+us/mn/minneapolis/novel-coworking-minneapolis/office-suite-600c-copy|6|24/7 Access, Door w/Lock, Furnished
+us/mn/minneapolis/novel-coworking-minneapolis/office-suite-600d-copy|6|24/7 Access, Door w/Lock, Furnished
+us/mn/minneapolis/novel-coworking-minneapolis/office-suite-600e-copy-2|6|24/7 Access, Door w/Lock, Furnished
+us/mn/minneapolis/novel-coworking-minneapolis/office-suite-500b-copy|6|24/7 Access, Door w/Lock, Furnished
+us/ny/new-york/workville/team-office-18-person-capacity-copy-copy|7|24/7 Access, Door w/Lock, Furnished
+us/il/chicago/working-from/private-studio-411|7|24/7 Access, Door w/Lock, Furnished
+us/ny/new-york/1501-broadway/private-office-96f6|5|24/7 Access, Door w/Lock, Furnished
+pt/porto/porto/vertical-coworking-dom-henrique/office-1|6|24/7 Access, Door w/Lock, Furnished
+pt/porto/porto/vertical-coworking-dom-henrique/office-3|6|24/7 Access, Door w/Lock, Furnished
+pt/porto/porto/vertical-coworking-dom-henrique/office-2|6|24/7 Access, Door w/Lock, Furnished
+pt/lisboa/lisboa/venture-x-portugal/office-3|5|24/7 Access, Door w/Lock, Meeting Rooms
+us/tx/austin/industrious-austin/ausdtn016|6|24/7 Access, Furnished, Mailbox Services
+us/tx/austin/industrious-austin/ausdtn024|6|24/7 Access, Furnished, Mailbox Services
+us/tx/austin/industrious-austin/ausdtn128|6|24/7 Access, Furnished, Mailbox Services
+us/il/chicago/industrious-chicago-central-loop/chisla023|6|24/7 Access, Furnished, Mailbox Services
+us/il/chicago/industrious-chicago-central-loop/chisla045|6|24/7 Access, Furnished, Mailbox Services
+us/il/chicago/industrious-chicago-central-loop/chisla085|6|24/7 Access, Furnished, Mailbox Services
+us/il/chicago/industrious-chicago-central-loop/chisla093|6|24/7 Access, Furnished, Mailbox Services
+us/il/chicago/industrious-chicago-central-loop/chisla094|6|24/7 Access, Furnished, Mailbox Services
+us/co/denver/serendipity-labs-denver-lodo/5-person-office|6|24/7 Access, Furnished, Mailbox Services
+us/co/denver/serendipity-labs-denver-lodo/8-person-office|6|24/7 Access, Furnished, Mailbox Services
+us/co/denver/serendipity-labs-denver-lodo/10-person-office|6|24/7 Access, Furnished, Mailbox Services
+us/co/denver/serendipity-labs-denver-lodo/20-person-offices|6|24/7 Access, Furnished, Mailbox Services
+us/co/denver/venture-x-lodo/dedicated-desk-1|5|24/7 Access, Furnished, Mailbox Services
+us/tx/austin/indy-by-industrious/ausbur220|5|24/7 Access, Furnished, Mailbox Services
+us/il/chicago/industrious-millennium-park-chicago/chi24e116|5|24/7 Access, Furnished, Mailbox Services
+us/co/denver/venture-x-denver-downtown-16th-street/dedicated-desk-1|5|24/7 Access, Furnished, Meeting Rooms
+us/tx/dallas/1910-pacific-place/suite-2090-8537|2|24/7 Access, WiFi
+us/tx/dallas/4100-spring-valley-rd/suite-100ws|2|24/7 Access, WiFi
+us/tx/dallas/1910-pacific-place/suite-11400|2|24/7 Access, WiFi
+us/tx/dallas/1910-pacific-place/suite-18100|2|24/7 Access, WiFi
+us/tx/dallas/boxer-14800-quorum/suite-200|2|24/7 Access, WiFi
+us/tx/dallas/8330-lbj-freeway/suite-b725ws|2|24/7 Access, WiFi
+us/tx/dallas/1910-pacific-place/suite-14250-cffe|2|24/7 Access, WiFi
+pt/lisboa/lisbon/regus-lisbon-parque-das-na231245es/private-office-05f8|4|Door w/Lock, Furnished, Phone
+pt/porto/porto/regus-regus-porto-s-bento/team-office-5bdc|4|Door w/Lock, Furnished, Phone
+us/co/denver/regus-denver-place-denver-1/team-office-4ce7|4|Door w/Lock, Furnished, Phone
+pt/porto-district/porto/regus-porto-batalha/team-office-6505|4|Door w/Lock, Furnished, Phone
+us/ny/new-york/regus-americas-tower/team-office-d03a|4|Door w/Lock, Furnished, Phone
+pt/lisbon/lisbon/regus-lisbon-avenida-da-liberdade/team-office-d10a|4|Door w/Lock, Furnished, Phone
+pt/porto/matosinhos/spaces-matosinhos-spaces-matosinhos/team-office-b8f0|4|Door w/Lock, Furnished, Phone
+us/il/chicago/regus-111-w-jackson/team-office-fdd4|4|Door w/Lock, Furnished, Phone
+us/mn/minneapolis/regus-mn-minneapolis-south-6th-st/team-office-db31|4|Door w/Lock, Furnished, Phone
+us/il/chicago/regus-111-w-jackson/private-office-1d56|4|Door w/Lock, Furnished, Phone
+pt/lisbon/lisbon/spaces-lisbon-marques-de-pombal/private-office-fe67|4|Door w/Lock, Furnished, Phone
+pt/lisbon/lisbon/regus-lisbon-avenida-da-liberdade/private-office-bcb8|4|Door w/Lock, Furnished, Phone
+pt/porto/vila-nova-de-gaia/regus-gaia-arrabida/team-office|4|Door w/Lock, Furnished, Phone
+us/il/chicago/regus-111-w-jackson/team-office-9d23|4|Door w/Lock, Furnished, Phone
+us/mn/minneapolis/regus-mn-minneapolis-south-6th-st/team-office|4|Door w/Lock, Furnished, Phone
+pt/lisbon/lisbon/spaces-lisbon-marques-de-pombal/team-office|4|Door w/Lock, Furnished, Phone
+us/ny/new-york/regus-americas-tower/team-office-2f1f|4|Door w/Lock, Furnished, Phone
+us/il/chicago/regus-west-loop-200-s-wacker/team-office-2c31|4|Door w/Lock, Furnished, Phone
+pt/porto-district/porto/regus-porto-batalha/team-office-0582|4|Door w/Lock, Furnished, Phone
+us/mn/minneapolis/regus-minnesota-bloomington-normandale-lake/team-office-1370|4|Door w/Lock, Furnished, Phone
+us/tx/austin/regus-westlake/team-office-3168|4|Door w/Lock, Furnished, Phone
+us/mn/minneapolis/regus-minnesota-center/team-office-6896|4|Door w/Lock, Furnished, Phone
+us/tx/austin/regus-river-place/team-office-7a45|4|Door w/Lock, Furnished, Phone
+us/tx/austin/regus-dobie-center/team-office-ccd8|4|Door w/Lock, Furnished, Phone
+us/ny/new-york/regus-americas-tower/team-office-c7b9|4|Door w/Lock, Furnished, Phone
+us/tx/austin/regus-aspen-lake-one/team-office-df64|4|Door w/Lock, Furnished, Phone
+us/mn/minneapolis/regus-spaces-north-loop/team-office-d119|4|Door w/Lock, Furnished, Phone
+pt/porto/matosinhos/spaces-matosinhos-spaces-matosinhos/team-office-dafb|4|Door w/Lock, Furnished, Phone
+us/mn/minneapolis/regus-mn-minneapolis-south-6th-st/team-office-b8bb|4|Door w/Lock, Furnished, Phone
+pt/porto/porto/regus-regus-porto-s-bento/team-office-ee24|4|Door w/Lock, Furnished, Phone
+us/mn/minneapolis/regus-minneapolis-lagoon-ave/team-office-1bd5|4|Door w/Lock, Furnished, Phone
+us/mn/minneapolis/regus-minneapolis-washington-ave/team-office-c8ad|4|Door w/Lock, Furnished, Phone
+pt/porto/vila-nova-de-gaia/regus-gaia-arrabida/team-office-de19|4|Door w/Lock, Furnished, Phone
+us/tx/dallas/boxer-northbrook-atrium-plaza/suite-1310|2|Furnished, WiFi
+us/ny/new-york/emerge212-1185-avenue-of-the-americas/team-room-311-with-interior-call-room|2|Furnished, WiFi
+us/ny/new-york/emerge212-1185-avenue-of-the-americas/team-room-219|2|Furnished, WiFi
+us/ny/new-york/bevmax-office-centers-plaza-district/suite-39|2|Furnished, WiFi
+us/il/chicago/workbox-the-loop/office-1-6146|2|Furnished, WiFi
+us/tx/dallas/1910-pacific-place/suite-6050|2|Furnished, WiFi
+us/tx/dallas/1910-pacific-place/suite-5045|2|Furnished, WiFi
+us/tx/dallas/1910-pacific-place/suite-9050|2|Furnished, WiFi
+us/tx/dallas/1910-pacific-place/suite-9350|2|Furnished, WiFi
+us/tx/dallas/1910-pacific-place/suite-12030|2|Furnished, WiFi
+us/tx/dallas/1910-pacific-place/suite-10500|2|Furnished, WiFi
+us/tx/dallas/1910-pacific-place/suite-15400|2|Furnished, WiFi
+us/ny/new-york/jay-suites/windowed-team-office-for-up-to-15-people|2|Furnished, WiFi
+us/ny/new-york/jay-suites/team-office-3049-for-up-to-6|2|Furnished, WiFi`;
+const AMEN = new Map<string, { n: number; top: string }>(AMENITIES.split('\n').map((l) => { const p = l.split('|'); return [p[0], { n: +p[1], top: p[2] }] as const; }));
+export function amenitiesFor(url: string): { n: number; top: string } | null {
+  return AMEN.get(url.replace(/^https?:\/\/liquidspace\.com\//, '').replace(/[?#].*$/, '').replace(/\/+$/, '')) ?? null;
+}

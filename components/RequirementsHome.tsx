@@ -22,7 +22,7 @@ import { capacityBand } from './data/collectionAgent';
 import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
 import { AssessCollectionModal } from './AssessCollectionModal';
-import { quickStatus, addSpace, applyUpdate, ensureBasis, assess as assessReq } from './data/assessmentAgent';
+import { quickStatus, addSpace, applyUpdate, ensureBasis, shortlistCount, assess as assessReq } from './data/assessmentAgent';
 import { UpdateCollectionModal } from './UpdateCollectionModal';
 import { AddSpaceModal } from './AddSpaceModal';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
@@ -787,6 +787,15 @@ export function RequirementsHome() {
         onClose={() => setAssessForId(null)}
         onAssessed={logAssessment}
         onUpdate={(r) => { setAssessForId(null); setUpdateForId(r.id); }}
+        onEdit={(r) => setDetailId(r.id)}
+        onGroupChange={(r, text) => {
+          const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          setRows((rs) => rs.map((x) => (x.id !== r.id || !x.collection ? x : {
+            ...x,
+            collection: { ...x.collection, shortlisted: shortlistCount(r) },
+            details: { ...x.details, events: [...x.details.events, { id: `e-${Date.now()}-gr`, type: 'collection', title: 'Shortlist Updated', description: text, date: dispDate, actor: CURRENT_USER_EMAIL }] },
+          })));
+        }}
       />
       <RequirementDetailsModal
         requirement={rows.find((r) => r.id === detailId) ?? null}

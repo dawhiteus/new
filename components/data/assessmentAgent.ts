@@ -1,7 +1,7 @@
 // Scripted Collection Assessment Agent (prototype). Computes from the recorded Pulse facts in assessmentData.ts.
 // The rules are written in docs/collection-assessment-spec.md so that one definition of a match exists.
 import { criteriaFor, capacityBand } from './collectionAgent';
-import { CENTERS, collectionSpaces, collectionCityFor, marketPool, builtByAgent, venueStats, venueKey, type AssessSpace } from './assessmentData';
+import { CENTERS, collectionSpaces, collectionCityFor, marketPool, builtByAgent, venueStats, venueKey, amenitiesFor, type AssessSpace } from './assessmentData';
 import type { MvpRequirement } from './mvpRequirements';
 
 export type Status = 'Plenty' | 'Few' | 'None';
@@ -40,6 +40,10 @@ export interface SpaceResult {
   pass: { area: boolean; capacity: boolean | null; budget: boolean | null; type: boolean | null };
   /** Venue and listing facts, for the expanded row. */
   detail: { k: string; v: string }[];
+  /** Monthly price per seat, or null when the space has no monthly price. */
+  costPP: number | null;
+  /** Up to three amenities and how many more, e.g. "24/7 Access, Door w/Lock, +5". Empty when none are recorded. */
+  amenities: string;
 }
 
 /** The workflow's test: a collection is thin below this many confirmed spaces. */
@@ -98,6 +102,28 @@ export const canAssess = (r: MvpRequirement) => !!r.collection;
 const addedSpaces = new Map<string, AssessSpace[]>();
 export const addedCount = (id: string) => addedSpaces.get(id)?.length ?? 0;
 export const hasSpace = (r: MvpRequirement, sp: AssessSpace) => membersFor(r).members.some((m) => (m.url && sp.url && m.url === sp.url) || m.id === sp.id);
+// ── Shortlist, Favorites, Recommendations ───────────────────────────────────────────────────────────────────────
+// Recommendations are the agent's default matches and are replaced when the collection is updated. Shortlist and
+// Favorites are the person's own choices and are never touched by an update.
+export type Group = 'Shortlist' | 'Favorites' | 'Recommendations';
+export const GROUPS: Group[] = ['Shortlist', 'Favorites', 'Recommendations'];
+const groupMap = new Map<string, Map<string, Group>>();
+const keyOf = (sp: AssessSpace) => sp.url || sp.id;
+// The Lisbon collection is recorded with its real groups: four on the shortlist, two favorites.
+const LISBON_GROUPS: Record<string, Group> = { 'Office 7.08': 'Shortlist', 'Office 4': 'Shortlist', '10-Person Office': 'Shortlist', 'Private Office': 'Shortlist', '1-5 person corner window': 'Favorites', 'Office 17, 6 person office': 'Favorites' };
+export function groupOf(r: MvpRequirement, sp: AssessSpace): Group {
+  const set = groupMap.get(r.id)?.get(keyOf(sp));
+  if (set) return set;
+  if (r.collection?.url?.includes('573e59b5-7b3f-43cb-a0f1-e8d341902c4c') && LISBON_GROUPS[sp.title]) return LISBON_GROUPS[sp.title];
+  return sp.addedByHand ? 'Shortlist' : 'Recommendations';
+}
+export function setGroup(r: MvpRequirement, sp: AssessSpace, g: Group) {
+  const m = groupMap.get(r.id) ?? new Map<string, Group>();
+  m.set(keyOf(sp), g);
+  groupMap.set(r.id, m);
+}
+export const shortlistCount = (r: MvpRequirement) => membersFor(r).members.filter((m) => groupOf(r, m) === 'Shortlist').length;
+
 /** The collection's own spaces after an update, replacing the recorded ones. */
 const refreshed = new Map<string, AssessSpace[]>();
 /** Counts membership changes, so a collection that changed is out of date even when its size did not. */
@@ -166,7 +192,10 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
     { k: 'Dedicated contracts', v: st?.dedicatedSpaces ? `On record at this venue, last billed ${st.lastDedicated}` : st ? 'None on record' : 'No venue record' },
   ];
   const pass = { area: area === 'pass', capacity: c.capacity ? capacity === 'pass' : null, budget: c.budget ? (budget === 'unknown' ? null : budget === 'pass') : null, type: c.type ? type === 'pass' : null };
-  return { space: sp, miles: mi, fit, extra, pass, detail, confirmed: priv ? quoteOk : age <= 90, ageDays: age, issues, facts, reason: issues.length ? issues[0].charAt(0).toUpperCase() + issues.join(', ').slice(1) : 'Meets every criterion' };
+  const am = amenitiesFor(sp.url);
+  const amText = am ? `${am.top}${am.n > 3 ? `, +${am.n - 3}` : ''}` : '';
+  detail.push({ k: 'Amenities', v: am ? `${am.n} listed, including ${am.top}` : 'None recorded' });
+  return { space: sp, miles: mi, fit, extra, pass, detail, costPP: sp.rate != null && sp.desks ? sp.rate / sp.desks : null, amenities: amText, confirmed: priv ? quoteOk : age <= 90, ageDays: age, issues, facts, reason: issues.length ? issues[0].charAt(0).toUpperCase() + issues.join(', ').slice(1) : 'Meets every criterion' };
 }
 
 const mediansFor = (all: AssessSpace[]) => {
@@ -323,7 +352,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   const missing = [!c.capacity ? 'headcount' : '', !c.budget ? 'budget' : '', !c.type ? 'workspace type' : ''].filter(Boolean);
   const sd = r.details.startDate ? new Date(r.details.startDate + 'T00:00:00') : null;
   const startTxt = sd && !isNaN(+sd) ? `Availability for the ${sd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} start isn't in the available data. ` : "Availability isn't in the available data. ";
-  gaps.push({ label: 'Not assessed', text: `${missing.length ? `${missing.join(', ').replace(/^./, (m) => m.toUpperCase())} ${missing.length === 1 ? 'was' : 'were'} not provided. ` : ''}${startTxt}Amenity needs and program needs aren't in the available data.` });
+  gaps.push({ label: 'Not assessed', text: `${missing.length ? `${missing.join(', ').replace(/^./, (m) => m.toUpperCase())} ${missing.length === 1 ? 'was' : 'were'} not provided. ` : ''}${startTxt}Amenity and program needs are written as free text on the requirement, so I don't match them. Each space's listed amenities are in its details.` });
 
   const reasons: { n: number; text: string; name: string }[] = [
     { n: tooFar, text: `area (${tooFar === total ? 'all' : tooFar} too far)`, name: 'area' },
@@ -425,22 +454,27 @@ export function proposalSpace(r: MvpRequirement, p: ProposalInput): AssessSpace 
 }
 
 
-/** What updating the collection would do: search again with the current requirement. Spaces added by hand are kept. */
-export function previewUpdate(r: MvpRequirement): { keep: AssessSpace[]; add: number; remove: number; handAdded: number } | null {
+/** What updating the collection would do: search again with the current requirement and replace the Recommendations. Shortlist and Favorites stay. */
+export function previewUpdate(r: MvpRequirement): { keepRecs: AssessSpace[]; curated: AssessSpace[]; add: number; remove: number } | null {
   const a = assess(r);
   if (!a || a.state !== 'ok') return null;
   const base = baseMembers(r);
-  const pool = marketPool(a.criteria.city).filter((p) => !base.some((b) => b.url === p.url));
-  const all = [...base, ...pool];
-  const meds = mediansFor(all);
-  const keep = all.filter((sp) => evaluate(sp, a.criteria, meds).fit).sort((x, y) => miles(x, a.criteria) - miles(y, a.criteria));
-  return { keep, add: keep.filter((k) => !base.some((b) => b.url === k.url)).length, remove: base.filter((b) => !keep.some((k) => k.url === b.url)).length, handAdded: addedCount(r.id) };
+  const all = [...base, ...(addedSpaces.get(r.id) ?? [])];
+  const curated = all.filter((m) => groupOf(r, m) !== 'Recommendations');
+  const recs = base.filter((m) => groupOf(r, m) === 'Recommendations');
+  const pool = marketPool(a.criteria.city).filter((p) => !all.some((b) => b.url === p.url));
+  const cand = [...recs, ...pool];
+  const meds = mediansFor([...all, ...pool]);
+  const keepRecs = cand.filter((sp) => evaluate(sp, a.criteria, meds).fit).sort((x, y) => miles(x, a.criteria) - miles(y, a.criteria));
+  return { keepRecs, curated, add: keepRecs.filter((k) => !recs.some((b) => b.url === k.url)).length, remove: recs.filter((b) => !keepRecs.some((k) => k.url === b.url)).length };
 }
 
 export function applyUpdate(r: MvpRequirement): ReturnType<typeof previewUpdate> {
   const p = previewUpdate(r);
   if (!p) return null;
-  refreshed.set(r.id, p.keep.map((s) => ({ ...s, inCollection: true })));
+  const addedKeys = new Set((addedSpaces.get(r.id) ?? []).map(keyOf));
+  const keptBase = [...p.curated.filter((c) => !addedKeys.has(keyOf(c))), ...p.keepRecs].map((sp) => ({ ...sp, inCollection: true }));
+  refreshed.set(r.id, keptBase);
   basis.set(r.id, currentValues(r));
   bump(r.id);
   return p;
