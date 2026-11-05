@@ -117,7 +117,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                     <tr {...dz} style={{ background: over ? '#E6F0F8' : '#F3F4F6', borderTop: '1px solid #E5E7EB' }}>
                       <td colSpan={nCols} style={{ padding: '9px 12px' }}>
                         <span style={{ fontSize: 13.5, fontWeight: 700, color: INK }}>{g}</span>
-                        <span style={{ fontSize: 13, color: '#6B7280', marginLeft: 8 }}>{plural(list.length, 'space')}{list.length ? ` · ${meet} ${meet === 1 ? 'meets' : 'meet'} every criterion` : ''}</span>
+                        <span style={{ fontSize: 13, color: '#6B7280', marginLeft: 8 }}>{plural(list.length, 'space')}{list.length ? ` · ${meet} of ${list.length} meet all criteria` : ''}</span>
                       </td>
                     </tr>
                     {list.length === 0 && (
@@ -146,7 +146,6 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                                 <div>
                                   <div style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{r.space.title}</div>
                                   <div style={{ fontSize: 12.5, color: '#6B7280' }}>{r.space.venue}{!c.type ? ` · ${r.space.type}` : ''}</div>
-                                  {all && <div style={{ fontSize: 12.5, color: GREEN, marginTop: 2 }}>Meets every criterion</div>}
                                 </div>
                               </div>
                             </td>
@@ -191,12 +190,12 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
             </tbody>
             <tfoot>
               <tr style={{ borderTop: '1px solid #E5E7EB', background: '#F9FAFB' }}>
-                <td style={{ padding: '12px 10px 12px 30px', fontSize: 13.5, fontWeight: 600, color: INK }}>Meet the criterion</td>
+                <td style={{ padding: '12px 10px 12px 30px', fontSize: 13.5, fontWeight: 600, color: INK }}>Spaces that meet</td>
                 {[a.inArea, c.capacity ? a.forPeople : null, c.budget ? a.withinBudget : null, c.type ? a.results.filter((x) => x.space.type === c.type).length : null].filter((x, i) => i === 0 || x !== null).map((n, i) => (
                   <td key={i} style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(n as number, total), whiteSpace: 'nowrap' }}>{n} of {total}</td>
                 ))}
                 <td />
-                <td style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(a.confirmedFits, total), whiteSpace: 'nowrap' }}>{a.confirmedFits} of {total}</td>
+                <td style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(a.confirmedFits, total), whiteSpace: 'nowrap' }}>{a.confirmedFits} of {total} meet all</td>
                 <td style={{ padding: '12px 10px', fontSize: 13.5, color: '#6B7280', whiteSpace: 'nowrap' }}>{a.results.filter((x) => x.confirmed).length} of {total} current</td>
               </tr>
             </tfoot>
@@ -245,15 +244,19 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
 
           {/* Result: the two facts in one panel, same structure each */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #E5E7EB', borderRadius: 12, marginTop: 16 }}>
-            <div style={{ padding: '18px 24px' }}>
-              <div style={EYEBROW_GRAY}>Spaces in collection</div>
-              <div style={{ marginTop: 8 }}>{big(a.total)}</div>
-              <div style={{ fontSize: 13, color: '#6B7280', marginTop: 8, lineHeight: 1.5 }}>{addedWhy(requirement)}</div>
+            <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              {big(a.total)}
+              <div>
+                <div style={EYEBROW_GRAY}>Spaces in collection</div>
+                <div style={{ fontSize: 13, color: '#6B7280', marginTop: 3, lineHeight: 1.4 }}>{addedWhy(requirement)}</div>
+              </div>
             </div>
-            <div style={{ padding: '18px 24px', borderLeft: '1px solid #E5E7EB' }}>
-              <div style={EYEBROW_GRAY}>Meet every criterion</div>
-              <div style={{ marginTop: 8 }}>{big(a.confirmedFits, a.confirmedFits === 0 ? '#B91C1C' : INK)}</div>
-              <div style={{ fontSize: 13, color: '#6B7280', marginTop: 8, lineHeight: 1.5 }}>{a.state === 'ok' ? `${cap(every.slice(0, -1).join(', ') + (every.length > 1 ? ' and ' : '') + every[every.length - 1])}, all together.` : 'Nothing to compare yet.'}</div>
+            <div style={{ padding: '12px 20px', borderLeft: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 14 }}>
+              {big(a.confirmedFits, a.confirmedFits === 0 ? '#B91C1C' : INK)}
+              <div>
+                <div style={EYEBROW_GRAY}>Meet every criterion</div>
+                <div style={{ fontSize: 13, color: '#6B7280', marginTop: 3, lineHeight: 1.4 }}>{a.state === 'ok' ? `${cap(every.slice(0, -1).join(', ') + (every.length > 1 ? ' and ' : '') + every[every.length - 1])}, all together.` : 'Nothing to compare yet.'}</div>
+              </div>
             </div>
           </div>
 
