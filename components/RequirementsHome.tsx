@@ -718,7 +718,7 @@ export function RequirementsHome() {
                       <td style={td}><Pill label={r.status} {...(({ bg, color }) => ({ bg, color }))(STATUS_STYLE[r.status])} /></td>
                       <td style={td}><Pill label={r.stage} bg="#E8A91C" color="#fff" /></td>
                       <td style={td}>{r.budget == null ? <NotProvided /> : money(r.budget)}</td>
-                      <td style={td} onClick={(e) => e.stopPropagation()}>{r.collection ? (
+                      <td style={{ ...td, paddingRight: 28 }} onClick={(e) => e.stopPropagation()}>{r.collection ? (
                           <CollectionPill req={r as MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }} onOpen={() => openCollection(r)} onAssess={() => setAssessForId(r.id)} onAdd={() => setAddForId(r.id)} onUpdate={() => setUpdateForId(r.id)} />
                         ) : (
                           <button
