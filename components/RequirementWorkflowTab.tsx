@@ -33,7 +33,11 @@ function Badge({ label, bg }: { label: string; bg: string }) {
   );
 }
 
+export interface TaskInfo { line: string; warn?: string; actions: { label: string; onClick: () => void }[] }
+
 interface Props {
+  /** Live collection and assessment information shown under the Create Collection and Assess Collection tasks. */
+  collectionInfo?: { create?: TaskInfo; assess?: TaskInfo };
   status: string;
   currentStage: string;
   lastUpdated: string;
@@ -47,7 +51,7 @@ const fieldInput: React.CSSProperties = {
 };
 const fieldLabel: React.CSSProperties = { display: 'block', fontSize: 15, fontWeight: 600, color: INK, marginBottom: 8, fontFamily: FONT };
 
-export function RequirementWorkflowTab({ status, currentStage, lastUpdated, tasks, onChange }: Props) {
+export function RequirementWorkflowTab({ status, currentStage, lastUpdated, tasks, onChange , collectionInfo}: Props) {
   const [addStage, setAddStage] = useState<string | null>(null);
   const [draft, setDraft] = useState({ name: '', dueDate: '', assignee: 'Unassigned', dependsOn: '', description: '' });
 
@@ -162,6 +166,18 @@ export function RequirementWorkflowTab({ status, currentStage, lastUpdated, task
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: INK, fontFamily: FONT }}>{t.name}</div>
                   <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4, fontFamily: FONT }}>{t.description}</div>
+                  {t.stage === 'Evaluation' && (t.name === 'Create Collection' ? collectionInfo?.create : t.name === 'Assess Collection' ? collectionInfo?.assess : undefined) && (() => {
+                    const info = (t.name === 'Create Collection' ? collectionInfo?.create : collectionInfo?.assess) as TaskInfo;
+                    return (
+                      <div style={{ marginTop: 10, fontFamily: FONT }}>
+                        <div style={{ fontSize: 13, color: INK, fontWeight: 600 }}>{info.line}</div>
+                        {info.warn && <div style={{ fontSize: 13, color: '#B45309', marginTop: 4, lineHeight: 1.45 }}>{info.warn}</div>}
+                        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                          {info.actions.map((x) => <button key={x.label} onClick={x.onClick} style={{ background: '#fff', color: '#0B4F7F', border: '1px solid #0B4F7F', borderRadius: 6, padding: '5px 12px', fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>{x.label}</button>)}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {t.output && (
                     <div style={{ marginTop: 10, background: '#F8F9FA', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 12px', fontFamily: FONT }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Notes</div>

@@ -1,3 +1,4 @@
+import { quickStatus, lastRun, assess as assessReq } from './data/assessmentAgent';
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, ChevronsUpDown, Sparkles, Copy } from 'lucide-react';
@@ -78,9 +79,11 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSave: (updated: MvpRequirement) => void;
+  /** Opens the collection modals from the Workflow tab. */
+  collectionActions?: { view: (r: MvpRequirement) => void; assess: (r: MvpRequirement) => void; add: (r: MvpRequirement) => void; update: (r: MvpRequirement) => void };
 }
 
-export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }: Props) {
+export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, collectionActions }: Props) {
   const [tab, setTab] = useState<Tab>('Overview');
   const [f, setF] = useState<FormState | null>(null);
   const [note, setNote] = useState('');
@@ -303,6 +306,26 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave }
               lastUpdated={requirement.lastUpdated}
               tasks={f.tasks}
               onChange={onTasks}
+              collectionInfo={(() => {
+                const col = requirement.collection;
+                if (!col || !collectionActions) return undefined;
+                const q = quickStatus(requirement);
+                const run = lastRun(requirement);
+                const a = assessReq(requirement);
+                const ch = q?.changes ?? [];
+                return {
+                  create: {
+                    line: `${col.name} · ${col.totalSpaces} space${col.totalSpaces === 1 ? '' : 's'} · updated ${col.updated}`,
+                    warn: ch.length ? `The requirement has changed since this collection was built: ${ch.join('; ')}.` : undefined,
+                    actions: [{ label: 'View collection', onClick: () => collectionActions.view(requirement) }, { label: 'Add space', onClick: () => collectionActions.add(requirement) }, ...(ch.length ? [{ label: 'Update collection', onClick: () => collectionActions.update(requirement) }] : [])],
+                  },
+                  assess: {
+                    line: a && a.state === 'ok' && run ? `${a.confirmedFits} of ${a.total} meet every criterion · assessed ${run.at}` : 'Not assessed yet',
+                    warn: q?.stale ? 'The collection has changed since it was last assessed.' : undefined,
+                    actions: [{ label: 'Assess collection', onClick: () => collectionActions.assess(requirement) }],
+                  },
+                };
+              })()}
             />
           ) : tab === 'Team' ? (
             <RequirementTeamTab

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, Bot, ExternalLink, ChevronDown } from 'lucide-react';
-import { assess, addedWhy, recordRun, CONFIRMED_NEEDED, type RunInfo, type SpaceResult } from './data/assessmentAgent';
+import { assess, addedWhy, recordRun, requirementChanges, CONFIRMED_NEEDED, type RunInfo, type SpaceResult } from './data/assessmentAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
 import { ASSESS_LAYOUT } from './data/assessLayout';
 
@@ -20,9 +20,11 @@ interface Props {
   onClose: () => void;
   /** Called when this run is the first, or the requirement or collection changed since the last one. */
   onAssessed: (req: MvpRequirement, text: string) => void;
+  /** Open Update collection for this requirement. */
+  onUpdate?: (req: MvpRequirement) => void;
 }
 
-export function AssessCollectionModal({ requirement, onClose, onAssessed }: Props) {
+export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpdate }: Props) {
   const [run, setRun] = useState<RunInfo | null>(null);
   const [showSpaces, setShowSpaces] = useState(false);
   const [openRow, setOpenRow] = useState<string | null>(null);
@@ -50,6 +52,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
   const numColor = (n: number, of: number) => (n === 0 ? '#B91C1C' : n === of ? '#15803D' : INK);
   const checked = a.state === 'ok' ? [c.capacity ? a.bandText : '', c.type, c.budget ? `under ${money(c.budget)}/mo` : '', `within ${c.radiusMi} miles of ${c.centerLabel}`].filter(Boolean).join(', ') : '';
   const every = [c.capacity ? 'headcount' : '', c.type ? 'workspace type' : '', c.budget ? 'budget' : '', 'area'].filter(Boolean);
+  const reqChanges = requirementChanges(requirement);
   const since = run?.since && run.since.changes.length ? run.since : null;
 
   const useTable = ASSESS_LAYOUT === 'table' && a.state === 'ok' && a.total > 0;
@@ -200,6 +203,12 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
             {a.verdict && <div style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{a.verdict}</div>}
             {checked && <div style={{ fontSize: 13, color: '#6B7280', marginTop: a.verdict ? 8 : 0, lineHeight: 1.5 }}>Checked against {checked}.</div>}
             {a.state === 'ok' && a.total > 0 && <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 1.5 }}>The workflow counts a collection as thin below {CONFIRMED_NEEDED} confirmed spaces. This one has {a.confirmedFits}.</div>}
+            {reqChanges.length > 0 && onUpdate && (
+              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '10px 12px 10px 14px', border: '1px solid #F3D9B1', background: '#FFFAF0', borderRadius: 10 }}>
+                <div style={{ fontSize: 13.5, color: '#374151', lineHeight: 1.5 }}><b style={{ color: INK }}>The requirement has changed since this collection was built:</b> {reqChanges.join('; ')}.</div>
+                <button type="button" onClick={() => onUpdate(requirement)} style={{ background: '#fff', color: BLUE, border: `1px solid ${BLUE}`, borderRadius: 6, padding: '7px 14px', fontSize: 13.5, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>Update collection</button>
+              </div>
+            )}
             {since && (
               <div style={{ fontSize: 13, color: '#374151', marginTop: 12, lineHeight: 1.5, paddingLeft: 12, borderLeft: `2px solid ${BLUE}` }}>
                 <b style={{ color: INK }}>Since last assessed on {since.at}:</b> {since.changes.join('; ')}. Matches {since.fitsBefore} → {since.fitsNow}.

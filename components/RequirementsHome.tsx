@@ -22,7 +22,8 @@ import { capacityBand } from './data/collectionAgent';
 import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
 import { AssessCollectionModal } from './AssessCollectionModal';
-import { quickStatus, addSpace } from './data/assessmentAgent';
+import { quickStatus, addSpace, applyUpdate, ensureBasis, assess as assessReq } from './data/assessmentAgent';
+import { UpdateCollectionModal } from './UpdateCollectionModal';
 import { AddSpaceModal } from './AddSpaceModal';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
 import { useSearchParams } from 'react-router-dom';
@@ -191,7 +192,7 @@ function RowMenu({ onAction, hasCollection, assessable }: { onAction: (a: string
   );
 }
 
-function CollectionPill({ req, onOpen, onAssess, onAdd }: { req: MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }; onOpen: () => void; onAssess: () => void; onAdd: () => void }) {
+function CollectionPill({ req, onOpen, onAssess, onAdd, onUpdate }: { req: MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }; onOpen: () => void; onAssess: () => void; onAdd: () => void; onUpdate: () => void }) {
   const c = req.collection;
   const status = quickStatus(req);
   const [show, setShow] = useState(false);
@@ -223,7 +224,7 @@ function CollectionPill({ req, onOpen, onAssess, onAdd }: { req: MvpRequirement 
           <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2A3D' }}>{c.name}</div>
           <div style={{ fontSize: 13, color: '#6B7280' }}>{c.totalSpaces} spaces total</div>
           {status && <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginTop: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: status.status === 'Plenty' ? '#2E9D4A' : status.status === 'Few' ? '#E8A91C' : '#9CA3AF' }} />{status.text}</div>}
-          {status?.stale && <div style={{ fontSize: 12.5, color: '#B45309', marginTop: 3, lineHeight: 1.4 }}>Out of date: the requirement or collection has changed. Assess again.</div>}
+          {status && status.changes.length > 0 ? <div style={{ fontSize: 12.5, color: '#B45309', marginTop: 3, lineHeight: 1.4 }}>The requirement has changed since this collection was built: {status.changes.join('; ')}.</div> : status?.stale ? <div style={{ fontSize: 12.5, color: '#B45309', marginTop: 3, lineHeight: 1.4 }}>The collection has changed since it was last assessed.</div> : null}
         </div>
         <div style={{ borderTop: '1px solid #E5E7EB', padding: '8px 12px' }}>
           {row(MapPin, c.location, c.locationSpaces)}
@@ -249,7 +250,7 @@ function CollectionPill({ req, onOpen, onAssess, onAdd }: { req: MvpRequirement 
             View Collection <ArrowRight size={14} />
           </button>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-            {([['Assess collection', onAssess], ['Add space', onAdd]] as const).map(([label, fn]) => (
+            {([...(status && status.changes.length > 0 ? [['Update collection', onUpdate] as const] : []), ['Assess collection', onAssess], ['Add space', onAdd]] as const).map(([label, fn]) => (
               <button
                 key={label}
                 onClick={fn}
@@ -291,6 +292,8 @@ export function RequirementsHome() {
   const [collectionForId, setCollectionForId] = useState<string | null>(null);
   const [assessForId, setAssessForId] = useState<string | null>(null);
   const [addForId, setAddForId] = useState<string | null>(null);
+  const [updateForId, setUpdateForId] = useState<string | null>(null);
+  useEffect(() => { rows.forEach(ensureBasis); }, [rows]);
   const [searchParams, setSearchParams] = useSearchParams();
   const [fromLicense, setFromLicense] = useState('');
   useEffect(() => {
@@ -558,6 +561,24 @@ export function RequirementsHome() {
     })));
   };
 
+  /** Update collection: search again with the current requirement, record it, and show the result. */
+  const updateCollection = (req: MvpRequirement) => {
+    const p = applyUpdate(req);
+    setUpdateForId(null);
+    if (!p) return;
+    const a = assessReq(req);
+    const today = new Date();
+    const dispDate = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    setRows((rs) => rs.map((r) => (r.id !== req.id || !r.collection ? r : {
+      ...r,
+      collection: { ...r.collection, totalSpaces: a?.total ?? r.collection.totalSpaces, locationSpaces: a?.inArea ?? r.collection.locationSpaces, budgetSpaces: a?.withinBudget ?? r.collection.budgetSpaces, peopleSpaces: a?.forPeople ?? r.collection.peopleSpaces, updated: dispDate },
+      lastUpdated: today.toISOString().slice(0, 10),
+      details: { ...r.details, events: [...r.details.events, { id: `e-${Date.now()}-up`, type: 'collection', title: 'Collection Updated', description: `Searched again with the current requirement: ${p.add} added, ${p.remove} removed.`, date: dispDate, actor: 'sourcing.agent@ai.liquidspace.com' }] },
+    })));
+    toast.success(`Collection updated: ${p.add} added, ${p.remove} removed.`);
+    setAssessForId(req.id);
+  };
+
   /** A space added by hand: the collection grows by one, and the timeline says so. */
   const logAdded = (req: MvpRequirement, _sp: unknown, text: string) => {
     const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -584,7 +605,9 @@ export function RequirementsHome() {
       setAssessForId(req.id);
     } else if (action === 'Add space') {
       setAddForId(req.id);
-    } else if (action === 'View collection' || action === 'Update collection') {
+    } else if (action === 'Update collection') {
+      setUpdateForId(req.id);
+    } else if (action === 'View collection') {
       openCollection(req);
     } else if (action === 'View Requirement') {
       setDetailId(req.id);
@@ -696,7 +719,7 @@ export function RequirementsHome() {
                       <td style={td}><Pill label={r.stage} bg="#E8A91C" color="#fff" /></td>
                       <td style={td}>{r.budget == null ? <NotProvided /> : money(r.budget)}</td>
                       <td style={td} onClick={(e) => e.stopPropagation()}>{r.collection ? (
-                          <CollectionPill req={r as MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }} onOpen={() => openCollection(r)} onAssess={() => setAssessForId(r.id)} onAdd={() => setAddForId(r.id)} />
+                          <CollectionPill req={r as MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }} onOpen={() => openCollection(r)} onAssess={() => setAssessForId(r.id)} onAdd={() => setAddForId(r.id)} onUpdate={() => setUpdateForId(r.id)} />
                         ) : (
                           <button
                             onClick={() => setCollectionForId(r.id)}
@@ -748,6 +771,11 @@ export function RequirementsHome() {
         onClose={() => setCollectionForId(null)}
         onComplete={applyCollection}
       />
+      <UpdateCollectionModal
+        requirement={rows.find((r) => r.id === updateForId) ?? null}
+        onClose={() => setUpdateForId(null)}
+        onConfirm={updateCollection}
+      />
       <AddSpaceModal
         requirement={rows.find((r) => r.id === addForId) ?? null}
         onClose={() => setAddForId(null)}
@@ -758,12 +786,14 @@ export function RequirementsHome() {
         requirement={rows.find((r) => r.id === assessForId) ?? null}
         onClose={() => setAssessForId(null)}
         onAssessed={logAssessment}
+        onUpdate={(r) => { setAssessForId(null); setUpdateForId(r.id); }}
       />
       <RequirementDetailsModal
         requirement={rows.find((r) => r.id === detailId) ?? null}
         isOpen={detailId !== null}
         onClose={() => setDetailId(null)}
         onSave={(u) => setRows((rs) => rs.map((r) => (r.id === u.id ? u : r)))}
+        collectionActions={{ view: (r) => openCollection(r), assess: (r) => setAssessForId(r.id), add: (r) => setAddForId(r.id), update: (r) => setUpdateForId(r.id) }}
       />
       <NewRequirementModal existing={rows.map((r) => ({ name: r.name, company: r.company, city: r.city, capacity: r.details.capacity }))} isOpen={createOpen} onClose={() => { setCreateOpen(false); setFromLicense(''); }} onCreate={handleCreate} initialLicenseId={fromLicense || undefined} />
     </div>

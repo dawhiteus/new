@@ -98,11 +98,20 @@ export const canAssess = (r: MvpRequirement) => !!r.collection;
 const addedSpaces = new Map<string, AssessSpace[]>();
 export const addedCount = (id: string) => addedSpaces.get(id)?.length ?? 0;
 export const hasSpace = (r: MvpRequirement, sp: AssessSpace) => membersFor(r).members.some((m) => (m.url && sp.url && m.url === sp.url) || m.id === sp.id);
-export function addSpace(r: MvpRequirement, sp: AssessSpace) { addedSpaces.set(r.id, [...(addedSpaces.get(r.id) ?? []), { ...sp, inCollection: true, addedByHand: true }]); }
+/** The collection's own spaces after an update, replacing the recorded ones. */
+const refreshed = new Map<string, AssessSpace[]>();
+/** Counts membership changes, so a collection that changed is out of date even when its size did not. */
+const revs = new Map<string, number>();
+const bump = (id: string) => revs.set(id, (revs.get(id) ?? 0) + 1);
+function baseMembers(r: MvpRequirement): AssessSpace[] {
+  const key = collectionCityFor(r.collection?.url);
+  return refreshed.get(r.id) ?? (key ? collectionSpaces(key) : []);
+}
+export function addSpace(r: MvpRequirement, sp: AssessSpace) { bump(r.id); addedSpaces.set(r.id, [...(addedSpaces.get(r.id) ?? []), { ...sp, inCollection: true, addedByHand: true }]); }
 
 function membersFor(r: MvpRequirement): { members: AssessSpace[]; recorded: boolean } {
   const key = collectionCityFor(r.collection?.url);
-  const members = [...(key ? collectionSpaces(key) : []), ...(addedSpaces.get(r.id) ?? [])];
+  const members = [...baseMembers(r), ...(addedSpaces.get(r.id) ?? [])];
   const total = r.collection?.totalSpaces ?? 0;
   return { members, recorded: members.length > 0 || total === 0 };
 }
@@ -343,28 +352,43 @@ export function addedWhy(r: MvpRequirement): string {
 // The agent remembers its last assessment of each requirement. A change to the requirement, or new spaces in the
 // collection, makes that assessment out of date; the next run says what changed and how the matches moved.
 
-export interface Snapshot { values: Values; spaces: number; fits: number; total: number; at: string }
+export interface Snapshot { values: Values; spaces: number; rev: number; fits: number; total: number; at: string }
 const snapshots = new Map<string, Snapshot>();
-const sig = (v: Values, spaces: number) => JSON.stringify([v.location, v.type, v.capacity, v.budget, v.radiusMi, spaces]);
+const sig = (v: Values, spaces: number, rev: number) => JSON.stringify([v.location, v.type, v.capacity, v.budget, v.radiusMi, spaces, rev]);
+export const lastRun = (r: MvpRequirement): Snapshot | null => snapshots.get(r.id) ?? null;
 
 export function isStale(r: MvpRequirement): boolean {
   const s = snapshots.get(r.id);
-  return !!s && sig(s.values, s.spaces) !== sig(currentValues(r), r.collection?.totalSpaces ?? 0);
+  return !!s && sig(s.values, s.spaces, s.rev) !== sig(currentValues(r), r.collection?.totalSpaces ?? 0, revs.get(r.id) ?? 0);
 }
 
 /** One short line for the hover card. */
 export function quickStatus(r: MvpRequirement) {
   const a = assess(r);
-  return a ? { status: a.status, text: a.statusText, stale: isStale(r) } : null;
+  return a ? { status: a.status, text: a.statusText, stale: isStale(r), changes: requirementChanges(r) } : null;
 }
 
 const fmtVal = (k: keyof Values, v: Values[keyof Values]) => (k === 'budget' ? (v ? `${money(v as number)}/mo` : 'not set') : k === 'type' ? (v || 'any') : v == null || v === '' ? 'not set' : String(v));
-function diffs(prev: Snapshot, now: Values, spaces: number): string[] {
+function diffs(prev: Snapshot, now: Values, spaces: number, rid: string): string[] {
   const out: string[] = [];
   const label: Record<string, string> = { location: 'location', type: 'workspace type', capacity: 'people', budget: 'budget', radiusMi: 'search distance (miles)' };
   (Object.keys(label) as (keyof Values)[]).forEach((k) => { if (String(prev.values[k] ?? '') !== String(now[k] ?? '')) out.push(`${label[k]} ${fmtVal(k, prev.values[k])} → ${fmtVal(k, now[k])}`); });
   if (prev.spaces !== spaces) out.push(`${prev.spaces} → ${spaces} spaces in the collection`);
+  else if (prev.rev !== (revs.get(rid) ?? 0)) out.push('the collection was updated');
   return out;
+}
+
+// The requirement values a collection was built (or last updated) for. A later change to the requirement means
+// the collection may no longer match it, until it is updated.
+const basis = new Map<string, Values>();
+export function ensureBasis(r: MvpRequirement) { if (r.collection && !basis.has(r.id)) basis.set(r.id, currentValues(r)); }
+/** What changed on the requirement since the collection was built or last updated. */
+export function requirementChanges(r: MvpRequirement): string[] {
+  const prev = basis.get(r.id);
+  if (!prev) return [];
+  const now = currentValues(r);
+  const label: Record<string, string> = { location: 'location', type: 'workspace type', capacity: 'people', budget: 'budget', radiusMi: 'search distance (miles)' };
+  return (Object.keys(label) as (keyof Values)[]).filter((k) => String(prev[k] ?? '') !== String(now[k] ?? '')).map((k) => `${label[k]} ${fmtVal(k, prev[k])} → ${fmtVal(k, now[k])}`);
 }
 
 export interface RunInfo { first: boolean; since?: { at: string; changes: string[]; fitsBefore: number; fitsNow: number }; log?: string }
@@ -375,9 +399,9 @@ export function recordRun(r: MvpRequirement, a: Assessment): RunInfo {
   const values = currentValues(r);
   const spaces = r.collection?.totalSpaces ?? 0;
   const at = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  snapshots.set(r.id, { values, spaces, fits: a.confirmedFits, total: a.total, at });
+  snapshots.set(r.id, { values, spaces, rev: revs.get(r.id) ?? 0, fits: a.confirmedFits, total: a.total, at });
   if (!prev) return { first: true, log: `Collection assessed: ${a.confirmedFits} of ${a.total} ${a.total === 1 ? 'space meets' : 'spaces meet'} every criterion.` };
-  const changes = diffs(prev, values, spaces);
+  const changes = diffs(prev, values, spaces, r.id);
   if (!changes.length) return { first: false, since: { at: prev.at, changes: [], fitsBefore: prev.fits, fitsNow: a.confirmedFits } };
   return { first: false, since: { at: prev.at, changes, fitsBefore: prev.fits, fitsNow: a.confirmedFits }, log: `Reassessed after ${changes.join(', ')}: ${prev.fits} → ${a.confirmedFits} of ${a.total} meet every criterion.` };
 }
@@ -398,4 +422,26 @@ export function proposalSpace(r: MvpRequirement, p: ProposalInput): AssessSpace 
   const a = assess(r);
   if (!a || a.state !== 'ok') return null;
   return { id: `prop-${Date.now()}`, url: '', venue: p.venue, title: p.title, type: p.type, desks: p.desks, rate: p.rate, lat: a.criteria.lat + p.miles / 69, lng: a.criteria.lng, modified: new Date().toISOString().slice(0, 10), inCollection: true, visibility: 'Private', validUntil: p.validUntil, availableFrom: p.availableFrom };
+}
+
+
+/** What updating the collection would do: search again with the current requirement. Spaces added by hand are kept. */
+export function previewUpdate(r: MvpRequirement): { keep: AssessSpace[]; add: number; remove: number; handAdded: number } | null {
+  const a = assess(r);
+  if (!a || a.state !== 'ok') return null;
+  const base = baseMembers(r);
+  const pool = marketPool(a.criteria.city).filter((p) => !base.some((b) => b.url === p.url));
+  const all = [...base, ...pool];
+  const meds = mediansFor(all);
+  const keep = all.filter((sp) => evaluate(sp, a.criteria, meds).fit).sort((x, y) => miles(x, a.criteria) - miles(y, a.criteria));
+  return { keep, add: keep.filter((k) => !base.some((b) => b.url === k.url)).length, remove: base.filter((b) => !keep.some((k) => k.url === b.url)).length, handAdded: addedCount(r.id) };
+}
+
+export function applyUpdate(r: MvpRequirement): ReturnType<typeof previewUpdate> {
+  const p = previewUpdate(r);
+  if (!p) return null;
+  refreshed.set(r.id, p.keep.map((s) => ({ ...s, inCollection: true })));
+  basis.set(r.id, currentValues(r));
+  bump(r.id);
+  return p;
 }
