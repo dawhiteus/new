@@ -27,7 +27,9 @@ Below them, only what can be observed: what was checked, and any spaces that wou
 
 **Gaps and trade-offs** (or **Why it's empty**). One plain sentence per row, giving the detail behind the cards and not repeating their counts: the nearest and farthest distance, the lowest price over budget, the size range against the size needed, the workspace type mix, spaces over the market rate, stale listings, term, and what was not assessed.
 
-The spaces follow, collapsed, each with distance, seats, rate, listing age and reason, and a link to its listing.
+The gaps also carry venue facts, stated as observations: **Term** (minimum terms against the requirement's term), **Track record** (venues with dedicated contracts on record, and when last billed), **Venue activity** (guest reviews, leads and tours in the last 12 months), **Booking** (Request to Book or Inquire Now, and whether lead response is on record), **Platform count** (the platform's own Assess counts beside these, in production), and **Not assessed** (including availability for the requirement's start date). Under the summary, one line states the workflow's thin test: "The workflow counts a collection as thin below 5 confirmed spaces. This one has N." It does not recommend a next step.
+
+The spaces follow, collapsed, each with distance, seats, rate, listing age and reason, and a link to its listing. Each space also lists booking method, venue response, reviews, 12-month leads and tours, and whether dedicated contracts are on record.
 
 ## 3a. Running it again
 The agent remembers its last assessment of each Requirement. It is run again by opening Assess collection, and it is out of date when:
@@ -53,6 +55,7 @@ This is a primary reason to assess. The agent says what is going on:
 
 ## 6. Data and tool basis
 * Per-space facts are computed from Pulse (venue location, rate, seats, minimum term, last-modified date, booking method, venue response time). The platform's Assess tool did not reconcile in testing and gives nothing per workspace, so it is not the source.
+* Also read from Pulse per venue: RatingsReviews, MonthlyInteractionLeads (12 months), RevenueRecognitionDedicated (contracts and last billed month), Venues (response time and rate; 0 means no data).
 * Not available: availability dates, Shortlist control, task or note writes, and any inquire, tour or book operation.
 
 ## 7. Prototype notes

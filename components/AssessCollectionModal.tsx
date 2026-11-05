@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, Bot, ExternalLink, ChevronDown } from 'lucide-react';
-import { assess, addedWhy, recordRun, type RunInfo, type SpaceResult } from './data/assessmentAgent';
+import { assess, addedWhy, recordRun, CONFIRMED_NEEDED, type RunInfo, type SpaceResult } from './data/assessmentAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
@@ -58,6 +58,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
         <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>{r.space.title}<span style={{ fontWeight: 400, color: '#6B7280' }}> · {r.space.venue}</span></div>
         <div style={{ fontSize: 13, color: r.fit && r.confirmed ? GREEN : '#374151', marginTop: 2 }}>{r.reason}</div>
         <div style={{ fontSize: 12.5, color: '#9CA3AF', marginTop: 1 }}>{r.facts}</div>
+        {r.extra.length > 0 && <div style={{ fontSize: 12.5, color: '#9CA3AF', marginTop: 1 }}>{r.extra.join(' · ')}</div>}
       </div>
       <a href={r.space.url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>Open listing <ExternalLink size={12} /></a>
     </div>
@@ -100,6 +101,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
           <div style={{ marginTop: 20 }}>
             {a.verdict && <div style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{a.verdict}</div>}
             {checked && <div style={{ fontSize: 13, color: '#6B7280', marginTop: a.verdict ? 8 : 0, lineHeight: 1.5 }}>Checked against {checked}.</div>}
+            {a.state === 'ok' && a.total > 0 && <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 1.5 }}>The workflow counts a collection as thin below {CONFIRMED_NEEDED} confirmed spaces. This one has {a.confirmedFits}.</div>}
             {since && (
               <div style={{ fontSize: 13, color: '#374151', marginTop: 12, lineHeight: 1.5, paddingLeft: 12, borderLeft: `2px solid ${BLUE}` }}>
                 <b style={{ color: INK }}>Since last assessed on {since.at}:</b> {since.changes.join('; ')}. Matches {since.fitsBefore} → {since.fitsNow}.

@@ -1,7 +1,7 @@
 // Scripted Collection Assessment Agent (prototype). Computes from the recorded Pulse facts in assessmentData.ts.
 // The rules are written in docs/collection-assessment-spec.md so that one definition of a match exists.
 import { criteriaFor, capacityBand } from './collectionAgent';
-import { CENTERS, collectionSpaces, collectionCityFor, marketPool, builtByAgent, type AssessSpace } from './assessmentData';
+import { CENTERS, collectionSpaces, collectionCityFor, marketPool, builtByAgent, venueStats, venueKey, type AssessSpace } from './assessmentData';
 import type { MvpRequirement } from './mvpRequirements';
 
 export type Status = 'Plenty' | 'Few' | 'None';
@@ -34,7 +34,12 @@ export interface SpaceResult {
   reason: string;
   issues: string[];
   facts: string;
+  /** Further recorded facts about the space and its venue: booking method, response, reviews, demand, dedicated record. */
+  extra: string[];
 }
+
+/** The workflow's test: a collection is thin below this many confirmed spaces. */
+export const CONFIRMED_NEEDED = 5;
 
 export type ReqPatch = { location?: string; type?: string; budget?: number | null; capacity?: number | null; searchArea?: string };
 
@@ -114,7 +119,16 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
   if (perSeat != null && mps && perSeat > mps * 1.15) issues.push('over the local market rate');
   if (age > 90) issues.push(`listing not updated in ${age} days`);
   const facts = [`${mi.toFixed(1)} mi`, `${sp.desks} seats`, sp.rate != null ? `${money(sp.rate)}/mo` : 'not priced monthly', `updated ${age} day${age === 1 ? '' : 's'} ago`].join(' · ');
-  return { space: sp, miles: mi, fit, confirmed: age <= 90, ageDays: age, issues, facts, reason: issues.length ? issues[0].charAt(0).toUpperCase() + issues.join(', ').slice(1) : 'Meets every criterion' };
+  const st = venueStats(sp.url);
+  const rt = st?.responseMin ? (st.responseMin < 60 ? `${Math.round(st.responseMin)} min` : st.responseMin < 1440 ? `${Math.round(st.responseMin / 60)} h` : `${Math.round(st.responseMin / 1440)} days`) : '';
+  const extra = [
+    sp.booking || '',
+    rt ? `venue replies in ${rt}${st?.responseRate ? ` (${Math.round(st.responseRate)}% rate)` : ''}` : '',
+    st?.reviews ? `${st.stars} stars (${st.reviews} review${st.reviews === 1 ? '' : 's'})` : '',
+    st?.leads12 || st?.tours12 ? `${st.leads12 ?? 0} leads, ${st.tours12 ?? 0} tours in 12 mo` : '',
+    st?.dedicatedSpaces ? `dedicated contracts on record (last billed ${st.lastDedicated})` : '',
+  ].filter(Boolean);
+  return { space: sp, miles: mi, fit, extra, confirmed: age <= 90, ageDays: age, issues, facts, reason: issues.length ? issues[0].charAt(0).toUpperCase() + issues.join(', ').slice(1) : 'Meets every criterion' };
 }
 
 const mediansFor = (all: AssessSpace[]) => {
@@ -246,9 +260,31 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   if (overMarket) gaps.push({ label: 'Rate', text: `${plural(overMarket, 'space')} ${overMarket === 1 ? 'is' : 'are'} more than 15% above the local market rate per seat.` });
   const stale = off((x) => !x.confirmed);
   if (stale) gaps.push({ label: 'Listings', text: `${plural(stale, 'listing')} ${stale === 1 ? "hasn't" : "haven't"} been updated in 90 days, so ${stale === 1 ? 'its' : 'their'} price and details are unconfirmed.` });
-  if (c.termMonths) { const long = off((x) => { const m = x.space.minTerm?.match(/(\d+)\s*month/); return !!m && +m[1] > (c.termMonths as number); }); if (long) gaps.push({ label: 'Term', text: `${plural(long, 'space')} require${long === 1 ? 's' : ''} a longer minimum term than ${c.termMonths} months.` }); }
+  const termsM = results.map((x) => x.space.minTerm?.match(/(\d+)\s*month/)).filter(Boolean).map((m) => +(m as RegExpMatchArray)[1]);
+  if (c.termMonths) {
+    const long = off((x) => { const m = x.space.minTerm?.match(/(\d+)\s*month/); return !!m && +m[1] > (c.termMonths as number); });
+    if (long) gaps.push({ label: 'Term', text: `${plural(long, 'space')} require${long === 1 ? 's' : ''} a longer minimum term than ${c.termMonths} months.` });
+    else if (termsM.length) gaps.push({ label: 'Term', text: `${Math.min(...termsM) === Math.max(...termsM) ? `Every space has a ${Math.min(...termsM)}-month minimum term` : `Minimum terms range from ${Math.min(...termsM)} to ${Math.max(...termsM)} months`}, within your ${c.termMonths}-month term.` });
+  }
+  // Venue facts, observed. Nothing here is a verdict.
+  const vmap = new Map<string, { name: string; st: ReturnType<typeof venueStats> }>();
+  results.forEach((x) => { const k = venueKey(x.space.url); if (!vmap.has(k)) vmap.set(k, { name: x.space.venue, st: venueStats(x.space.url) }); });
+  const venues = [...vmap.values()]; const V = venues.length;
+  const ded = venues.filter((v) => (v.st?.dedicatedSpaces ?? 0) > 0);
+  gaps.push({ label: 'Track record', text: ded.length ? `${ded.length} of ${V} venues have dedicated contracts on record: ${ded.slice(0, 3).map((v) => `${v.name} (${plural(v.st!.dedicatedSpaces!, 'space')}, last billed ${v.st!.lastDedicated})`).join('; ')}${ded.length > 3 ? `; ${ded.length - 3} more` : ''}.` : `None of the ${V} venues has a dedicated contract on record.` });
+  const rev = venues.filter((v) => (v.st?.reviews ?? 0) > 0);
+  const nRev = rev.reduce((n, v) => n + (v.st!.reviews as number), 0);
+  const leads = venues.reduce((n, v) => n + (v.st?.leads12 ?? 0), 0), tours = venues.reduce((n, v) => n + (v.st?.tours12 ?? 0), 0);
+  const low = rev.slice().sort((a, b) => (a.st!.stars as number) - (b.st!.stars as number))[0];
+  gaps.push({ label: 'Venue activity', text: `${rev.length ? `${rev.length} of ${V} venues have guest reviews, averaging ${(rev.reduce((n, v) => n + (v.st!.stars as number) * (v.st!.reviews as number), 0) / nRev).toFixed(1)} stars${low && rev.length > 1 && low.st!.stars !== Math.max(...rev.map((v) => v.st!.stars as number)) ? ` (lowest ${low.st!.stars} at ${low.name})` : ''}.` : `None of the ${V} venues has guest reviews.`} Together they logged ${plural(leads, 'lead')} and ${plural(tours, 'tour')} in the last 12 months.` });
+  const rtc = results.filter((x) => x.space.booking).reduce((m: Record<string, number>, x) => { m[x.space.booking as string] = (m[x.space.booking as string] ?? 0) + 1; return m; }, {});
+  const withResp = venues.filter((v) => v.st?.responseMin).length;
+  if (Object.keys(rtc).length) gaps.push({ label: 'Booking', text: `${Object.entries(rtc).map(([k, n]) => `${n} ${n === 1 ? 'is' : 'are'} ${k}`).join(', ')}. Average lead response is on record for ${withResp} of ${V} venues.` });
+  gaps.push({ label: 'Platform count', text: "The platform's own Assess tool can't be called from the demo. In production its counts appear here beside these, so the two can be compared." });
   const missing = [!c.capacity ? 'headcount' : '', !c.budget ? 'budget' : '', !c.type ? 'workspace type' : ''].filter(Boolean);
-  gaps.push({ label: 'Not assessed', text: `${missing.length ? `${missing.join(', ').replace(/^./, (m) => m.toUpperCase())} ${missing.length === 1 ? 'was' : 'were'} not provided. ` : ''}Availability, amenity needs and program needs aren't in the available data.` });
+  const sd = r.details.startDate ? new Date(r.details.startDate + 'T00:00:00') : null;
+  const startTxt = sd && !isNaN(+sd) ? `Availability for the ${sd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} start isn't in the available data. ` : "Availability isn't in the available data. ";
+  gaps.push({ label: 'Not assessed', text: `${missing.length ? `${missing.join(', ').replace(/^./, (m) => m.toUpperCase())} ${missing.length === 1 ? 'was' : 'were'} not provided. ` : ''}${startTxt}Amenity needs and program needs aren't in the available data.` });
 
   const reasons: { n: number; text: string; name: string }[] = [
     { n: tooFar, text: `area (${tooFar === total ? 'all' : tooFar} too far)`, name: 'area' },

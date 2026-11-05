@@ -267,3 +267,86 @@ const AGENT_BUILT = [
   '568ef221-1642-4822-b79f-3fe348062ccc', 'b6709b07-6512-4120-98b7-7a4dd7505bb4', '85361f6e-0113-4954-a782-54c933b5155c',
 ];
 export const builtByAgent = (url: string | undefined) => !!url && AGENT_BUILT.some((id) => url.includes(id));
+
+/** Per-venue facts recorded from Pulse (RatingsReviews, MonthlyInteractionLeads, RevenueRecognitionDedicated, Venues) on 2026-11-05. Key: listing path without the venue's last segment. Fields: stars|reviews|leads12|tours12|dedicatedSpaces|dedicatedMonths|lastDedicatedMonth|leadResponseMin|leadResponseRate|chain. Blank = no record. */
+const VENUE_STATS = `pt/lisboa/lisboa/av-republic||||||||0|0|
+pt/lisboa/lisboa/maleo-saldanha||||||||0|0|
+pt/lisboa/lisboa/venture-x-portugal||||||||0|0|Venture X
+pt/lisboa/lisbon/regus-lisbon-parque-das-na231245es||||||||0|0|IWG/Regus
+pt/lisbon/lisbon/regus-lisbon-avenida-da-liberdade||||||||0|0|IWG/Regus
+pt/lisbon/lisbon/spaces-lisbon-marques-de-pombal|5|1||||||0|0|IWG/Regus
+pt/porto-district/porto/regus-porto-batalha||||||||0|0|IWG/Regus
+pt/porto/matosinhos/spaces-matosinhos-spaces-matosinhos||||||||0|0|IWG/Regus
+pt/porto/porto/regus-regus-porto-s-bento||||||||0|0|IWG/Regus
+pt/porto/porto/vertical-coworking-dom-henrique||||||||0|0|
+pt/porto/porto/work-wise-co-working-offices|||0|0||||0|0|
+pt/porto/vila-nova-de-gaia/regus-gaia-arrabida||||||||0|0|IWG/Regus
+us/co/denver/candy-factory-coworking|4.9|11|0|0|1|1|2023-04|0|0|
+us/co/denver/industrious-denver|5|3|0|0||||0|0|Industrious
+us/co/denver/industrious-lohi|5|1||||||0|0|Industrious
+us/co/denver/regus-denver-place-denver-1|4|1|4|2||||119999|0|IWG/Regus
+us/co/denver/serendipity-labs-denver-lodo|5|6|2|1|2|19|2025-09|28671|67|Serendipity Labs
+us/co/denver/venture-x-denver-downtown-16th-street|4.9|19|1|0|1|1|2023-01|0|0|Venture X
+us/co/denver/venture-x-lodo|4.9|14|1|1||||398|100|Venture X
+us/il/chicago/expansive-river-north-superior|2.7|3|7|4|1|4|2026-11|428|100|Expansive
+us/il/chicago/expansive-stetson-ave|||0|0|1|1|2024-09|0|0|Expansive
+us/il/chicago/industrious-chicago-central-loop|5|1|2|0||||0|0|Industrious
+us/il/chicago/industrious-millennium-park-chicago|||1|0||||0|0|Industrious
+us/il/chicago/level-office|4.9|19|18|11|4|19|2026-11|16790|80|Expansive
+us/il/chicago/level-office-211-w-wacker|4.5|13|0|0|1|14|2024-02|33314|67|Expansive
+us/il/chicago/regus-111-w-jackson|5|2|1|0||||2320|0|IWG/Regus
+us/il/chicago/regus-west-loop-200-s-wacker|||1|1||||0|0|IWG/Regus
+us/il/chicago/workbox-the-loop|5|4|4|1||||0|0|Workbox
+us/il/chicago/working-from|4.9|24|10|2|3|16|2026-11|33983|50|
+us/mn/minneapolis/industrious-minneapolis-downtown|||0|0|1|1|2025-10|0|0|Industrious
+us/mn/minneapolis/industrious-minneapolis-north-loop|5|3|0|0||||0|0|Industrious
+us/mn/minneapolis/novel-coworking-minneapolis|5|1|2|2||||0|0|Expansive
+us/mn/minneapolis/regus-minneapolis-lagoon-ave|||2|1|1|6|2026-11|0|0|IWG/Regus
+us/mn/minneapolis/regus-minneapolis-washington-ave|||1|1||||0|0|IWG/Regus
+us/mn/minneapolis/regus-minnesota-bloomington-normandale-lake|||0|0||||0|0|IWG/Regus
+us/mn/minneapolis/regus-minnesota-center|||4|2||||8121|0|IWG/Regus
+us/mn/minneapolis/regus-mn-minneapolis-south-6th-st||||||||0|0|IWG/Regus
+us/mn/minneapolis/regus-spaces-north-loop|5|1|7|3|1|6|2026-11|82699|0|IWG/Regus
+us/ny/new-york/1501-broadway|||0|0||||0|0|BevMax Office Centers
+us/ny/new-york/53-beach-street|||7|5||||15|0|
+us/ny/new-york/bevmax-office-centers-plaza-district|||0|0||||0|0|
+us/ny/new-york/emerge212-1185-avenue-of-the-americas|4.6|25|3|2||||23238|50|Emerge212
+us/ny/new-york/full-floor-penn-station-office|||8|3||||19610|50|
+us/ny/new-york/industrious-indy-by-industrious-times-square||||||||0|0|Industrious
+us/ny/new-york/jay-suites|4|5|9|4||||790|67|Jay Suites
+us/ny/new-york/jay-suites-38th-street-new-york|4.5|10|4|0|1|1|2024-08|16|100|Jay Suites
+us/ny/new-york/jay-suites-chelsea|4.3|11|1|0|1|1|2023-12|169|50|Jay Suites
+us/ny/new-york/regus-americas-tower|4|1|5|1|1|3|2026-11|84917|0|IWG/Regus
+us/ny/new-york/select-office-suites-flatiron|4.4|64|29|15|2|4|2023-04|11711|91|Select Office Suites
+us/ny/new-york/tower-49-by-industrious|5|1|6|1||||17541|0|Industrious
+us/ny/new-york/workville|4.5|31|13|10|2|3|2025-12|37597|33|IHG Meetings
+us/tx/austin/dwell-coworking-downtown|4|2||||||0|0|
+us/tx/austin/expansive-austin-highland|4|12|2|1|2|14|2026-11|351|100|Expansive
+us/tx/austin/industrious-austin|3.5|2|2|2|1|5|2023-06|0|0|Industrious
+us/tx/austin/indy-by-industrious||||||||0|0|Industrious
+us/tx/austin/novel-coworking-north-austin|4.8|9|6|5|3|26|2026-11|1181|100|Expansive
+us/tx/austin/regus-aspen-lake-one|5|1|0|0||||0|0|IWG/Regus
+us/tx/austin/regus-dobie-center|5|2|3|2||||8582|0|IWG/Regus
+us/tx/austin/regus-river-place|||2|1|1|7|2026-11|0|0|IWG/Regus
+us/tx/austin/regus-westlake|||4|1||||0|0|IWG/Regus
+us/tx/dallas/1910-pacific-place|||19|7|5|43|2026-11|1048|100|Boxer Property
+us/tx/dallas/4100-spring-valley-rd|||6|1|4|34|2026-05|6827|100|Boxer Property
+us/tx/dallas/8330-lbj-freeway|||6|1|2|13|2024-11|8180|100|Boxer Property
+us/tx/dallas/boxer-14800-quorum|||2|2|1|9|2023-09|3025|100|Boxer Property
+us/tx/dallas/boxer-northbrook-atrium-plaza|||5|0|2|16|2025-06|0|0|Boxer Property
+us/tx/dallas/boxer-office-alpha|||6|4|1|12|2024-05|5354|75|Boxer Property
+us/tx/dallas/carillon-towers|||21|8|1|12|2024-10|8182|100|Boxer Property
+us/tx/dallas/level-office-701commerce|4.8|6|6|2|3|10|2026-11|0|0|Expansive`;
+
+export interface VenueStats { stars?: number; reviews?: number; leads12?: number; tours12?: number; dedicatedSpaces?: number; dedicatedMonths?: number; lastDedicated?: string; responseMin?: number; responseRate?: number; chain?: string }
+const STATS = new Map<string, VenueStats>(VENUE_STATS.split('\n').map((l) => {
+  const p = l.split('|'); const n = (i: number) => (p[i] === '' || p[i] === undefined ? undefined : +p[i]);
+  return [p[0], { stars: n(1), reviews: n(2), leads12: n(3), tours12: n(4), dedicatedSpaces: n(5), dedicatedMonths: n(6), lastDedicated: p[7] || undefined, responseMin: n(8) || undefined, responseRate: n(9) || undefined, chain: p[10] || undefined }] as const;
+}));
+/** Facts about the venue that holds a listing, or null when none are recorded. */
+export function venueStats(url: string): VenueStats | null {
+  const path = url.replace(/^https?:\/\/liquidspace\.com\//, '').replace(/[?#].*$/, '').replace(/\/+$/, '');
+  return STATS.get(path.split('/').slice(0, -1).join('/')) ?? null;
+}
+/** Venue key: the listing path without its last segment. */
+export const venueKey = (url: string) => url.replace(/^https?:\/\/liquidspace\.com\//, '').replace(/[?#].*$/, '').replace(/\/+$/, '').split('/').slice(0, -1).join('/');
