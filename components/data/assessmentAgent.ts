@@ -36,6 +36,10 @@ export interface SpaceResult {
   facts: string;
   /** Further recorded facts about the space and its venue: booking method, response, reviews, demand, dedicated record. */
   extra: string[];
+  /** Which criteria this space meets: true, false, or null when the requirement does not state it (or the rate is unknown). */
+  pass: { area: boolean; capacity: boolean | null; budget: boolean | null; type: boolean | null };
+  /** Venue and listing facts, for the expanded row. */
+  detail: { k: string; v: string }[];
 }
 
 /** The workflow's test: a collection is thin below this many confirmed spaces. */
@@ -142,7 +146,18 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
     st?.leads12 || st?.tours12 ? `${plural(st.leads12 ?? 0, 'lead')}, ${plural(st.tours12 ?? 0, 'tour')} in 12 mo` : '',
     st?.dedicatedSpaces ? `dedicated contracts on record (last billed ${st.lastDedicated})` : '',
   ].filter(Boolean);
-  return { space: sp, miles: mi, fit, extra, confirmed: priv ? quoteOk : age <= 90, ageDays: age, issues, facts, reason: issues.length ? issues[0].charAt(0).toUpperCase() + issues.join(', ').slice(1) : 'Meets every criterion' };
+  const detail: { k: string; v: string }[] = [
+    { k: 'Booking', v: sp.booking || 'Not recorded' },
+    ...(priv ? [{ k: 'Quote valid until', v: sp.validUntil ? fdate(sp.validUntil) : 'Not given' }, { k: 'Available from', v: sp.availableFrom ? fdate(sp.availableFrom) : 'Not given' }] : [{ k: 'Listing updated', v: `${age} day${age === 1 ? '' : 's'} ago${age > 90 ? ' (over 90 days)' : ''}` }]),
+    { k: 'Minimum term', v: sp.minTerm || 'Not recorded' },
+    ...(perSeat != null && mps && perSeat > mps * 1.15 ? [{ k: 'Rate', v: 'More than 15% above the local market per seat' }] : []),
+    { k: 'Guest reviews', v: st?.reviews ? `${st.stars} stars (${st.reviews})` : st ? 'None' : 'No venue record' },
+    { k: 'Last 12 months', v: st ? `${plural(st.leads12 ?? 0, 'lead')}, ${plural(st.tours12 ?? 0, 'tour')}` : 'No venue record' },
+    { k: 'Lead response', v: rt ? `${rt}${st?.responseRate ? ` (${Math.round(st.responseRate)}% rate)` : ''}` : 'Not recorded' },
+    { k: 'Dedicated contracts', v: st?.dedicatedSpaces ? `On record at this venue, last billed ${st.lastDedicated}` : st ? 'None on record' : 'No venue record' },
+  ];
+  const pass = { area: area === 'pass', capacity: c.capacity ? capacity === 'pass' : null, budget: c.budget ? (budget === 'unknown' ? null : budget === 'pass') : null, type: c.type ? type === 'pass' : null };
+  return { space: sp, miles: mi, fit, extra, pass, detail, confirmed: priv ? quoteOk : age <= 90, ageDays: age, issues, facts, reason: issues.length ? issues[0].charAt(0).toUpperCase() + issues.join(', ').slice(1) : 'Meets every criterion' };
 }
 
 const mediansFor = (all: AssessSpace[]) => {
