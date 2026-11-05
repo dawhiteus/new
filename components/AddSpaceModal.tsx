@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, Bot } from 'lucide-react';
 import { listingByUrl, type AssessSpace } from './data/assessmentData';
-import { assess, evaluateFor, hasSpace, proposalSpace, type SpaceResult } from './data/assessmentAgent';
+import { assess, hasSpace, proposalSpace } from './data/assessmentAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
@@ -24,40 +24,38 @@ interface Props {
 export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props) {
   const [mode, setMode] = useState<'link' | 'proposal'>('link');
   const [url, setUrl] = useState('');
-  const [looked, setLooked] = useState<{ space: AssessSpace | null; tried: boolean }>({ space: null, tried: false });
+  const [msg, setMsg] = useState('');
   const [f, setF] = useState({ venue: '', title: '', type: '', desks: '', rate: '', miles: '', validUntil: iso(new Date(Date.now() + 30 * 864e5)), availableFrom: '' });
-  const [draft, setDraft] = useState<AssessSpace | null>(null);
 
-  useEffect(() => { setMode('link'); setUrl(''); setLooked({ space: null, tried: false }); setDraft(null); }, [requirement?.id]);
+  useEffect(() => { setMode('link'); setUrl(''); setMsg(''); }, [requirement?.id]);
 
   const a = requirement ? assess(requirement) : null;
   if (!requirement || !requirement.collection || !a) return <Dialog open={false}><DialogContent className="hidden" /></Dialog>;
   const col = requirement.collection;
   const ready = a.state === 'ok';
-  const sp = mode === 'link' ? looked.space : draft;
-  const result: SpaceResult | null = sp && ready ? evaluateFor(requirement, sp) : null;
-  const already = sp ? hasSpace(requirement, sp) : false;
 
-  const lookUp = () => {
+  const finish = (sp: AssessSpace) => {
+    addSpace(requirement, sp);
+    onAdded(requirement, sp, `Added “${sp.title}” (${sp.venue}, ${sp.visibility === 'Private' ? 'private' : 'public'}) to ${col.name}.`);
+    onClose();
+  };
+  const addLink = () => {
     const hit = listingByUrl(url);
-    setLooked({ space: hit ? hit.space : null, tried: true });
+    if (!hit) { setMsg("I can't find that listing in the demo."); return; }
+    if (hasSpace(requirement, hit.space)) { setMsg('That space is already in this collection.'); return; }
+    finish(hit.space);
   };
   const num = (v: string) => (v.trim() === '' || isNaN(+v) ? null : +v);
   const proposalOk = f.venue.trim() && f.title.trim() && f.type && num(f.desks) && num(f.rate) != null && num(f.miles) != null && f.availableFrom;
-  const preview = () => {
+  const addProposal = () => {
     const p = proposalSpace(requirement, { venue: f.venue.trim(), title: f.title.trim(), type: f.type, desks: num(f.desks) as number, rate: num(f.rate) as number, miles: num(f.miles) as number, validUntil: f.validUntil, availableFrom: f.availableFrom });
-    setDraft(p);
-  };
-  const confirm = () => {
-    if (!sp || already) return;
-    addSpace(requirement, sp);
-    const vis = sp.visibility === 'Private' ? 'private' : 'public';
-    onAdded(requirement, sp, `Added “${sp.title}” (${sp.venue}, ${vis}) to ${col.name}.`);
-    onClose();
+    if (p) finish(p);
   };
 
   const field = (label: string, node: React.ReactNode, flex = 1) => <div style={{ flex }}><div style={LABEL}>{label}</div>{node}</div>;
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { setDraft(null); setF({ ...f, [k]: e.target.value }); };
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
+  const linkBtn: React.CSSProperties = { background: 'none', border: 'none', padding: 0, color: BLUE, fontWeight: 600, fontFamily: FONT, fontSize: 13.5, cursor: 'pointer' };
+  const primary = (on: boolean): React.CSSProperties => ({ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '0 22px', height: 40, whiteSpace: 'nowrap', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: on ? 'pointer' : 'default', opacity: on ? 1 : 0.5 });
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -75,29 +73,22 @@ export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props
             <div style={{ fontSize: 13, color: '#6B7280' }}>{requirement.name} · {col.name}</div>
           </div>
 
-          <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.55, marginTop: 16 }}>
-            {mode === 'link'
-              ? 'Paste a link to a listing. I show how it measures against the requirement before anything is added.'
-              : 'Enter what the venue proposed. A proposal becomes a private listing, and it counts as confirmed while its quote is valid.'}
-          </div>
-
-          {!ready && <div style={{ fontSize: 13.5, color: '#6B7280', marginTop: 14, lineHeight: 1.5 }}>I can't measure a space against this requirement yet ({a.verdict || 'its location is not set'}), so there is nothing to add to here.</div>}
+          {!ready && <div style={{ fontSize: 14, color: '#374151', marginTop: 16, lineHeight: 1.55 }}>This requirement has no location I can find, so spaces can't be added here yet.</div>}
 
           {ready && mode === 'link' && (
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: 18 }}>
               <div style={LABEL}>Listing link</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <input style={INPUT} placeholder="https://liquidspace.com/us/…" value={url} onChange={(e) => { setUrl(e.target.value); setLooked({ space: null, tried: false }); }} onKeyDown={(e) => { if (e.key === 'Enter') lookUp(); }} />
-                <button type="button" onClick={lookUp} disabled={!url.trim()} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '0 18px', whiteSpace: 'nowrap', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: url.trim() ? 'pointer' : 'default', opacity: url.trim() ? 1 : 0.5 }}>Look up</button>
+                <input style={{ ...INPUT, height: 40 }} placeholder="https://liquidspace.com/us/…" value={url} onChange={(e) => { setUrl(e.target.value); setMsg(''); }} onKeyDown={(e) => { if (e.key === 'Enter' && url.trim()) addLink(); }} />
+                <button type="button" onClick={addLink} disabled={!url.trim()} style={primary(!!url.trim())}>Add</button>
               </div>
-              {looked.tried && !looked.space && (
-                <div style={{ fontSize: 13.5, color: '#374151', marginTop: 12, lineHeight: 1.5 }}>I can't look that listing up from the demo. <button type="button" onClick={() => { setMode('proposal'); setLooked({ space: null, tried: false }); }} style={{ background: 'none', border: 'none', padding: 0, color: BLUE, fontWeight: 600, fontFamily: FONT, fontSize: 13.5, cursor: 'pointer' }}>Enter it as a venue proposal</button> instead.</div>
-              )}
+              {msg && <div style={{ fontSize: 13.5, color: '#374151', marginTop: 10 }}>{msg}</div>}
+              <div style={{ marginTop: 14 }}><button type="button" onClick={() => { setMode('proposal'); setMsg(''); }} style={linkBtn}>Add a venue proposal instead</button></div>
             </div>
           )}
 
           {ready && mode === 'proposal' && (
-            <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
+            <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
               <div style={{ display: 'flex', gap: 12 }}>
                 {field('Venue', <input style={INPUT} value={f.venue} onChange={set('venue')} />)}
                 {field('Space', <input style={INPUT} value={f.title} onChange={set('title')} />)}
@@ -113,34 +104,10 @@ export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props
                 {field('Quote valid until', <input style={INPUT} type="date" value={f.validUntil} onChange={set('validUntil')} />)}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <button type="button" onClick={() => { setMode('link'); setDraft(null); }} style={{ background: 'none', border: 'none', padding: 0, color: BLUE, fontWeight: 600, fontFamily: FONT, fontSize: 13.5, cursor: 'pointer' }}>Use a listing link instead</button>
-                <button type="button" onClick={preview} disabled={!proposalOk} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: proposalOk ? 'pointer' : 'default', opacity: proposalOk ? 1 : 0.5 }}>Check</button>
+                <button type="button" onClick={() => setMode('link')} style={linkBtn}>Use a listing link instead</button>
+                <button type="button" onClick={addProposal} disabled={!proposalOk} style={primary(!!proposalOk)}>Add</button>
               </div>
             </div>
-          )}
-
-          {sp && result && (
-            <>
-              <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: '14px 18px', marginTop: 18 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: INK }}>{sp.title}<span style={{ fontWeight: 400, color: '#6B7280' }}> · {sp.venue}</span></div>
-                  <div style={{ fontSize: 13, color: '#6B7280', whiteSpace: 'nowrap' }}>{sp.visibility === 'Private' ? 'Private' : 'Public'}</div>
-                </div>
-                <div style={{ fontSize: 13.5, color: result.fit && result.confirmed ? '#0F7B4F' : '#374151', marginTop: 6 }}>{result.reason}</div>
-                <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>{result.facts}</div>
-                {result.extra.filter((x) => x !== 'Public' && x !== 'Private (from a venue proposal)').length > 0 && <div style={{ fontSize: 13, color: '#9CA3AF', marginTop: 2 }}>{result.extra.filter((x) => x !== 'Public' && x !== 'Private (from a venue proposal)').join(' · ')}</div>}
-              </div>
-              <div style={{ marginTop: 18 }}>
-                <div style={LABEL}>This will</div>
-                <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.55 }}>
-                  {already ? 'Nothing. This space is already in the collection.' : `Add 1 workspace to ${col.name}. The assessment then shows as out of date, and the next run says what changed.`}
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
-                <button type="button" onClick={onClose} style={{ background: '#fff', color: INK, border: '1px solid #D1D5DB', borderRadius: 8, padding: '9px 18px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>Cancel</button>
-                <button type="button" onClick={confirm} disabled={already} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: already ? 'default' : 'pointer', opacity: already ? 0.5 : 1 }}>Add to collection</button>
-              </div>
-            </>
           )}
         </div>
       </DialogContent>
