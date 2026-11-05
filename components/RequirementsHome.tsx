@@ -22,7 +22,8 @@ import { capacityBand } from './data/collectionAgent';
 import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
 import { AssessCollectionModal } from './AssessCollectionModal';
-import { quickStatus } from './data/assessmentAgent';
+import { quickStatus, addSpace } from './data/assessmentAgent';
+import { AddSpaceModal } from './AddSpaceModal';
 import { RequirementDetailsModal } from './RequirementDetailsModal';
 import { useSearchParams } from 'react-router-dom';
 import { readHubOrigin, formatVerdict, formatPurpose, formatUsd } from './hubOrigin';
@@ -177,6 +178,7 @@ function RowMenu({ onAction, hasCollection, assessable }: { onAction: (a: string
             <>
               {item('View collection')}
               {item('Assess collection')}
+              {item('Add space')}
               {item('Update collection')}
               {item('Remove collection')}
             </>
@@ -189,7 +191,7 @@ function RowMenu({ onAction, hasCollection, assessable }: { onAction: (a: string
   );
 }
 
-function CollectionPill({ req, onOpen, onAssess }: { req: MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }; onOpen: () => void; onAssess: () => void }) {
+function CollectionPill({ req, onOpen, onAssess, onAdd }: { req: MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }; onOpen: () => void; onAssess: () => void; onAdd: () => void }) {
   const c = req.collection;
   const status = quickStatus(req);
   const [show, setShow] = useState(false);
@@ -252,6 +254,12 @@ function CollectionPill({ req, onOpen, onAssess }: { req: MvpRequirement & { col
             >
               Assess collection
           </button>
+          <button
+              onClick={onAdd}
+              style={{ width: '100%', background: 'none', border: 'none', marginTop: 2, padding: '4px', fontSize: 13, fontWeight: 600, color: '#005B94', fontFamily: FONT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              Add space
+          </button>
         </div>
       </div>
       </div>
@@ -283,6 +291,7 @@ export function RequirementsHome() {
   const [detailId, setDetailIdRaw] = useState<string | null>(null);
   const [collectionForId, setCollectionForId] = useState<string | null>(null);
   const [assessForId, setAssessForId] = useState<string | null>(null);
+  const [addForId, setAddForId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [fromLicense, setFromLicense] = useState('');
   useEffect(() => {
@@ -550,6 +559,17 @@ export function RequirementsHome() {
     })));
   };
 
+  /** A space added by hand: the collection grows by one, and the timeline says so. */
+  const logAdded = (req: MvpRequirement, _sp: unknown, text: string) => {
+    const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    setRows((rs) => rs.map((r) => (r.id !== req.id || !r.collection ? r : {
+      ...r,
+      collection: { ...r.collection, totalSpaces: r.collection.totalSpaces + 1 },
+      details: { ...r.details, events: [...r.details.events, { id: `e-${Date.now()}-sp`, type: 'collection', title: 'Spaces Added', description: text, date: dispDate, actor: CURRENT_USER_EMAIL }] },
+    })));
+    toast.success('Space added to the collection.');
+  };
+
   const handleAction = (req: MvpRequirement, action: string) => {
     if (action === 'Remove Requirement') {
       setRows((rs) => rs.filter((r) => r.id !== req.id));
@@ -563,6 +583,8 @@ export function RequirementsHome() {
       setCollectionForId(req.id);
     } else if (action === 'Assess collection') {
       setAssessForId(req.id);
+    } else if (action === 'Add space') {
+      setAddForId(req.id);
     } else if (action === 'View collection' || action === 'Update collection') {
       openCollection(req);
     } else if (action === 'View Requirement') {
@@ -675,7 +697,7 @@ export function RequirementsHome() {
                       <td style={td}><Pill label={r.stage} bg="#E8A91C" color="#fff" /></td>
                       <td style={td}>{r.budget == null ? <NotProvided /> : money(r.budget)}</td>
                       <td style={td} onClick={(e) => e.stopPropagation()}>{r.collection ? (
-                          <CollectionPill req={r as MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }} onOpen={() => openCollection(r)} onAssess={() => setAssessForId(r.id)} />
+                          <CollectionPill req={r as MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }} onOpen={() => openCollection(r)} onAssess={() => setAssessForId(r.id)} onAdd={() => setAddForId(r.id)} />
                         ) : (
                           <button
                             onClick={() => setCollectionForId(r.id)}
@@ -726,6 +748,12 @@ export function RequirementsHome() {
         requirement={rows.find((r) => r.id === collectionForId) ?? null}
         onClose={() => setCollectionForId(null)}
         onComplete={applyCollection}
+      />
+      <AddSpaceModal
+        requirement={rows.find((r) => r.id === addForId) ?? null}
+        onClose={() => setAddForId(null)}
+        onAdded={logAdded}
+        addSpace={addSpace}
       />
       <AssessCollectionModal
         requirement={rows.find((r) => r.id === assessForId) ?? null}

@@ -60,7 +60,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
         <div style={{ fontSize: 12.5, color: '#9CA3AF', marginTop: 1 }}>{r.facts}</div>
         {r.extra.length > 0 && <div style={{ fontSize: 12.5, color: '#9CA3AF', marginTop: 1 }}>{r.extra.join(' · ')}</div>}
       </div>
-      <a href={r.space.url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>Open listing <ExternalLink size={12} /></a>
+      {r.space.url && <a href={r.space.url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>Open listing <ExternalLink size={12} /></a>}
     </div>
   );
 

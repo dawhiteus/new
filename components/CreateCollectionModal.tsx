@@ -154,7 +154,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                   <Zap size={15} color={BLUE} />
                 </div>
                 <div style={{ fontSize: 14, lineHeight: 1.55, color: '#1E3A5F' }}>
-                  <b style={{ fontWeight: 600 }}>The Create Collection Agent</b> will source spaces based on this requirement's metadata: location, headcount, budget and workspace type.
+                  <b style={{ fontWeight: 600 }}>The Create Collection Agent</b> will source spaces based on this requirement's metadata: location, headcount, budget and workspace type. It uses public listings. Proposals from venues are added later, as private listings.
                 </div>
               </div>
               <div style={{ fontSize: 13.5, color: '#6B7280', lineHeight: 1.55 }}>

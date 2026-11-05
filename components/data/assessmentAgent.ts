@@ -90,9 +90,15 @@ export function currentValues(r: MvpRequirement): Values {
 /** Every requirement with a collection can be assessed. */
 export const canAssess = (r: MvpRequirement) => !!r.collection;
 
+/** Spaces added by hand to a requirement's collection in this session (the demo cannot write to MCP). */
+const addedSpaces = new Map<string, AssessSpace[]>();
+export const addedCount = (id: string) => addedSpaces.get(id)?.length ?? 0;
+export const hasSpace = (r: MvpRequirement, sp: AssessSpace) => membersFor(r).members.some((m) => (m.url && sp.url && m.url === sp.url) || m.id === sp.id);
+export function addSpace(r: MvpRequirement, sp: AssessSpace) { addedSpaces.set(r.id, [...(addedSpaces.get(r.id) ?? []), { ...sp, inCollection: true, addedByHand: true }]); }
+
 function membersFor(r: MvpRequirement): { members: AssessSpace[]; recorded: boolean } {
   const key = collectionCityFor(r.collection?.url);
-  const members = key ? collectionSpaces(key) : [];
+  const members = [...(key ? collectionSpaces(key) : []), ...(addedSpaces.get(r.id) ?? [])];
   const total = r.collection?.totalSpaces ?? 0;
   return { members, recorded: members.length > 0 || total === 0 };
 }
@@ -106,7 +112,10 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
   if (c.budget) budget = sp.rate == null ? 'unknown' : sp.rate <= c.budget ? 'pass' : 'fail';
   const type: Dim = c.type ? (sp.type === c.type ? 'pass' : 'fail') : 'na';
   const fit = area === 'pass' && (capacity === 'pass' || capacity === 'na') && (budget === 'pass' || budget === 'unknown' || budget === 'na') && (type === 'pass' || type === 'na');
-  const age = daysAgo(sp.modified);
+  const priv = sp.visibility === 'Private';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const quoteOk = priv ? !sp.validUntil || new Date(sp.validUntil + 'T23:59:59') >= today : false;
+  const age = priv ? 0 : daysAgo(sp.modified);
   const perSeat = sp.rate != null && sp.desks ? sp.rate / sp.desks : null;
   const mps = medians[sp.type];
 
@@ -117,18 +126,23 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
   if (capacity === 'fail') issues.push(`holds ${sp.desks}, needs ${c.capacity}`);
   if (type === 'fail') issues.push(`not ${c.type}`);
   if (perSeat != null && mps && perSeat > mps * 1.15) issues.push('over the local market rate');
-  if (age > 90) issues.push(`listing not updated in ${age} days`);
-  const facts = [`${mi.toFixed(1)} mi`, `${sp.desks} seats`, sp.rate != null ? `${money(sp.rate)}/mo` : 'not priced monthly', `updated ${age} day${age === 1 ? '' : 's'} ago`].join(' · ');
+  if (!priv && age > 90) issues.push(`listing not updated in ${age} days`);
+  if (priv && !quoteOk) issues.push('quote has expired');
+  const fdate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const facts = [`${mi.toFixed(1)} mi`, `${sp.desks} seats`, sp.rate != null ? `${money(sp.rate)}/mo` : 'not priced monthly', priv ? (sp.validUntil ? `quote valid until ${fdate(sp.validUntil)}` : 'quote validity not given') : `updated ${age} day${age === 1 ? '' : 's'} ago`].join(' · ');
   const st = venueStats(sp.url);
   const rt = st?.responseMin ? (st.responseMin < 60 ? `${Math.round(st.responseMin)} min` : st.responseMin < 1440 ? `${Math.round(st.responseMin / 60)} h` : `${Math.round(st.responseMin / 1440)} days`) : '';
   const extra = [
+    priv ? 'Private (from a venue proposal)' : 'Public',
+    priv && sp.availableFrom ? `available from ${fdate(sp.availableFrom)}` : '',
+    sp.addedByHand ? 'added by hand' : '',
     sp.booking || '',
     rt ? `venue replies in ${rt}${st?.responseRate ? ` (${Math.round(st.responseRate)}% rate)` : ''}` : '',
     st?.reviews ? `${st.stars} stars (${st.reviews} review${st.reviews === 1 ? '' : 's'})` : '',
-    st?.leads12 || st?.tours12 ? `${st.leads12 ?? 0} leads, ${st.tours12 ?? 0} tours in 12 mo` : '',
+    st?.leads12 || st?.tours12 ? `${plural(st.leads12 ?? 0, 'lead')}, ${plural(st.tours12 ?? 0, 'tour')} in 12 mo` : '',
     st?.dedicatedSpaces ? `dedicated contracts on record (last billed ${st.lastDedicated})` : '',
   ].filter(Boolean);
-  return { space: sp, miles: mi, fit, extra, confirmed: age <= 90, ageDays: age, issues, facts, reason: issues.length ? issues[0].charAt(0).toUpperCase() + issues.join(', ').slice(1) : 'Meets every criterion' };
+  return { space: sp, miles: mi, fit, extra, confirmed: priv ? quoteOk : age <= 90, ageDays: age, issues, facts, reason: issues.length ? issues[0].charAt(0).toUpperCase() + issues.join(', ').slice(1) : 'Meets every criterion' };
 }
 
 const mediansFor = (all: AssessSpace[]) => {
@@ -268,8 +282,10 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   }
   // Venue facts, observed. Nothing here is a verdict.
   const vmap = new Map<string, { name: string; st: ReturnType<typeof venueStats> }>();
-  results.forEach((x) => { const k = venueKey(x.space.url); if (!vmap.has(k)) vmap.set(k, { name: x.space.venue, st: venueStats(x.space.url) }); });
+  results.forEach((x) => { const k = venueKey(x.space.url) || `name:${x.space.venue}`; if (!vmap.has(k)) vmap.set(k, { name: x.space.venue, st: venueStats(x.space.url) }); });
   const venues = [...vmap.values()]; const V = venues.length;
+  const nPriv = results.filter((x) => x.space.visibility === 'Private').length;
+  gaps.push({ label: 'Public / private', text: `${plural(total - nPriv, 'space')} ${total - nPriv === 1 ? 'is a public listing' : 'are public listings'}, ${nPriv} ${nPriv === 1 ? 'is' : 'are'} private. ${nPriv ? 'A private listing counts as confirmed while its quote is valid.' : 'Proposals from venues become private listings and are added with Add space.'}` });
   const ded = venues.filter((v) => (v.st?.dedicatedSpaces ?? 0) > 0);
   gaps.push({ label: 'Track record', text: ded.length ? `${ded.length} of ${V} venues have dedicated contracts on record: ${ded.slice(0, 3).map((v) => `${v.name} (${plural(v.st!.dedicatedSpaces!, 'space')}, last billed ${v.st!.lastDedicated})`).join('; ')}${ded.length > 3 ? `; ${ded.length - 3} more` : ''}.` : `None of the ${V} venues has a dedicated contract on record.` });
   const rev = venues.filter((v) => (v.st?.reviews ?? 0) > 0);
@@ -304,7 +320,9 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
 /** Why the spaces are in the collection, when we know. */
 export function addedWhy(r: MvpRequirement): string {
   if ((r.collection?.totalSpaces ?? 0) === 0) return 'Nothing has been added yet.';
-  return builtByAgent(r.collection?.url) ? 'Matched on location, headcount and workspace type when the collection was built.' : 'Added outside the agent, so I can\'t say why.';
+  const n = addedCount(r.id);
+  const base = builtByAgent(r.collection?.url) ? 'Matched on location, headcount and workspace type when the collection was built.' : 'Added outside the agent, so I can\'t say why.';
+  return n ? `${base} ${n} added by hand since.` : base;
 }
 
 // ── Re-running ──────────────────────────────────────────────────────────────
@@ -348,4 +366,22 @@ export function recordRun(r: MvpRequirement, a: Assessment): RunInfo {
   const changes = diffs(prev, values, spaces);
   if (!changes.length) return { first: false, since: { at: prev.at, changes: [], fitsBefore: prev.fits, fitsNow: a.confirmedFits } };
   return { first: false, since: { at: prev.at, changes, fitsBefore: prev.fits, fitsNow: a.confirmedFits }, log: `Reassessed after ${changes.join(', ')}: ${prev.fits} → ${a.confirmedFits} of ${a.total} meet every criterion.` };
+}
+
+
+/** How one space measures against the requirement, before it is added. */
+export function evaluateFor(r: MvpRequirement, sp: AssessSpace): SpaceResult | null {
+  const a = assess(r);
+  if (!a || a.state !== 'ok') return null;
+  const { members } = membersFor(r);
+  return evaluate(sp, a.criteria, mediansFor([...members, ...marketPool(a.criteria.city)]));
+}
+
+export interface ProposalInput { venue: string; title: string; type: string; desks: number; rate: number; miles: number; validUntil: string; availableFrom: string }
+
+/** A venue proposal entered by hand. It sits `miles` due north of the search center, since a proposal carries no coordinates here. */
+export function proposalSpace(r: MvpRequirement, p: ProposalInput): AssessSpace | null {
+  const a = assess(r);
+  if (!a || a.state !== 'ok') return null;
+  return { id: `prop-${Date.now()}`, url: '', venue: p.venue, title: p.title, type: p.type, desks: p.desks, rate: p.rate, lat: a.criteria.lat + p.miles / 69, lng: a.criteria.lng, modified: new Date().toISOString().slice(0, 10), inCollection: true, visibility: 'Private', validUntil: p.validUntil, availableFrom: p.availableFrom };
 }

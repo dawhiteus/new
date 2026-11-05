@@ -17,6 +17,14 @@ export interface AssessSpace {
   responseMin?: number; // venue's average lead response, minutes (0 = no data)
   minTerm?: string;
   inCollection: boolean;
+  /** Public listings are on the marketplace; private ones are created from a venue's proposal. Default Public. */
+  visibility?: 'Public' | 'Private';
+  /** Private only: the quote's valid-until date (ISO). */
+  validUntil?: string;
+  /** Private only: when the venue says the space is available (ISO). */
+  availableFrom?: string;
+  /** Added by hand to the collection after it was built. */
+  addedByHand?: boolean;
 }
 
 /** Search centers: the city center. Used when a Requirement gives no search area. */

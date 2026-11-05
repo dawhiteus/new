@@ -9,6 +9,8 @@ The assessment opens in a modal. Every Requirement that has a Collection has an 
 1. **Collection pill hover card (Requirements table):** a one-line status ("Few matches", "Empty collection", "Not assessed") and an **Assess collection** link beside View Collection.
 2. **Requirement row menu:** **Assess collection** with View, Update and Remove collection.
 
+3. **Add space** (hover card and row menu): adds one space to the Collection by hand, which is how venue proposals reach it. Paste a listing link, or enter a venue proposal (venue, space, type, seats, price per month, miles from the search center, available from, quote valid until). The agent shows how the space measures against the Requirement and states the one operation (add 1 workspace to the Collection) before anything is written. A public listing is looked up; a proposal becomes a private listing. A private listing counts as confirmed while its quote is valid (30 days if none is given). Adding a space makes the last assessment out of date, so the next run reports what changed. Assessment itself never edits the Collection.
+
 Update collection refreshes the Collection's spaces. Assess explains whether the Collection is enough and what would improve it.
 
 Held back for now: a button on the "Collection populated" confirmation, the Workflow task, and a "re-check" line on the Requirement Overview. Intended users are the Transaction Manager team; customer-scoped access is untested.
@@ -39,6 +41,10 @@ The agent remembers its last assessment of each Requirement. It is run again by 
 When it is out of date, the collection's hover card says so ("Out of date: the requirement or collection has changed. Assess again.") so nobody has to guess. The next run adds a line saying what changed since the last one ("Since last assessed on Nov 4: budget $9,000/mo → $12,000/mo. Matches 0 → 2.") and the Timeline records it as "Collection Assessed" ("Reassessed after budget $9,000/mo → $12,000/mo: 0 → 2 of 8 meet every criterion."). The first run is recorded too. A run with nothing changed since the last one adds nothing to the Timeline.
 
 The loop the documents describe is iterative: assessing a thin collection prompts sourcing (Update collection, or an RFP outside Transaction Manager), and changed requirements prompt reassessment.
+
+**Public and private.** Each space is marked Public or Private. One Gaps row (Public / private) counts each. Create Collection states that it uses public listings and that venue proposals are added later as private listings, because venue outreach is outside TM.
+
+Open: the platform does not say whether hand-added entries survive Update collection (which removes entries first), nor whether private listings can be resolved from a link in Pulse. A proposal's quote date and valid-until cannot be stored in TM (no note writes); the Timeline's "Spaces Added" event is the only record.
 
 ## 4. An empty or unassessable Collection
 This is a primary reason to assess. The agent says what is going on:
