@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, Bot, ExternalLink, MapPin, DollarSign, Users, Building2, ChevronDown } from 'lucide-react';
+import { X, Bot, ExternalLink, ChevronDown } from 'lucide-react';
 import { assess, addedWhy, recordRun, type RunInfo, type SpaceResult } from './data/assessmentAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
 
@@ -9,6 +9,9 @@ const BLUE = '#0D619B';
 const INK = '#0F2A3D';
 const GREEN = '#0F7B4F';
 const money = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`;
+const EYEBROW_GRAY: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280' };
+const SECTION: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#005B94', margin: '28px 0 10px' };
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
 interface Props {
@@ -43,13 +46,12 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
 
   // Color only for contrast: a criterion nobody meets stands out, one everybody meets is quietly confirmed.
   const numColor = (n: number, of: number) => (n === 0 ? '#B91C1C' : n === of ? '#15803D' : INK);
-  const cardIcon = (label: string) => (/ mi of /.test(label) ? MapPin : /\/mo$/.test(label) ? DollarSign : /^For /.test(label) ? Users : Building2);
   const checked = a.state === 'ok' ? [c.capacity ? a.bandText : '', c.type, c.budget ? `under ${money(c.budget)}/mo` : '', `within ${c.radiusMi} miles of ${c.centerLabel}`].filter(Boolean).join(', ') : '';
   const every = [c.capacity ? 'headcount' : '', c.type ? 'workspace type' : '', c.budget ? 'budget' : '', 'area'].filter(Boolean);
   const thin = a.state === 'ok' && a.total > 0 && a.confirmedFits < 5;
   const since = run?.since && run.since.changes.length ? run.since : null;
 
-  const big = (n: number) => <span style={{ fontSize: 40, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em', color: INK }}>{n}</span>;
+  const big = (n: number, color: string = INK) => <span style={{ fontSize: 44, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em', color }}>{n}</span>;
 
   const spaceLine = (r: SpaceResult, i: number) => (
     <div key={`${r.space.id}-${i}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '12px 0', borderTop: i ? '1px solid #F1F3F5' : undefined }}>
@@ -73,78 +75,76 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed }: Prop
           <button type="button" onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer' }}><X size={20} /></button>
         </div>
 
-        <div style={{ padding: '16px 20px 24px', overflowY: 'auto', flex: 1, minHeight: 0, fontFamily: FONT }}>
+        <div style={{ padding: '20px 24px 28px', overflowY: 'auto', flex: 1, minHeight: 0, fontFamily: FONT }}>
           {/* The agent, as elsewhere */}
-          <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Bot size={20} color="#059669" /></div>
+          <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Bot size={18} color="#059669" /></div>
             <div style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: INK }}>Collection Assessment Agent</div>
-            <div style={{ fontSize: 13, color: '#6B7280', textAlign: 'right' }}>{requirement.name} · {col.name}</div>
+            <div style={{ fontSize: 13, color: '#6B7280', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{requirement.name} · {col.name}</div>
           </div>
 
-          {/* The two facts: what is in the collection, and how much of it meets every criterion */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, margin: '22px 0 0' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>{big(a.total)}<span style={{ fontSize: 16, fontWeight: 600, color: INK }}>{a.total === 1 ? 'space added' : 'spaces added'}</span></div>
-              <div style={{ fontSize: 13, color: '#6B7280', marginTop: 6, lineHeight: 1.5 }}>{addedWhy(requirement)}</div>
+          {/* Result: the two facts in one panel, same structure each */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #E5E7EB', borderRadius: 12, marginTop: 16 }}>
+            <div style={{ padding: '18px 24px' }}>
+              <div style={EYEBROW_GRAY}>Spaces added</div>
+              <div style={{ marginTop: 8 }}>{big(a.total)}</div>
+              <div style={{ fontSize: 13, color: '#6B7280', marginTop: 8, lineHeight: 1.5 }}>{addedWhy(requirement)}</div>
             </div>
-            <div style={{ borderLeft: '1px solid #E5E7EB', paddingLeft: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <span style={{ fontSize: 40, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em', color: a.confirmedFits === 0 ? '#B91C1C' : INK }}>{a.confirmedFits}</span>
-                <span style={{ fontSize: 16, fontWeight: 600, color: INK }}>{a.confirmedFits === 1 ? 'meets every criterion' : 'meet every criterion'}</span>
+            <div style={{ padding: '18px 24px', borderLeft: '1px solid #E5E7EB' }}>
+              <div style={EYEBROW_GRAY}>Meet every criterion</div>
+              <div style={{ marginTop: 8 }}>{big(a.confirmedFits, a.confirmedFits === 0 ? '#B91C1C' : INK)}</div>
+              <div style={{ fontSize: 13, color: '#6B7280', marginTop: 8, lineHeight: 1.5 }}>{a.state === 'ok' ? `${cap(every.slice(0, -1).join(', ') + (every.length > 1 ? ' and ' : '') + every[every.length - 1])}, all together.` : 'Nothing to compare yet.'}</div>
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontSize: 15.5, color: INK, lineHeight: 1.6 }}>
+              {a.verdict}{thin ? ' That is thin (fewer than 5 confirmed fits), so an RFP to venues is the next step.' : ''}
+            </div>
+            {checked && <div style={{ fontSize: 13, color: '#6B7280', marginTop: 8, lineHeight: 1.5 }}>Checked against {checked}.</div>}
+            {since && (
+              <div style={{ fontSize: 13, color: '#374151', marginTop: 12, lineHeight: 1.5, paddingLeft: 12, borderLeft: `2px solid ${BLUE}` }}>
+                <b style={{ color: INK }}>Since last assessed on {since.at}:</b> {since.changes.join('; ')}. Matches {since.fitsBefore} → {since.fitsNow}.
               </div>
-              <div style={{ fontSize: 13, color: '#6B7280', marginTop: 6, lineHeight: 1.5 }}>{a.state === 'ok' ? `${every.slice(0, -1).join(', ')}${every.length > 1 ? ' and ' : ''}${every[every.length - 1]}` : 'Nothing to compare yet.'}</div>
-            </div>
+            )}
           </div>
-
-          {/* The summary */}
-          <div style={{ fontSize: 15, color: '#374151', lineHeight: 1.6, marginTop: 18 }}>
-            {a.verdict}{thin ? ' That is thin (fewer than 5 confirmed fits), so an RFP to venues is the next step.' : ''}
-          </div>
-          {checked && <div style={{ fontSize: 13.5, color: '#6B7280', marginTop: 6, lineHeight: 1.5 }}>Checked against {checked}.</div>}
-          {since && (
-            <div style={{ fontSize: 13.5, color: '#374151', marginTop: 10, lineHeight: 1.5, paddingTop: 10, borderTop: '1px solid #F1F3F5' }}>
-              <b style={{ color: INK }}>Since last assessed on {since.at}:</b> {since.changes.join('; ')}. Matches {since.fitsBefore} → {since.fitsNow}.
-            </div>
-          )}
 
           {a.cards.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${a.cards.length}, 1fr)`, gap: 12, marginTop: 18 }}>
-              {a.cards.map((k) => {
-                const Icon = cardIcon(k.label);
-                return (
-                  <div key={k.label} style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: '14px 16px', background: '#fff' }}>
-                    <Icon size={16} color="#9CA3AF" />
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 8 }}>
-                      <span style={{ fontSize: 28, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', color: numColor(k.n, k.of) }}>{k.n}</span>
-                      <span style={{ fontSize: 14, color: '#6B7280' }}>of {k.of}</span>
+            <>
+              <div style={SECTION}>By criterion</div>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${a.cards.length}, 1fr)`, gap: 12 }}>
+                {a.cards.map((k) => (
+                  <div key={k.label} style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: '14px 16px', background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.35 }}>{k.label}</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                      <span style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', color: numColor(k.n, k.of) }}>{k.n}</span>
+                      <span style={{ fontSize: 13.5, color: '#6B7280' }}>of {k.of}</span>
                     </div>
-                    <div style={{ fontSize: 12.5, color: '#6B7280', marginTop: 6, lineHeight: 1.35 }}>{k.label}</div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* Gaps and trade-offs, or why it's empty */}
-          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)', padding: '14px 20px 4px', marginTop: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#005B94' }}>{a.gapsTitle}</div>
-            <div style={{ marginTop: 4 }}>
-              {a.gaps.map((g, i) => {
-                const muted = g.label === 'Not assessed';
-                return (
-                  <div key={g.label} style={{ display: 'flex', gap: 16, padding: '11px 0', borderTop: i ? '1px solid #f3f4f6' : undefined }}>
-                    <div style={{ width: 118, flexShrink: 0, fontSize: 13.5, fontWeight: 600, color: muted ? '#6b7280' : INK }}>{g.label}</div>
-                    <div style={{ flex: 1, fontSize: 13.5, color: muted ? '#6b7280' : '#374151', lineHeight: 1.55 }}>{g.text}</div>
-                  </div>
-                );
-              })}
-            </div>
+          <div style={SECTION}>{a.gapsTitle}</div>
+          <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: '2px 20px' }}>
+            {a.gaps.map((g, i) => {
+              const muted = g.label === 'Not assessed';
+              return (
+                <div key={g.label} style={{ display: 'flex', gap: 16, padding: '12px 0', borderTop: i ? '1px solid #F1F3F5' : undefined }}>
+                  <div style={{ width: 118, flexShrink: 0, fontSize: 13.5, fontWeight: 600, color: muted ? '#6B7280' : INK }}>{g.label}</div>
+                  <div style={{ flex: 1, fontSize: 13.5, color: muted ? '#6B7280' : '#374151', lineHeight: 1.55 }}>{g.text}</div>
+                </div>
+              );
+            })}
           </div>
 
           {/* The spaces */}
           {a.state === 'ok' && a.total > 0 && (
-            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)', padding: '14px 20px', marginTop: 12 }}>
-              <button type="button" onClick={() => setShowSpaces((s) => !s)} style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: FONT, fontSize: 15, fontWeight: 700, color: INK, textAlign: 'left' }}>
+            <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: '14px 20px', marginTop: 12 }}>
+              <button type="button" onClick={() => setShowSpaces((s) => !s)} style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: FONT, fontSize: 14, fontWeight: 600, color: INK, textAlign: 'left' }}>
                 <span>The {plural(a.total, 'space')} in this collection</span>
                 <ChevronDown size={16} color="#9CA3AF" style={{ transform: showSpaces ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} />
               </button>
