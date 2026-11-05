@@ -82,7 +82,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   };
   const tint = (ok: boolean | null): React.CSSProperties => (ok === null ? {} : { background: ok ? '#F0FAF4' : '#FEF2F2' });
   const crit = (v: React.ReactNode, ok: boolean | null, sub?: string) => (
-    <td style={{ padding: '12px 10px', verticalAlign: 'top', whiteSpace: 'nowrap', ...tint(ok) }}>
+    <td style={{ padding: '12px 10px', verticalAlign: 'top', ...tint(ok) }}>
       <div style={{ fontSize: 13.5, color: ok === false ? '#B91C1C' : '#374151', fontWeight: ok === false ? 600 : 400 }}>{v}</div>
       {sub && <div style={{ fontSize: 12.5, color: '#6B7280' }}>{sub}</div>}
     </td>
@@ -93,7 +93,18 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
       <div style={SECTION}>The {plural(total, 'space')}, against the requirement</div>
       <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: FONT }}>
+          <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontFamily: FONT }}>
+            <colgroup>
+              <col />
+              <col style={{ width: 84 }} />
+              {c.capacity ? <col style={{ width: 72 }} /> : null}
+              {c.budget ? <col style={{ width: 150 }} /> : null}
+              {c.type ? <col style={{ width: 116 }} /> : null}
+              <col style={{ width: 150 }} />
+              <col style={{ width: 72 }} />
+              <col style={{ width: 92 }} />
+              <col style={{ width: 36 }} />
+            </colgroup>
             <thead>
               <tr style={{ borderBottom: '1px solid #E5E7EB', background: '#F9FAFB' }}>
                 {colHead('Space')}
@@ -140,7 +151,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                             aria-expanded={open}
                             style={{ borderTop: '1px solid #F1F3F5', cursor: 'grab', opacity: dragId === id ? 0.45 : 1, background: open ? '#F9FAFB' : over ? '#F5F9FD' : undefined }}
                           >
-                            <td style={{ padding: '12px 10px', verticalAlign: 'top', minWidth: 180 }}>
+                            <td style={{ padding: '12px 10px', verticalAlign: 'top', minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
                                 <GripVertical size={16} color="#9CA3AF" style={{ marginTop: 1, flexShrink: 0 }} />
                                 <div>
@@ -153,7 +164,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                             {c.capacity ? crit(r.space.desks, r.pass.capacity) : null}
                             {c.budget ? crit(r.space.rate != null ? money(r.space.rate) : 'n/a', r.pass.budget, r.costPP != null ? `${money(r.costPP)} per person${r.detail.some((d) => d.k === 'Rate') ? ' · over market' : ''}` : undefined) : null}
                             {c.type ? crit(r.space.type, r.pass.type) : null}
-                            <td style={{ padding: '12px 10px', verticalAlign: 'top', fontSize: 13, color: '#374151', maxWidth: 150 }}>{r.amenities || <span style={{ color: '#9CA3AF' }}>None recorded</span>}</td>
+                            <td style={{ padding: '12px 10px', verticalAlign: 'top', fontSize: 13, color: '#374151' }}>{r.amenities || <span style={{ color: '#9CA3AF' }}>None recorded</span>}</td>
                             <td style={{ padding: '12px 10px', verticalAlign: 'top', fontSize: 13.5, fontWeight: 600, color: n === k ? GREEN : INK, whiteSpace: 'nowrap' }}>{n} of {k}</td>
                             <td style={{ padding: '12px 10px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
                               <div style={{ fontSize: 13.5, color: '#374151' }}>{priv ? 'Private' : 'Public'}</div>
@@ -163,17 +174,17 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                           </tr>
                           {open && (
                             <tr style={{ background: '#F9FAFB' }}>
-                              <td colSpan={nCols} style={{ padding: '4px 14px 16px 32px' }}>
-                                <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, padding: '14px 18px' }}>
-                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 36 }}>
+                              <td colSpan={nCols} style={{ padding: '2px 12px 12px 30px' }}>
+                                <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 16px 12px' }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 32 }}>
                                     {r.detail.map((d) => (
-                                      <div key={d.k} style={{ display: 'flex', gap: 12, fontSize: 13, padding: '6px 0', borderBottom: '1px solid #F1F3F5' }}>
-                                        <div style={{ width: 120, flexShrink: 0, color: '#6B7280' }}>{d.k}</div>
+                                      <div key={d.k} style={{ display: 'flex', gap: 12, fontSize: 13, padding: '5px 0', borderBottom: '1px solid #F1F3F5' }}>
+                                        <div style={{ width: 104, flexShrink: 0, color: '#6B7280' }}>{d.k}</div>
                                         <div style={{ color: INK, minWidth: 0, overflowWrap: 'anywhere' }}>{d.v}</div>
                                       </div>
                                     ))}
                                   </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, fontSize: 13 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10, fontSize: 13 }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6B7280' }}>Group
                                       <select value={g} onClick={(e) => e.stopPropagation()} onChange={(e) => move(r, e.target.value as Group)} aria-label="Move to group" style={{ border: '1px solid #D1D5DB', borderRadius: 6, padding: '4px 8px', fontSize: 13, fontFamily: FONT, color: INK, background: '#fff' }}>
                                         {GROUPS.map((x) => <option key={x}>{x}</option>)}
@@ -200,8 +211,8 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                   <td key={i} style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(n as number, total), whiteSpace: 'nowrap' }}>{n} of {total}</td>
                 ))}
                 <td />
-                <td style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(a.confirmedFits, total), whiteSpace: 'nowrap' }}>{a.confirmedFits} of {total} meet all</td>
-                <td style={{ padding: '12px 10px', fontSize: 13.5, color: '#6B7280', whiteSpace: 'nowrap' }}>{a.results.filter((x) => x.confirmed).length} of {total} current</td>
+                <td style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(a.confirmedFits, total), whiteSpace: 'nowrap' }}>{a.confirmedFits} of {total}</td>
+                <td style={{ padding: '12px 10px', fontSize: 13.5, color: '#6B7280' }}>{a.results.filter((x) => x.confirmed).length} of {total} current</td>
                 <td />
               </tr>
             </tfoot>
