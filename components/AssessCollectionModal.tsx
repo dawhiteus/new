@@ -90,7 +90,6 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   const nCols = 6 + (c.capacity ? 1 : 0) + (c.budget ? 1 : 0) + (c.type ? 1 : 0);
   const tableBody = (
     <>
-      <div style={SECTION}>The {plural(total, 'space')}, against the requirement</div>
       <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontFamily: FONT }}>
@@ -129,13 +128,9 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                       <td colSpan={nCols} style={{ padding: '9px 12px' }}>
                         <span style={{ fontSize: 13.5, fontWeight: 700, color: INK }}>{g}</span>
                         <span style={{ fontSize: 13, color: '#6B7280', marginLeft: 8 }}>{plural(list.length, 'space')}{list.length ? ` · ${meet} of ${list.length} meet all criteria` : ''}</span>
+                        {list.length === 0 && <span style={{ float: 'right', fontSize: 12.5, color: over ? BLUE : '#9CA3AF' }}>Drag spaces here</span>}
                       </td>
                     </tr>
-                    {list.length === 0 && (
-                      <tr {...dz} style={{ background: over ? '#EEF5FB' : undefined }}>
-                        <td colSpan={nCols} style={{ padding: '14px 12px', fontSize: 13, color: '#9CA3AF', textAlign: 'center' }}>Drag spaces here</td>
-                      </tr>
-                    )}
                     {list.map((r) => {
                       const id = r.space.id; const open = openRow === id; const all = r.fit && r.confirmed;
                       const priv = r.space.visibility === 'Private';
@@ -179,7 +174,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 32 }}>
                                     {r.detail.map((d) => (
                                       <div key={d.k} style={{ display: 'flex', gap: 12, fontSize: 13, padding: '5px 0', borderBottom: '1px solid #F1F3F5' }}>
-                                        <div style={{ width: 104, flexShrink: 0, color: '#6B7280' }}>{d.k}</div>
+                                        <div style={{ width: 132, flexShrink: 0, color: '#6B7280', whiteSpace: 'nowrap' }}>{d.k}</div>
                                         <div style={{ color: INK, minWidth: 0, overflowWrap: 'anywhere' }}>{d.v}</div>
                                       </div>
                                     ))}
@@ -219,12 +214,12 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
           </table>
         </div>
       </div>
-      <div style={{ fontSize: 12.5, color: '#6B7280', marginTop: 8 }}>Drag a space to move it between Shortlist, Favorites and Recommendations. Select a space for venue facts.</div>
       {footnotes.length > 0 && (
         <div style={{ marginTop: 18, display: 'grid', gap: 6 }}>
           {footnotes.map((g) => <div key={g.label} style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5 }}><b style={{ color: '#374151', fontWeight: 600 }}>{g.label}.</b> {g.text}</div>)}
         </div>
       )}
+      <div style={{ fontSize: 12.5, color: '#6B7280', marginTop: 8 }}>Drag a space to move it between Shortlist, Favorites and Recommendations. Select a space for its venue facts.</div>
     </>
   );
 
@@ -278,7 +273,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
           </div>
 
           {/* Summary */}
-          <div style={{ marginTop: 20 }}>
+          <div style={{ marginTop: 14, marginBottom: 18 }}>
             {a.verdict && <div style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{a.verdict}</div>}
             {checked && <div style={{ fontSize: 13, color: '#6B7280', marginTop: a.verdict ? 8 : 0, lineHeight: 1.5 }}>Checked against {checked}.{onEdit && <> <button type="button" onClick={() => onEdit(requirement)} style={{ background: 'none', border: 'none', padding: 0, color: BLUE, fontWeight: 600, fontFamily: FONT, fontSize: 13, cursor: 'pointer' }}>Edit requirement</button></>}</div>}
             {a.state === 'ok' && a.total > 0 && <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 1.5 }}>The workflow counts a collection as thin below {CONFIRMED_NEEDED} confirmed spaces. This one has {a.confirmedFits}.</div>}
