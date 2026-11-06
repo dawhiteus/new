@@ -6,7 +6,6 @@ import {
   Zap,
   ChevronsUpDown,
   MoreHorizontal,
-  FolderPlus,
   ArrowUp,
   ArrowUpDown,
   Folder,
@@ -213,9 +212,9 @@ function CollectionPill({ req, onOpen, onAssess, onAdd, onUpdate }: { req: MvpRe
     >
         <span
           onClick={onOpen}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: '#E8F0FE', color: '#1D4ED8', border: '1px solid #D5E3FB', cursor: 'pointer' }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 12px', whiteSpace: 'nowrap', borderRadius: 999, fontSize: 13, fontWeight: 600, background: '#E8F0FE', color: '#1D4ED8', border: '1px solid #D5E3FB', cursor: 'pointer' }}
         >
-          <Folder size={13} /> {c.totalSpaces} spaces
+          {c.totalSpaces} spaces
         </span>
       {show && (
       <div style={{ position: 'absolute', left: '50%', bottom: '100%', transform: 'translateX(-50%)', paddingBottom: 6, zIndex: 40 }}>
@@ -718,14 +717,14 @@ export function RequirementsHome() {
                       <td style={td}><Pill label={r.status} {...(({ bg, color }) => ({ bg, color }))(STATUS_STYLE[r.status])} /></td>
                       <td style={td}><Pill label={r.stage} bg="#E8A91C" color="#fff" /></td>
                       <td style={td}>{r.budget == null ? <NotProvided /> : money(r.budget)}</td>
-                      <td style={{ ...td, paddingRight: 28 }} onClick={(e) => e.stopPropagation()}>{r.collection ? (
+                      <td style={{ ...td, paddingRight: 48 }} onClick={(e) => e.stopPropagation()}>{r.collection ? (
                           <CollectionPill req={r as MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }} onOpen={() => openCollection(r)} onAssess={() => setAssessForId(r.id)} onAdd={() => setAddForId(r.id)} onUpdate={() => setUpdateForId(r.id)} />
                         ) : (
                           <button
                             onClick={() => setCollectionForId(r.id)}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: '#fff', color: INK, border: '1px solid #E5E7EB', cursor: 'pointer', fontFamily: FONT, whiteSpace: 'nowrap' }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 12px', whiteSpace: 'nowrap', borderRadius: 999, fontSize: 13, fontWeight: 600, background: '#fff', color: INK, border: '1px solid #E5E7EB', cursor: 'pointer', fontFamily: FONT, whiteSpace: 'nowrap' }}
                           >
-                            <FolderPlus size={13} /> Create Collection
+                            Create Collection
                           </button>
                         )}</td>
                       <td style={td}>{fmtDate(r.lastUpdated)}</td>
