@@ -1,19 +1,40 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, Bot, ExternalLink, ChevronDown, GripVertical } from 'lucide-react';
+import { X, Bot, ExternalLink, ChevronDown, GripVertical, Check, Users, Building2, DollarSign, MapPin, AlertTriangle, Info } from 'lucide-react';
 import { assess, addedWhy, recordRun, requirementChanges, CONFIRMED_NEEDED, GROUPS, groupOf, setGroup, type Group, type RunInfo, type SpaceResult } from './data/assessmentAgent';
+import { capacityBand } from './data/collectionAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
 import { ASSESS_LAYOUT } from './data/assessLayout';
 
+// LiquidSpace Design System v4 tokens
 const FONT = 'Inter, sans-serif';
-const BLUE = '#0D619B';
-const INK = '#0F2A3D';
-const GREEN = '#0F7B4F';
+const BLUE = '#005b94'; // interactive
+const TEXT = '#374151'; // text-primary
+const MUTED = '#6b7280'; // text-muted
+const DISABLED = '#9ca3af'; // text-disabled
+const BORDER = '#e5e7eb';
+const BORDER_STRONG = '#d1d5db';
+const HAIR = '#f3f4f6';
+const PAGE = '#f8f9fa'; // surface-page
+const SUCCESS = '#28a745';
+const WARNING = '#ffa500';
+const DANGER = '#dc3545';
+const AMBER_TEXT = '#b45309';
+const SHADOW_CARD = '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)';
+
 const money = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`;
-const EYEBROW_GRAY: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280' };
-const SECTION: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#005B94', margin: '28px 0 10px' };
-const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+const EYEBROW: React.CSSProperties = { fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: MUTED };
+const SECTION: React.CSSProperties = { ...EYEBROW, margin: '28px 0 10px' };
+const NUM: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const rag = (p: number) => (p >= 0.7 ? SUCCESS : p >= 0.4 ? WARNING : DANGER);
+
+const Chip = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 28, padding: '0 10px', borderRadius: 9999, background: PAGE, border: `1px solid ${BORDER}`, fontSize: 13, fontWeight: 500, color: TEXT, whiteSpace: 'nowrap' }}>{icon}{children}</span>
+);
+const Count = ({ n, blue }: { n: number; blue?: boolean }) => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 7px', borderRadius: 9999, fontSize: 12, fontWeight: 600, ...NUM, ...(blue ? { background: '#e6f1f8', border: '1px solid #cce3f1', color: '#004d7d' } : { background: HAIR, color: MUTED }) }}>{n}</span>
+);
 
 interface Props {
   requirement: MvpRequirement | null;
@@ -54,25 +75,89 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   if (!a) return <Dialog open={false}><DialogContent className="hidden" /></Dialog>;
   const col = requirement.collection;
   const c = a.criteria;
-
-  // Color only for contrast: a criterion nobody meets stands out, one everybody meets is quietly confirmed.
-  const numColor = (n: number, of: number) => (n === 0 ? '#B91C1C' : n === of ? '#15803D' : INK);
-  const checked = a.state === 'ok' ? [c.capacity ? a.bandText : '', c.type, c.budget ? `under ${money(c.budget)}/mo` : '', `within ${c.radiusMi} miles of ${c.centerLabel}`].filter(Boolean).join(', ') : '';
-  const every = [c.capacity ? 'headcount' : '', c.type ? 'workspace type' : '', c.budget ? 'budget' : '', 'area'].filter(Boolean);
+  const total = a.total;
+  const ok = a.state === 'ok';
   const reqChanges = requirementChanges(requirement);
   const since = run?.since && run.since.changes.length ? run.since : null;
+  const useTable = ASSESS_LAYOUT === 'table' && ok && total > 0;
+  const band = c.capacity ? capacityBand(c.capacity) : null;
+  const bandShort = band ? `${band[0]}–${band[1]}` : '';
+  const typeCount = c.type ? a.results.filter((x) => x.space.type === c.type).length : null;
 
-  const useTable = ASSESS_LAYOUT === 'table' && a.state === 'ok' && a.total > 0;
-  const big = (n: number, color: string = INK) => <span style={{ fontSize: 32, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.03em', color }}>{n}</span>;
+  // ── Requirement chips ──────────────────────────────────────────────────────────────────────────────────────────
+  const ic = { size: 13, color: MUTED, strokeWidth: 2, 'aria-hidden': true } as const;
+  const requirementRow = ok && (
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+      <span style={{ ...EYEBROW, marginRight: 4 }}>Requirement</span>
+      {band && <Chip icon={<Users {...ic} />}>{bandShort} people</Chip>}
+      {c.type && <Chip icon={<Building2 {...ic} />}>{c.type}</Chip>}
+      {c.budget ? <Chip icon={<DollarSign {...ic} />}><span style={NUM}>Under {money(c.budget)}/mo</span></Chip> : null}
+      <Chip icon={<MapPin {...ic} />}>Within {c.radiusMi} mi of {c.centerLabel}</Chip>
+      {onEdit && <button type="button" onClick={() => onEdit(requirement)} style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: '4px 0', color: BLUE, fontWeight: 600, fontFamily: FONT, fontSize: 13, cursor: 'pointer' }}>Edit Requirement</button>}
+    </div>
+  );
 
+  // ── Scorecard: how many spaces pass each criterion ─────────────────────────────────────────────────────────────
+  const criteria = [
+    { key: 'area', label: 'Distance', n: a.inArea, rule: `Within ${c.radiusMi} mi` },
+    ...(band ? [{ key: 'capacity', label: 'Seats', n: a.forPeople ?? 0, rule: `${bandShort} people` }] : []),
+    ...(c.budget ? [{ key: 'budget', label: 'Price', n: a.withinBudget ?? 0, rule: `Up to ${money(c.budget)}/mo` }] : []),
+    ...(c.type ? [{ key: 'type', label: 'Type', n: typeCount ?? 0, rule: c.type }] : []),
+  ];
+  const scorecard = ok && total > 0 && (
+    <div style={{ display: 'grid', gridTemplateColumns: `1.35fr repeat(${criteria.length}, minmax(0, 1fr))`, border: `1px solid ${BORDER}`, borderRadius: 16, boxShadow: SHADOW_CARD, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '18px 20px', background: PAGE, borderRight: `1px solid ${BORDER}` }}>
+        <span style={EYEBROW}>Meet every criterion</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, ...NUM }}>
+          <span style={{ fontSize: 32, lineHeight: 1, fontWeight: 700, color: a.confirmedFits >= CONFIRMED_NEEDED ? SUCCESS : a.confirmedFits === 0 ? DANGER : TEXT }}>{a.confirmedFits}</span>
+          <span style={{ fontSize: 14, fontWeight: 500, color: TEXT }}>of {plural(total, 'space')}</span>
+        </div>
+        <span style={{ fontSize: 12, color: MUTED }}>Thin below {CONFIRMED_NEEDED} confirmed spaces</span>
+      </div>
+      {criteria.map((k, i) => {
+        const p = total ? k.n / total : 0;
+        return (
+          <div key={k.key} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '18px 20px', borderRight: i < criteria.length - 1 ? `1px solid ${BORDER}` : undefined }}>
+            <span style={EYEBROW}>{k.label}</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, ...NUM }}>
+              <span style={{ fontSize: 22, lineHeight: 1, fontWeight: 600, color: TEXT }}>{k.n}</span>
+              <span style={{ fontSize: 13, color: MUTED }}>of {total}</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 9999, background: HAIR, overflow: 'hidden' }}>
+              <div style={{ height: 6, borderRadius: 9999, width: `${Math.round(p * 100)}%`, background: rag(p), transition: 'width 700ms ease-out' }} />
+            </div>
+            <span style={{ fontSize: 12, color: MUTED }}>{k.rule}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // ── The one takeaway: the criterion most spaces miss ──────────────────────────────────────────────────────────
+  const worst = criteria.length ? criteria.reduce((m, k) => (k.n < m.n ? k : m)) : null;
+  const missN = worst ? total - worst.n : 0;
+  const gapLine = !worst || missN === 0 ? null : (() => {
+    const of = `${missN} of ${total} spaces`;
+    if (worst.key === 'capacity') return { title: 'Headcount is the gap.', text: `${of} fall outside ${bandShort} people.` };
+    if (worst.key === 'budget') return { title: 'Price is the gap.', text: `${of} are over ${money(c.budget as number)}/mo.` };
+    if (worst.key === 'type') return { title: 'Workspace type is the gap.', text: `${of} aren't ${c.type}.` };
+    return { title: 'Distance is the gap.', text: `${of} are more than ${c.radiusMi} mi from ${c.centerLabel}.` };
+  })();
+  const thin = a.confirmedFits < CONFIRMED_NEEDED;
+  const insight = useTable && (gapLine || thin) && (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', borderRadius: 8, background: '#fffbeb', border: '1px solid #fde68a' }}>
+      <AlertTriangle size={16} color={AMBER_TEXT} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} aria-hidden />
+      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: TEXT }}>
+        {gapLine && <><strong style={{ fontWeight: 600 }}>{gapLine.title}</strong> {gapLine.text} </>}
+        {thin && <>The workflow counts a collection as thin below {CONFIRMED_NEEDED} confirmed spaces. This one has {a.confirmedFits}.</>}
+      </p>
+    </div>
+  );
 
   // ── Table layout: a row per space, a column per criterion ──────────────────────────────────────────────────────
   const metCount = (r: SpaceResult) => [r.pass.area, r.pass.capacity, r.pass.budget, r.pass.type].filter((x) => x === true).length;
   const rows = [...a.results].sort((x, y) => metCount(y) - metCount(x) || x.miles - y.miles);
-  const colHead = (t: string, sub?: string) => <th style={{ textAlign: 'left', padding: '12px 10px 10px', fontWeight: 400, verticalAlign: 'top', whiteSpace: 'nowrap' }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280' }}>{t}</div><div style={{ fontSize: 12, color: '#6B7280', marginTop: 3, minHeight: 16 }}>{sub}</div></th>;
-  const td = (v: React.ReactNode, fail: boolean) => <td style={{ padding: '12px 10px', fontSize: 13.5, color: fail ? '#B91C1C' : '#374151', fontWeight: fail ? 600 : 400, verticalAlign: 'top', whiteSpace: 'nowrap' }}>{v}</td>;
   const shortDate = (d?: string) => (d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '');
-  const total = a.total;
   const footnotes = a.gaps.filter((g) => g.label === 'Not assessed');
   const move = (r: SpaceResult, g: Group) => {
     if (groupOf(requirement, r.space) === g) return;
@@ -80,228 +165,220 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
     setTick((x) => x + 1);
     onGroupChange?.(requirement, `Moved “${r.space.title}” (${r.space.venue}) to ${g}.`);
   };
-  const tint = (ok: boolean | null): React.CSSProperties => (ok === null ? {} : { background: ok ? '#F0FAF4' : '#FEF2F2' });
-  const crit = (v: React.ReactNode, ok: boolean | null, sub?: string) => (
-    <td style={{ padding: '12px 10px', verticalAlign: 'top', ...tint(ok) }}>
-      <div style={{ fontSize: 13.5, color: ok === false ? '#B91C1C' : '#374151', fontWeight: ok === false ? 600 : 400 }}>{v}</div>
-      {sub && <div style={{ fontSize: 12.5, color: '#6B7280' }}>{sub}</div>}
-    </td>
+  const dz = (g: Group) => ({
+    onDragOver: (e: React.DragEvent) => { if (dragId) { e.preventDefault(); setOverGroup(g); } },
+    onDragLeave: () => setOverGroup((x) => (x === g ? null : x)),
+    onDrop: (e: React.DragEvent) => { e.preventDefault(); const r = rows.find((x) => x.space.id === dragId); setDragId(null); setOverGroup(null); if (r) move(r, g); },
+  });
+
+  const GRID = ['16px', 'minmax(0, 1fr)', '88px', band ? '80px' : '', c.budget ? '136px' : '', c.type ? '124px' : '', '84px', '32px'].filter(Boolean).join(' ');
+  const rowGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: GRID, columnGap: 10 };
+  const head = (t: string, sub?: string) => (
+    <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span style={EYEBROW}>{t}</span>
+      {sub !== undefined && <span style={{ fontSize: 12, color: MUTED, ...NUM }}>{sub}</span>}
+    </span>
   );
-  const nCols = 6 + (c.capacity ? 1 : 0) + (c.budget ? 1 : 0) + (c.type ? 1 : 0);
+  const cell = (value: React.ReactNode, pass: boolean | null, lines: { text: string; color?: string }[] = []) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {pass === true && <Check size={14} color={SUCCESS} strokeWidth={2.5} aria-label="Meets" style={{ flexShrink: 0 }} />}
+        {pass === false && <X size={14} color={DANGER} strokeWidth={2.5} aria-label="Misses" style={{ flexShrink: 0 }} />}
+        <span style={{ fontSize: 13, ...NUM, color: pass === false ? DANGER : TEXT, fontWeight: pass === false ? 600 : 400, paddingLeft: pass === null ? 20 : 0 }}>{value}</span>
+      </div>
+      {lines.filter((l) => l.text).map((l) => <span key={l.text} style={{ fontSize: 12, lineHeight: 1.4, color: l.color ?? MUTED, paddingLeft: 20, ...NUM }}>{l.text}</span>)}
+    </div>
+  );
+
+  const spaceRow = (r: SpaceResult, g: Group, first: boolean) => {
+    const id = r.space.id; const open = openRow === id;
+    const priv = r.space.visibility === 'Private';
+    const checks = [r.pass.area, r.pass.capacity, r.pass.budget, r.pass.type].filter((x) => x !== null) as boolean[];
+    const n = metCount(r);
+    const overMarket = r.detail.some((d) => d.k === 'Rate');
+    const seatHint = band && r.pass.capacity === false ? (r.space.desks < band[0] ? `Below ${band[0]}` : `Above ${band[1]}`) : '';
+    const listing = priv ? (r.space.validUntil ? `Private · quote to ${shortDate(r.space.validUntil)}` : 'Private · no quote date') : `Public · updated ${r.ageDays} d ago`;
+    return (
+      <div key={id} {...dz(g)} style={{ borderTop: first ? undefined : `1px solid ${HAIR}`, background: open ? PAGE : '#fff', opacity: dragId === id ? 0.45 : 1 }}>
+        <div
+          draggable
+          onDragStart={(e) => { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; setDragId(id); }}
+          onDragEnd={() => { setDragId(null); setOverGroup(null); }}
+          onClick={() => setOpenRow(open ? null : id)}
+          style={{ ...rowGrid, alignItems: 'start', padding: '14px 16px', cursor: 'grab' }}
+        >
+          <GripVertical size={16} color={DISABLED} style={{ marginTop: 1 }} aria-hidden />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: TEXT }}>{r.space.title}</span>
+            <span style={{ fontSize: 12, lineHeight: 1.4, color: MUTED }}>{r.space.venue}{!c.type ? ` · ${r.space.type}` : ''}</span>
+            <span style={{ fontSize: 12, lineHeight: 1.4, color: r.confirmed ? MUTED : DANGER }}>{listing}{r.confirmed ? '' : ' · unconfirmed'}</span>
+          </div>
+          {cell(`${r.miles.toFixed(1)} mi`, r.pass.area, [{ text: r.pass.area ? '' : `Outside ${c.radiusMi} mi`, color: DANGER }])}
+          {band ? cell(r.space.desks, r.pass.capacity, [{ text: seatHint, color: DANGER }]) : null}
+          {c.budget ? cell(r.space.rate != null ? money(r.space.rate) : 'Unknown', r.pass.budget, [
+            { text: r.costPP != null ? `${money(r.costPP)} / person` : '' },
+            { text: r.pass.budget === false ? 'Over budget' : overMarket ? 'Above market' : '', color: r.pass.budget === false ? DANGER : AMBER_TEXT },
+          ]) : null}
+          {c.type ? cell(r.space.type, r.pass.type) : null}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: TEXT, ...NUM }}>{n} of {checks.length}</span>
+            <div style={{ display: 'flex', gap: 3 }} aria-hidden>
+              {checks.map((p, i) => <span key={i} style={{ width: 14, height: 4, borderRadius: 9999, background: p ? SUCCESS : BORDER }} />)}
+            </div>
+          </div>
+          <button type="button" aria-label={open ? 'Hide details' : 'Show details'} aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpenRow(open ? null : id); }} style={{ width: 32, height: 32, marginTop: -6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, borderRadius: 8, background: 'transparent', color: MUTED, cursor: 'pointer' }}>
+            <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 150ms ease' }} />
+          </button>
+        </div>
+        {open && (
+          <div style={{ margin: '0 16px 16px 42px', padding: '16px 20px', background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 32 }}>
+              {r.detail.map((d) => (
+                <div key={d.k} style={{ display: 'grid', gridTemplateColumns: '136px minmax(0, 1fr)', gap: 12, padding: '8px 0', borderBottom: `1px solid ${HAIR}` }}>
+                  <span style={{ fontSize: 12, color: MUTED }}>{d.k}</span>
+                  <span style={{ fontSize: 13, color: TEXT, overflowWrap: 'anywhere' }}>{d.v}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: TEXT }}>Group
+                <select value={g} onClick={(e) => e.stopPropagation()} onChange={(e) => move(r, e.target.value as Group)} style={{ height: 36, padding: '0 12px', border: `1px solid ${BORDER_STRONG}`, borderRadius: 12, background: '#fff', fontFamily: FONT, fontSize: 13, color: TEXT }}>
+                  {GROUPS.map((x) => <option key={x}>{x}</option>)}
+                </select>
+              </label>
+              {r.space.url && <a href={r.space.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none' }}>Open Listing <ExternalLink size={13} aria-hidden /></a>}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const groups = GROUPS.map((g) => ({ g, list: rows.filter((r) => groupOf(requirement, r.space) === g) }));
+  const emptyGroups = groups.filter((x) => x.list.length === 0);
+  const fullGroups = groups.filter((x) => x.list.length > 0);
   const tableBody = (
     <>
-      <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontFamily: FONT }}>
-            <colgroup>
-              <col />
-              <col style={{ width: 84 }} />
-              {c.capacity ? <col style={{ width: 72 }} /> : null}
-              {c.budget ? <col style={{ width: 150 }} /> : null}
-              {c.type ? <col style={{ width: 116 }} /> : null}
-              <col style={{ width: 150 }} />
-              <col style={{ width: 72 }} />
-              <col style={{ width: 92 }} />
-              <col style={{ width: 36 }} />
-            </colgroup>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #E5E7EB', background: '#F9FAFB' }}>
-                {colHead('Space')}
-                {colHead('Distance', `within ${c.radiusMi} mi`)}
-                {c.capacity ? colHead('Seats', a.bandText ? a.bandText.replace(/ people$/, '') : undefined) : null}
-                {c.budget ? colHead('Price', `up to ${money(c.budget)}/mo`) : null}
-                {c.type ? colHead('Type', c.type) : null}
-                {colHead('Amenities')}
-                {colHead('Meets', 'criteria')}
-                {colHead('Listing')}<th />
-              </tr>
-            </thead>
-            <tbody>
-              {GROUPS.map((g) => {
-                const list = rows.filter((r) => groupOf(requirement, r.space) === g);
-                const meet = list.filter((r) => r.fit && r.confirmed).length;
-                const over = overGroup === g && dragId !== null;
-                const dz = { onDragOver: (e: React.DragEvent) => { if (dragId) { e.preventDefault(); setOverGroup(g); } }, onDrop: (e: React.DragEvent) => { e.preventDefault(); const r = rows.find((x) => x.space.id === dragId); setDragId(null); setOverGroup(null); if (r) move(r, g); } };
-                return (
-                  <React.Fragment key={g}>
-                    <tr {...dz} style={{ background: over ? '#E6F0F8' : '#F3F4F6', borderTop: '1px solid #E5E7EB' }}>
-                      <td colSpan={nCols} style={{ padding: '9px 12px' }}>
-                        <span style={{ fontSize: 13.5, fontWeight: 700, color: INK }}>{g}</span>
-                        <span style={{ fontSize: 13, color: '#6B7280', marginLeft: 8 }}>{plural(list.length, 'space')}{list.length ? ` · ${meet} of ${list.length} meet all criteria` : ''}</span>
-                        {list.length === 0 && <span style={{ float: 'right', fontSize: 12.5, color: over ? BLUE : '#9CA3AF' }}>Drag spaces here</span>}
-                      </td>
-                    </tr>
-                    {list.map((r) => {
-                      const id = r.space.id; const open = openRow === id; const all = r.fit && r.confirmed;
-                      const priv = r.space.visibility === 'Private';
-                      const k = [r.pass.area, r.pass.capacity, r.pass.budget, r.pass.type].filter((x) => x !== null).length; const n = metCount(r);
-                      return (
-                        <React.Fragment key={id}>
-                          <tr
-                            {...dz}
-                            draggable
-                            onDragStart={(e) => { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; setDragId(id); }}
-                            onDragEnd={() => { setDragId(null); setOverGroup(null); }}
-                            onClick={() => setOpenRow(open ? null : id)}
-                            aria-expanded={open}
-                            style={{ borderTop: '1px solid #F1F3F5', cursor: 'grab', opacity: dragId === id ? 0.45 : 1, background: open ? '#F9FAFB' : over ? '#F5F9FD' : undefined }}
-                          >
-                            <td style={{ padding: '12px 10px', verticalAlign: 'top', minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-                                <GripVertical size={16} color="#9CA3AF" style={{ marginTop: 1, flexShrink: 0 }} />
-                                <div>
-                                  <div style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{r.space.title}</div>
-                                  <div style={{ fontSize: 12.5, color: '#6B7280' }}>{r.space.venue}{!c.type ? ` · ${r.space.type}` : ''}</div>
-                                </div>
-                              </div>
-                            </td>
-                            {crit(`${r.miles.toFixed(1)} mi`, r.pass.area)}
-                            {c.capacity ? crit(r.space.desks, r.pass.capacity) : null}
-                            {c.budget ? crit(r.space.rate != null ? money(r.space.rate) : 'n/a', r.pass.budget, r.costPP != null ? `${money(r.costPP)} per person${r.detail.some((d) => d.k === 'Rate') ? ' · over market' : ''}` : undefined) : null}
-                            {c.type ? crit(r.space.type, r.pass.type) : null}
-                            <td style={{ padding: '12px 10px', verticalAlign: 'top', fontSize: 13, color: '#374151' }}>{r.amenities || <span style={{ color: '#9CA3AF' }}>None recorded</span>}</td>
-                            <td style={{ padding: '12px 10px', verticalAlign: 'top', fontSize: 13.5, fontWeight: 600, color: n === k ? GREEN : INK, whiteSpace: 'nowrap' }}>{n} of {k}</td>
-                            <td style={{ padding: '12px 10px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
-                              <div style={{ fontSize: 13.5, color: '#374151' }}>{priv ? 'Private' : 'Public'}</div>
-                              <div style={{ fontSize: 12.5, color: r.confirmed ? '#6B7280' : '#B91C1C' }}>{priv ? (r.space.validUntil ? `quote to ${shortDate(r.space.validUntil)}` : 'no quote date') : `${r.ageDays} d ago`}</div>
-                            </td>
-                            <td style={{ padding: '12px 12px 12px 0', verticalAlign: 'top', width: 28 }}><ChevronDown size={16} color="#6B7280" style={{ transform: open ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} /></td>
-                          </tr>
-                          {open && (
-                            <tr style={{ background: '#F9FAFB' }}>
-                              <td colSpan={nCols} style={{ padding: '2px 12px 12px 30px' }}>
-                                <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 16px 12px' }}>
-                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 32 }}>
-                                    {r.detail.map((d) => (
-                                      <div key={d.k} style={{ display: 'flex', gap: 12, fontSize: 13, padding: '5px 0', borderBottom: '1px solid #F1F3F5' }}>
-                                        <div style={{ width: 132, flexShrink: 0, color: '#6B7280', whiteSpace: 'nowrap' }}>{d.k}</div>
-                                        <div style={{ color: INK, minWidth: 0, overflowWrap: 'anywhere' }}>{d.v}</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10, fontSize: 13 }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6B7280' }}>Group
-                                      <select value={g} onClick={(e) => e.stopPropagation()} onChange={(e) => move(r, e.target.value as Group)} aria-label="Move to group" style={{ border: '1px solid #D1D5DB', borderRadius: 6, padding: '4px 8px', fontSize: 13, fontFamily: FONT, color: INK, background: '#fff' }}>
-                                        {GROUPS.map((x) => <option key={x}>{x}</option>)}
-                                      </select>
-                                    </label>
-                                    {r.space.url && <a href={r.space.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 600, color: BLUE, textDecoration: 'none' }}>Open listing <ExternalLink size={12} /></a>}
-                                    <button type="button" onClick={(e) => { e.stopPropagation(); setOpenRow(null); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 0, fontWeight: 600, fontSize: 13, fontFamily: FONT, color: BLUE, cursor: 'pointer' }}>Hide details</button>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr style={{ borderTop: '1px solid #E5E7EB', background: '#F9FAFB' }}>
-                <td style={{ padding: '12px 10px 12px 30px', fontSize: 13.5, fontWeight: 600, color: INK }}>Spaces that meet</td>
-                {[a.inArea, c.capacity ? a.forPeople : null, c.budget ? a.withinBudget : null, c.type ? a.results.filter((x) => x.space.type === c.type).length : null].filter((x, i) => i === 0 || x !== null).map((n, i) => (
-                  <td key={i} style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(n as number, total), whiteSpace: 'nowrap' }}>{n} of {total}</td>
-                ))}
-                <td />
-                <td style={{ padding: '12px 10px', fontSize: 13.5, fontWeight: 700, color: numColor(a.confirmedFits, total), whiteSpace: 'nowrap' }}>{a.confirmedFits} of {total}</td>
-                <td style={{ padding: '12px 10px', fontSize: 13.5, color: '#6B7280' }}>{a.results.filter((x) => x.confirmed).length} of {total} current</td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-      {footnotes.length > 0 && (
-        <div style={{ marginTop: 18, display: 'grid', gap: 6 }}>
-          {footnotes.map((g) => <div key={g.label} style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5 }}><b style={{ color: '#374151', fontWeight: 600 }}>{g.label}.</b> {g.text}</div>)}
+      {emptyGroups.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${emptyGroups.length}, minmax(0, 1fr))`, gap: 12 }}>
+          {emptyGroups.map(({ g }) => {
+            const over = overGroup === g && dragId !== null;
+            return (
+              <div key={g} {...dz(g)} style={{ display: 'flex', alignItems: 'center', gap: 8, height: 48, padding: '0 16px', border: `1px dashed ${over ? BLUE : BORDER_STRONG}`, borderRadius: 12, background: over ? '#e6f1f8' : '#fff', transition: 'background 150ms ease, border-color 150ms ease' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{g}</span>
+                <Count n={0} />
+                <span style={{ marginLeft: 'auto', fontSize: 12, color: over ? BLUE : MUTED }}>Drag spaces here</span>
+              </div>
+            );
+          })}
         </div>
       )}
-      <div style={{ fontSize: 12.5, color: '#6B7280', marginTop: 8 }}>Drag a space to move it between Shortlist, Favorites and Recommendations. Select a space for its venue facts.</div>
+      {fullGroups.map(({ g, list }) => {
+        const over = overGroup === g && dragId !== null;
+        const meet = list.filter((r) => r.fit && r.confirmed).length;
+        return (
+          <div key={g} style={{ border: `1px solid ${over ? BLUE : BORDER}`, borderRadius: 16, overflow: 'hidden', transition: 'border-color 150ms ease' }}>
+            <div {...dz(g)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px', borderBottom: `1px solid ${BORDER}`, background: over ? '#e6f1f8' : '#fff' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>{g}</span>
+              <Count n={list.length} blue />
+              <span style={{ marginLeft: 'auto', fontSize: 12, color: MUTED, ...NUM }}>{meet} of {list.length} meet every criterion</span>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <div style={{ minWidth: 760 }}>
+                <div style={{ ...rowGrid, alignItems: 'end', padding: '10px 16px', background: PAGE, borderBottom: `1px solid ${BORDER}` }}>
+                  <span />
+                  {head('Space')}
+                  {head('Distance', `≤ ${c.radiusMi} mi`)}
+                  {band ? head('Seats', bandShort) : null}
+                  {c.budget ? head('Price / mo', `≤ ${money(c.budget)}`) : null}
+                  {c.type ? head('Type', c.type) : null}
+                  {head('Match')}
+                  <span />
+                </div>
+                {list.map((r, i) => spaceRow(r, g, i === 0))}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {footnotes.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <Info size={15} color={MUTED} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden />
+          <div style={{ display: 'grid', gap: 4 }}>
+            {footnotes.map((g) => <p key={g.label} style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: MUTED }}><strong style={{ fontWeight: 600, color: TEXT }}>{g.label}:</strong> {g.text}</p>)}
+          </div>
+        </div>
+      )}
     </>
   );
 
   const spaceLine = (r: SpaceResult, i: number) => (
-    <div key={`${r.space.id}-${i}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '12px 0', borderTop: i ? '1px solid #F1F3F5' : undefined }}>
+    <div key={`${r.space.id}-${i}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '12px 0', borderTop: i ? `1px solid ${HAIR}` : undefined }}>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>{r.space.title}<span style={{ fontWeight: 400, color: '#6B7280' }}> · {r.space.venue}</span></div>
-        <div style={{ fontSize: 13, color: r.fit && r.confirmed ? GREEN : '#374151', marginTop: 2 }}>{r.reason}</div>
-        <div style={{ fontSize: 12.5, color: '#9CA3AF', marginTop: 1 }}>{r.facts}</div>
-        {r.extra.length > 0 && <div style={{ fontSize: 12.5, color: '#9CA3AF', marginTop: 1 }}>{r.extra.join(' · ')}</div>}
+        <div style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>{r.space.title}<span style={{ fontWeight: 400, color: MUTED }}> · {r.space.venue}</span></div>
+        <div style={{ fontSize: 13, color: r.fit && r.confirmed ? '#15803d' : TEXT, marginTop: 2 }}>{r.reason}</div>
+        <div style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>{r.facts}</div>
+        {r.extra.length > 0 && <div style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>{r.extra.join(' · ')}</div>}
       </div>
-      {r.space.url && <a href={r.space.url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>Open listing <ExternalLink size={12} /></a>}
+      {r.space.url && <a href={r.space.url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>Open Listing <ExternalLink size={13} aria-hidden /></a>}
     </div>
   );
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className={`${useTable ? 'sm:max-w-[980px]' : 'sm:max-w-[700px]'} p-0 overflow-hidden [&>button]:hidden gap-0`} style={{ borderRadius: 16, border: 'none', maxHeight: '92vh', boxShadow: '0 20px 60px rgba(0,0,0,.15)', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+      <DialogContent className={`${useTable ? 'sm:max-w-[960px]' : 'sm:max-w-[700px]'} p-0 overflow-hidden [&>button]:hidden gap-0`} style={{ borderRadius: 16, border: 'none', maxHeight: '92vh', boxShadow: '0 20px 60px rgba(0,0,0,.15)', background: '#fff', display: 'flex', flexDirection: 'column', fontFamily: FONT, color: TEXT }}>
         <DialogDescription className="sr-only">The Collection Assessment Agent explains how well this collection covers the requirement</DialogDescription>
 
-        {/* Title bar: the same as the other modals */}
-        <div style={{ background: BLUE, padding: '20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <DialogTitle style={{ color: '#fff', fontSize: 24, fontWeight: 700, fontFamily: FONT }}>Assess Collection</DialogTitle>
-          <button type="button" onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer' }}><X size={20} /></button>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, padding: '22px 24px 20px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+            <DialogTitle style={{ margin: 0, fontSize: 20, lineHeight: 1.25, fontWeight: 600, letterSpacing: '-0.01em', color: TEXT, fontFamily: FONT }}>Assess Collection</DialogTitle>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: MUTED }}>{col.name} · {requirement.name} · {addedWhy(requirement)}</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 26, padding: '0 10px', borderRadius: 9999, background: '#ecfeff', border: '1px solid #a5f3fc', color: '#0e7490', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <Bot size={13} aria-hidden /> Collection Assessment Agent
+            </span>
+            <button type="button" onClick={onClose} aria-label="Close" style={{ width: 32, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, borderRadius: 8, background: 'transparent', color: MUTED, cursor: 'pointer' }}><X size={18} /></button>
+          </div>
         </div>
 
-        <div style={{ padding: '20px 24px 28px', overflowY: 'auto', flex: 1, minHeight: 0, fontFamily: FONT }}>
-          {/* The agent, as elsewhere */}
-          <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Bot size={18} color="#059669" /></div>
-            <div style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: INK }}>Collection Assessment Agent</div>
-            <div style={{ fontSize: 13, color: '#6B7280', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{requirement.name} · {col.name}</div>
-          </div>
+        {/* Body */}
+        <div style={{ padding: '20px 24px 24px', overflowY: 'auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gridAutoRows: 'max-content', alignContent: 'start', gap: 20 }}>
+          {requirementRow}
+          {scorecard}
+          {insight}
 
-          {/* Result: the two facts in one panel, same structure each */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #E5E7EB', borderRadius: 12, marginTop: 16 }}>
-            <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-              {big(a.total)}
-              <div>
-                <div style={EYEBROW_GRAY}>Spaces in collection</div>
-                <div style={{ fontSize: 13, color: '#6B7280', marginTop: 3, lineHeight: 1.4 }}>{addedWhy(requirement)}</div>
-              </div>
+          {(a.verdict || (!useTable && !ok) || reqChanges.length > 0 || since) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {a.verdict && <div style={{ fontSize: 14, color: TEXT, lineHeight: 1.5 }}>{a.verdict}</div>}
+              {reqChanges.length > 0 && onUpdate && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '12px 14px', border: '1px solid #fde68a', background: '#fffbeb', borderRadius: 8 }}>
+                  <div style={{ fontSize: 13, color: TEXT, lineHeight: 1.5 }}><strong style={{ fontWeight: 600 }}>The requirement has changed since this collection was built:</strong> {reqChanges.join('; ')}.</div>
+                  <button type="button" onClick={() => onUpdate(requirement)} style={{ height: 36, background: '#fff', color: TEXT, border: `1px solid ${BORDER_STRONG}`, borderRadius: 12, padding: '0 14px', fontSize: 13, fontWeight: 500, fontFamily: FONT, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>Update Collection</button>
+                </div>
+              )}
+              {since && (
+                <div style={{ display: 'flex', gap: 10, padding: '12px 14px', borderRadius: 8, background: '#e6f1f8', border: '1px solid #cce3f1', fontSize: 13, color: TEXT, lineHeight: 1.5 }}>
+                  <Info size={15} color="#004d7d" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden />
+                  <span><strong style={{ fontWeight: 600 }}>Since last assessed on {since.at}:</strong> {since.changes.join('; ')}. Matches <span style={NUM}>{since.fitsBefore} → {since.fitsNow}</span>.</span>
+                </div>
+              )}
             </div>
-            <div style={{ padding: '12px 20px', borderLeft: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 14 }}>
-              {big(a.confirmedFits, a.confirmedFits === 0 ? '#B91C1C' : INK)}
-              <div>
-                <div style={EYEBROW_GRAY}>Meet every criterion</div>
-                <div style={{ fontSize: 13, color: '#6B7280', marginTop: 3, lineHeight: 1.4 }}>{a.state === 'ok' ? `${cap(every.slice(0, -1).join(', ') + (every.length > 1 ? ' and ' : '') + every[every.length - 1])}, all together.` : 'Nothing to compare yet.'}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Summary */}
-          <div style={{ marginTop: 14, marginBottom: 18 }}>
-            {a.verdict && <div style={{ fontSize: 15, color: INK, lineHeight: 1.6 }}>{a.verdict}</div>}
-            {checked && <div style={{ fontSize: 13, color: '#6B7280', marginTop: a.verdict ? 8 : 0, lineHeight: 1.5 }}>Checked against {checked}.{onEdit && <> <button type="button" onClick={() => onEdit(requirement)} style={{ background: 'none', border: 'none', padding: 0, color: BLUE, fontWeight: 600, fontFamily: FONT, fontSize: 13, cursor: 'pointer' }}>Edit requirement</button></>}</div>}
-            {a.state === 'ok' && a.total > 0 && <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 1.5 }}>The workflow counts a collection as thin below {CONFIRMED_NEEDED} confirmed spaces. This one has {a.confirmedFits}.</div>}
-            {reqChanges.length > 0 && onUpdate && (
-              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '10px 12px 10px 14px', border: '1px solid #F3D9B1', background: '#FFFAF0', borderRadius: 10 }}>
-                <div style={{ fontSize: 13.5, color: '#374151', lineHeight: 1.5 }}><b style={{ color: INK }}>The requirement has changed since this collection was built:</b> {reqChanges.join('; ')}.</div>
-                <button type="button" onClick={() => onUpdate(requirement)} style={{ background: '#fff', color: BLUE, border: `1px solid ${BLUE}`, borderRadius: 6, padding: '7px 14px', fontSize: 13.5, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>Update collection</button>
-              </div>
-            )}
-            {since && (
-              <div style={{ fontSize: 13, color: '#374151', marginTop: 12, lineHeight: 1.5, paddingLeft: 12, borderLeft: `2px solid ${BLUE}` }}>
-                <b style={{ color: INK }}>Since last assessed on {since.at}:</b> {since.changes.join('; ')}. Matches {since.fitsBefore} → {since.fitsNow}.
-              </div>
-            )}
-          </div>
+          )}
 
           {useTable ? tableBody : (
-          <>
-          {a.cards.length > 0 && (
+          <div>
+          {a.cards.length > 0 && !scorecard && (
             <>
               <div style={SECTION}>By criterion</div>
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${a.cards.length}, 1fr)`, gap: 12 }}>
                 {a.cards.map((k) => (
-                  <div key={k.label} style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: '14px 16px', background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 10 }}>
-                    <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.35 }}>{k.label}</div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                      <span style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', color: numColor(k.n, k.of) }}>{k.n}</span>
-                      <span style={{ fontSize: 13.5, color: '#6B7280' }}>of {k.of}</span>
+                  <div key={k.label} style={{ border: `1px solid ${BORDER}`, borderRadius: 16, padding: '14px 16px', background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ fontSize: 13, color: TEXT, lineHeight: 1.35 }}>{k.label}</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, ...NUM }}>
+                      <span style={{ fontSize: 22, fontWeight: 600, lineHeight: 1, color: TEXT }}>{k.n}</span>
+                      <span style={{ fontSize: 13, color: MUTED }}>of {k.of}</span>
                     </div>
                   </div>
                 ))}
@@ -310,31 +387,36 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
           )}
 
           {/* Gaps and trade-offs, or why it's empty */}
-          <div style={SECTION}>{a.gapsTitle}</div>
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: '2px 20px' }}>
+          <div style={{ ...SECTION, marginTop: 0 }}>{a.gapsTitle}</div>
+          <div style={{ border: `1px solid ${BORDER}`, borderRadius: 16, padding: '2px 20px' }}>
             {a.gaps.map((g, i) => {
               const muted = g.label === 'Not assessed';
               return (
-                <div key={g.label} style={{ display: 'flex', gap: 16, padding: '12px 0', borderTop: i ? '1px solid #F1F3F5' : undefined }}>
-                  <div style={{ width: 118, flexShrink: 0, fontSize: 13.5, fontWeight: 600, color: muted ? '#6B7280' : INK }}>{g.label}</div>
-                  <div style={{ flex: 1, fontSize: 13.5, color: muted ? '#6B7280' : '#374151', lineHeight: 1.55 }}>{g.text}</div>
+                <div key={g.label} style={{ display: 'flex', gap: 16, padding: '12px 0', borderTop: i ? `1px solid ${HAIR}` : undefined }}>
+                  <div style={{ width: 118, flexShrink: 0, fontSize: 13, fontWeight: 600, color: muted ? MUTED : TEXT }}>{g.label}</div>
+                  <div style={{ flex: 1, fontSize: 13, color: muted ? MUTED : TEXT, lineHeight: 1.5 }}>{g.text}</div>
                 </div>
               );
             })}
           </div>
 
-          {/* The spaces */}
-          {a.state === 'ok' && a.total > 0 && (
-            <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: '14px 20px', marginTop: 12 }}>
-              <button type="button" onClick={() => setShowSpaces((s) => !s)} style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: FONT, fontSize: 14, fontWeight: 600, color: INK, textAlign: 'left' }}>
-                <span>The {plural(a.total, 'space')} in this collection</span>
-                <ChevronDown size={16} color="#9CA3AF" style={{ transform: showSpaces ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} />
+          {ok && total > 0 && (
+            <div style={{ border: `1px solid ${BORDER}`, borderRadius: 16, padding: '14px 20px', marginTop: 12 }}>
+              <button type="button" onClick={() => setShowSpaces((s) => !s)} style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: FONT, fontSize: 14, fontWeight: 600, color: TEXT, textAlign: 'left' }}>
+                <span>The {plural(total, 'space')} in this collection</span>
+                <ChevronDown size={16} color={MUTED} style={{ transform: showSpaces ? 'rotate(180deg)' : undefined, transition: 'transform 150ms ease' }} />
               </button>
               {showSpaces && <div style={{ marginTop: 6 }}>{a.results.map((r, i) => spaceLine(r, i))}</div>}
             </div>
           )}
-          </>
+          </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '16px 24px', borderTop: `1px solid ${BORDER}`, background: PAGE, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, color: MUTED }}>{useTable ? 'Drag a space to move it between Shortlist, Favorites and Recommendations.' : ''}</span>
+          <button type="button" onClick={onClose} style={{ height: 36, padding: '0 18px', border: 0, borderRadius: 12, background: BLUE, color: '#fff', fontFamily: FONT, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Done</button>
         </div>
       </DialogContent>
     </Dialog>
