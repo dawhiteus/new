@@ -722,7 +722,7 @@ export function RequirementsHome() {
                         ) : (
                           <button
                             onClick={() => setCollectionForId(r.id)}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 12px', whiteSpace: 'nowrap', borderRadius: 999, fontSize: 13, fontWeight: 600, background: '#fff', color: INK, border: '1px solid #E5E7EB', cursor: 'pointer', fontFamily: FONT, whiteSpace: 'nowrap' }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: '#fff', color: INK, border: '1px solid #E5E7EB', cursor: 'pointer', fontFamily: FONT, whiteSpace: 'nowrap' }}
                           >
                             Create Collection
                           </button>
