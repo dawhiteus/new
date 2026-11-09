@@ -231,10 +231,8 @@ export function runIntake(text: string, licenseIdRaw: string, opts: { today?: st
       if (!f.size) { f.size = String(license.sizeSf); prov.size = { kind: 'license', note: `License ${license.licenseId}: ${license.sizeSf.toLocaleString()} sq ft` }; }
     }
 
-    // Name: Account - City - N seats (the pattern the sales team uses).
-    const parts = [f.company, f.location, f.capacity ? `${f.capacity} seats` : ''].filter(Boolean);
-    if (parts.length >= 2) { f.name = parts.join(' - '); prov.name = { kind: 'suggested', note: 'Named Account - City - Seats. Please edit.' }; }
-    else if (f.location) { f.name = f.location; prov.name = { kind: 'suggested', note: `Named after the location (${f.location}). Please edit.` }; }
+    // Name: just the city (for example "Madrid").
+    if (f.location) { f.name = f.location; prov.name = { kind: 'suggested', note: `Named after the location (${f.location}). Please edit.` }; }
     else if (license) { f.name = `${license.city} renewal`; prov.name = { kind: 'suggested', note: `Suggested from license ${license.licenseId}` }; }
 
     const ambiguities = sc.data.ambiguities.map((a) => a.text);
@@ -344,12 +342,6 @@ export function proposeUpdate(current: Partial<IntakeFields>, text: string, opts
     changes.push({ ...base, kind: old ? 'changed' : 'new', from: old, to: raw });
   });
 
-  // A generated name carries the seat count, so keep it in step when the headcount changes.
-  const capChange = changes.find((c) => c.field === 'capacity');
-  const nm = cur.name.match(/^(.*) - (\d+) seats$/);
-  if (capChange && nm && cur.company && nm[1] === [cur.company, cur.location].filter(Boolean).join(' - ') && nm[2] === String(Number(capChange.from))) {
-    changes.push({ field: 'name', from: cur.name, to: `${nm[1]} - ${capChange.to} seats`, kind: 'changed', note: 'The name follows Account - City - Seats, so it follows the new headcount.', inferred: true, sourcing: false });
-  }
   const sourcing = changes.filter((c) => c.sourcing && c.kind !== 'new');
   const consequence = opts.hasCollection && changes.some((c) => c.sourcing)
     ? `${cap1(joinList(changes.filter((c) => c.sourcing)  .map((c) => FIELD_LABEL[c.field].replace(/ \(.*\)/, '').toLowerCase())))} ${changes.filter((c) => c.sourcing).length === 1 ? 'is' : 'are'} used to build the Collection. The Collection is not changed automatically; once you apply this you can choose Update collection.`

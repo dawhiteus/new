@@ -81,16 +81,16 @@ describe('Update from text', () => {
   const today = TODAY;
   it('proposes one changed field with before and after, and leaves the rest alone', () => {
     const p = proposeUpdate(saved(), 'Update: we are now at 35 people for Lisbon.', { today });
-    expect(p.changes.map((c) => c.field)).toEqual(['capacity', 'name']);
+    expect(p.changes.map((c) => c.field)).toEqual(['capacity']);
     expect(p.changes[0]).toMatchObject({ field: 'capacity', from: '25', to: '35', kind: 'changed' });
     const a = applyChanges(p.changes, today);
-    expect(Object.keys(a.fields)).toEqual(['capacity', 'name']);
+    expect(Object.keys(a.fields)).toEqual(['capacity']);
     expect(a.fields.budget).toBeUndefined();
   });
 
   it('proposes several changes together', () => {
     const p = proposeUpdate(saved(), 'Change of plan: we need 30 people, starting March 1, 2027, and the budget is now $34,000 per month.', { today });
-    expect(p.changes.map((c) => c.field).sort()).toEqual(['budget', 'capacity', 'name', 'startDate']);
+    expect(p.changes.map((c) => c.field).sort()).toEqual(['budget', 'capacity', 'startDate']);
     expect(p.changes.find((c) => c.field === 'budget')).toMatchObject({ from: '30000', to: '34000' });
   });
 
@@ -209,12 +209,14 @@ Priya`;
   });
 });
 
-describe('Names follow the headcount', () => {
-  it('proposes a matching name change only when the name was generated from the old headcount', () => {
-    const p = proposeUpdate(saved(), 'We are now 30 people.', { today: TODAY });
-    expect(p.changes.find((c) => c.field === 'name')).toMatchObject({ from: 'Slalom - Lisbon - 25 seats', to: 'Slalom - Lisbon - 30 seats' });
-    const custom = proposeUpdate(saved({ name: 'Lisbon expansion' }), 'We are now 30 people.', { today: TODAY });
-    expect(custom.changes.find((c) => c.field === 'name')).toBeUndefined();
+describe('Requirement name', () => {
+  it('is just the city', () => {
+    expect(fieldsOf('We need space in Madrid for about 25 people.').fields.name).toBe('Madrid');
+    expect(runIntake(SAMPLE_EMAIL, '', { today: TODAY }).drafts.map((d) => d.fields.name)).toEqual(['Lisbon', 'Porto']);
+  });
+  it('is not rewritten when the headcount changes', () => {
+    const p = proposeUpdate(saved({ name: 'Madrid' }), 'We are now 30 people.', { today: TODAY });
+    expect(p.changes.find((c) => c.field === 'name')).toBeUndefined();
   });
 });
 
@@ -232,7 +234,7 @@ describe('Create, save, reopen, update (state flow)', () => {
     // 3. reopen later and update from a follow-up
     const followUp = 'Update: we are now 22 people and would like to start April 1, 2027 instead.';
     const p1 = proposeUpdate(record, followUp, { today: TODAY });
-    expect(p1.changes.map((c) => c.field).sort()).toEqual(['capacity', 'name', 'startDate']);
+    expect(p1.changes.map((c) => c.field).sort()).toEqual(['capacity', 'startDate']);
     const before = { ...record };
     record = { ...record, ...applyChanges(p1.changes, TODAY).fields };
     expect(record).toMatchObject({ capacity: '22', startDate: '2027-04-01', budget: '22000', size: '3500', location: 'Denver' });

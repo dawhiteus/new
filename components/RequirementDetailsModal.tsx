@@ -427,10 +427,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
                   </div>
                   <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
                     {f.intake.questions.map((q) => (
-                      <li key={q}>{q}{' '}
-                        <button type="button" onClick={() => commit({ intake: { ...f.intake!, questions: f.intake!.questions.filter((x) => x !== q) } }, [])}
-                          style={{ background: 'none', border: 'none', color: BLUE, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Mark answered</button>
-                      </li>
+                      <li key={q}>{q}</li>
                     ))}
                   </ol>
                 </div>
