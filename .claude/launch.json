@@ -3,9 +3,43 @@
   "configurations": [
     {
       "name": "Transaction Manager",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "5175"],
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": [
+        "node_modules/.bin/vite",
+        "--port",
+        "5175"
+      ],
       "port": 5175
+    },
+    {
+      "name": "Home Page",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "serve",
+        "/Users/davidwhite/Desktop",
+        "--listen",
+        "5176",
+        "--no-clipboard"
+      ],
+      "port": 5176
+    },
+    {
+      "name": "Workplace Strategist",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd '/Users/davidwhite/Desktop/Workplace Strategist' && npm run dev -- -p 3007"
+      ],
+      "port": 3007
+    },
+    {
+      "name": "Nav Prototype",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd '/Users/davidwhite/Desktop/Transaction Manager/.claude/worktrees/fervent-dijkstra-37c2f3' && node node_modules/.bin/vite --port 5177"
+      ],
+      "port": 5177
     }
   ]
 }
