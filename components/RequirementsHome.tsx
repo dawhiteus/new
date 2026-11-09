@@ -433,13 +433,16 @@ export function RequirementsHome() {
     const notes: MvpRequirement['details']['notes'] = [];
     if (d.intake) {
       // One note: the complete source plus the open questions (a requirement takes a single initial note).
+      const qs = d.intake.questions.length
+        ? `\n\nOpen questions:\n${d.intake.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`
+        : '';
       const lic = d.intake.licenseId ? DEMO_LICENSES[d.intake.licenseId] : undefined;
       const fmtD = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       const renewal = lic
         ? `Renewal of license ${lic.licenseId} · Incumbent: ${lic.operator} · ${lic.termEnd ? `Term ends ${fmtD(lic.termEnd)}` : 'Auto-renews'}${lic.noticeDate ? ` · Customer must decide by ${fmtD(lic.noticeDate)}` : ''}`
         : '';
       const src = d.intake.sourceText ? `Source provided by Sales (${d.intake.sourceLabel}), kept in full:\n\n${d.intake.sourceText}` : '';
-      notes.push({ author: AGENT_NAME, date: dispDate, text: [renewal, src].filter(Boolean).join('\n\n').trim() });
+      notes.push({ author: AGENT_NAME, date: dispDate, text: ([renewal, src].filter(Boolean).join('\n\n') + qs).trim() });
       events.push({
         id: `e-${Date.now()}-${seq}-agent`, type: 'note', title: 'Draft Prepared',
         description: `${AGENT_NAME} drafted this requirement from ${d.intake.sourceLabel}${d.intake.licenseId ? ` and license ${d.intake.licenseId}` : ''}. Reviewed and saved by Sales.`,
