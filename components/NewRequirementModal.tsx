@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { LICENSE_REGISTRY, needingDecision, byNoticeDate, daysUntil } from './data/licenseRegistry';
-import { X, ChevronsUpDown, Bot, Loader2, Sparkles, Copy, ArrowUp, Paperclip } from 'lucide-react';
+import { X, ChevronsUpDown, Bot, Loader2, Sparkles, Copy, ArrowUp, Paperclip, CheckSquare } from 'lucide-react';
 import { toast } from './ui/toast';
 import {
   AGENT_NAME, REQUIRED, FIELD_LABEL,
   runIntake, missingDetailsMessage,
-  type IntakeDraft, type IntakeFields, type IntakeResult, type FieldKey, type Provenance,
+  type IntakeDraft, type IntakeFields, type IntakeResult, type FieldKey, type Provenance, type OpenQuestion,
 } from './data/intakeAgent';
 
 const FONT = 'Inter, sans-serif';
@@ -14,6 +14,14 @@ const BLUE = '#0D619B';
 const INK = '#0F2A3D';
 const fmtShort = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const GREEN = '#0F7B4F';
+// LiquidSpace v4 tokens used by the agent summary (agents are teal everywhere).
+const TEAL = '#00b8c4';
+const TEAL_TEXT = '#0e7490';
+const TEXT = '#374151';
+const MUTED = '#6b7280';
+const BORDER = '#e5e7eb';
+const HAIRLINE = '#f3f4f6';
+const LS_500 = '#005b94';
 const STATUSES = ['Active', 'Draft', 'Executed', 'Archived'];
 const WORKSPACE_TYPES = ['Office Suite', 'Private Office', 'Team Office', 'Coworking', 'Meeting Space'];
 const CONFIGURATIONS = ['Single space', 'Collection of spaces'];
@@ -42,10 +50,35 @@ const sectionStyle: React.CSSProperties = {
 };
 
 const MARK: Record<Provenance['kind'], { color: string; text: string }> = {
-  source: { color: GREEN, text: 'from your text' },
-  license: { color: BLUE, text: 'from the license' },
-  suggested: { color: '#B45309', text: 'suggested, please confirm' },
+  source: { color: TEAL_TEXT, text: 'From your text' },
+  license: { color: TEAL_TEXT, text: 'From the license' },
+  suggested: { color: TEAL_TEXT, text: 'Suggested, please confirm' },
 };
+
+// One checklist row per open question: a short field name, and a hint. When the agent asked something
+// specific (a conflict, a currency, a hybrid headcount), the question itself is the hint.
+const ROW_LABEL: Partial<Record<FieldKey, string>> = {
+  location: 'Location', capacity: 'Headcount', budget: 'Monthly budget', startDate: 'Start date', termLength: 'Term length',
+  workspaceType: 'Space type', otherFunctional: 'Search area', size: 'Size', company: 'Company',
+};
+const GENERIC_Q = /^(Which city|How many people will|What monthly budget|What start date|How long a term|What type of space|Which neighborhoods|Do they have a size|Which company)/;
+function checklistRow(q: OpenQuestion, f: IntakeFields): { field: FieldKey; label: string; hint: string } {
+  const label = ROW_LABEL[q.field] ?? FIELD_LABEL[q.field] ?? 'Detail';
+  if (!GENERIC_Q.test(q.text)) return { field: q.field, label, hint: q.text };
+  const termEnd = q.text.match(/Current term ends (.+?)\.\)/)?.[1];
+  const hint: Partial<Record<FieldKey, string>> = {
+    location: 'City or location',
+    capacity: 'People the space must hold',
+    budget: 'Target spend per month',
+    startDate: termEnd ? `Current term ends ${termEnd}` : 'Required move-in date',
+    termLength: 'Months of commitment',
+    workspaceType: 'Office suite, private office, team office, coworking or meeting space',
+    otherFunctional: f.location ? `Neighborhoods or radius in ${f.location}` : 'Neighborhoods or radius',
+    size: q.suggest ? `About ${Number(q.suggest.value).toLocaleString('en-US')} sq ft at 150 sq ft per person` : 'Square feet',
+    company: 'Customer company name',
+  };
+  return { field: q.field, label, hint: hint[q.field] ?? q.text };
+}
 
 function AgentAvatar({ spinning, small }: { spinning?: boolean; small?: boolean }) {
   const size = small ? 34 : 40;
@@ -201,8 +234,8 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
     if (!p) return null;
     const m = MARK[p.kind];
     return (
-      <span title={`${m.text}: ${p.note}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: m.color, padding: '0 2px', cursor: 'help' }}>
-        <Sparkles size={11} />
+      <span title={`${m.text}: ${p.note}`} aria-label={`Agent-filled. ${m.text}: ${p.note}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: m.color, padding: '0 2px', cursor: 'help' }}>
+        <Sparkles size={12} />
       </span>
     );
   };
@@ -213,7 +246,8 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
     draft.prov[k]?.kind === 'suggested';
   const vis = (k: FieldKey) => !(agentRun && reviewOnly) || needsReview(k);
   const ALL_FIELDS: FieldKey[] = ['company', 'name', 'location', 'workspaceType', 'capacity', 'size', 'programNeeds', 'amenityNeeds', 'configuration', 'otherFunctional', 'startDate', 'termLength', 'closeDate', 'budget', 'otherCommercial'];
-  const hiddenCount = ALL_FIELDS.filter((k) => !needsReview(k) && String(draft.fields[k] ?? '').trim()).length;
+  const reviewCount = ALL_FIELDS.filter(needsReview).length;
+  const checklist = (draft.open ?? draft.questions.map((text) => ({ field: 'otherFunctional' as FieldKey, tier: 'useful' as const, text }))).map((q) => checklistRow(q, draft.fields));
   const missingFlag = (k: FieldKey) => agentRun && REQUIRED.includes(k) && k !== 'name' && !draft.fields[k];
 
   const field = (k: FieldKey, type = 'text') => (
@@ -223,7 +257,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
         type={type}
         value={draft.fields[k]}
         onChange={(e) => setField(k, e.target.value)}
-        style={{ ...inputStyle, borderColor: draft.prov[k] ? `${MARK[draft.prov[k]!.kind].color}66` : missingFlag(k) ? '#E5E7EB' : '#D1D5DB' }}
+        style={{ ...inputStyle, borderColor: missingFlag(k) ? '#E5E7EB' : '#D1D5DB' }}
       />
       {missingFlag(k) && <div style={{ fontSize: 12, color: '#B45309', marginTop: 5, fontFamily: FONT }}>Not provided</div>}
     </div>
@@ -236,7 +270,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
         onChange={(e) => setField(k, e.target.value)}
         placeholder={placeholder}
         rows={3}
-        style={{ ...inputStyle, resize: 'vertical', borderColor: draft.prov[k] ? `${MARK[draft.prov[k]!.kind].color}66` : '#D1D5DB' }}
+        style={{ ...inputStyle, resize: 'vertical', borderColor: '#D1D5DB' }}
       />
     </div>
   );
@@ -263,8 +297,8 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) close(); }}>
       <DialogContent className="sm:max-w-[760px] p-0 overflow-hidden [&>button]:hidden" style={{ borderRadius: 24, border: 'none', maxHeight: '92vh' }}>
         <DialogDescription className="sr-only">Create a new workspace requirement</DialogDescription>
-        <div style={{ background: BLUE, padding: '20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <DialogTitle style={{ color: '#fff', fontSize: 24, fontWeight: 700, fontFamily: FONT }}>Create New Requirement</DialogTitle>
+        <div style={{ background: 'linear-gradient(135deg, #004a7c 0%, #005b94 50%, #0071b8 100%)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <DialogTitle style={{ color: '#fff', fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em', fontFamily: FONT }}>Create Requirement</DialogTitle>
           <button type="button" onClick={close} aria-label="Close" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer' }}><X size={20} /></button>
         </div>
 
@@ -284,7 +318,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
             </div>
           )}
 
-          {phase !== 'closed' && (
+          {(phase === 'open' || phase === 'working') && (
             <div style={{ border: '1.5px solid #E5E7EB', background: '#F9FAFB', borderRadius: 16, padding: 16, marginBottom: 20 }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <AgentAvatar spinning={phase === 'working'} />
@@ -385,32 +419,43 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
                   )}
 
                   {phase === 'working' && <div style={{ fontSize: 14, color: '#374151', padding: '6px 0' }}>{workMsg}</div>}
-
-                  {phase === 'review' && result && (
-                    <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.55 }}>
-                      {result.drafts.length > 1
-                        ? <>I drafted <b>{result.drafts.length} requirements</b> ({result.drafts.map((d) => d.label).join(' and ')}). </>
-                        : <>I've drafted your requirement. </>}
-                      I filled <b>{result.filledCount} of {result.totalCount}</b> fields, marked <span style={{ color: GREEN, fontWeight: 600 }}>✦</span>. Review and edit anything, then create.
-                      {result.license && (
-                        <div style={{ fontSize: 13, color: '#6B7280', marginTop: 6 }}>
-                          I used the customer, location, seats and size from license <b>{result.license.licenseId}</b>{result.license.noticeDate ? <> (customer must decide by {fmtShort(result.license.noticeDate)})</> : null}, but not its commercial terms.
-                        </div>
-                      )}
-                      {result.licenseError && <div style={{ fontSize: 13, color: '#B45309', marginTop: 6 }}>{result.licenseError}</div>}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {agentRun && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#374151', fontFamily: FONT, margin: '-8px 0 16px', cursor: 'pointer' }}>
-              <input type="checkbox" checked={reviewOnly} onChange={(e) => setReviewOnly(e.target.checked)} />
-              Show only fields to review
-              {reviewOnly && <span style={{ color: '#6B7280' }}>· {hiddenCount} filled field{hiddenCount === 1 ? '' : 's'} hidden</span>}
-            </label>
+          {/* ── Agent summary (after a draft) ── */}
+          {agentRun && result && (
+            <section aria-label="Requirement Agent summary" style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px 20px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', fontFamily: FONT, color: TEXT, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 6, background: TEAL, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Bot size={15} /></div>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{AGENT_NAME}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: '#ecfeff', border: '1px solid #a5f3fc', color: TEAL_TEXT }}>{result.drafts.length > 1 ? 'Drafts ready' : 'Draft ready'}</span>
+                <span style={{ flex: 1 }} />
+                <span style={{ fontSize: 12, color: MUTED, fontVariantNumeric: 'tabular-nums' }}><b style={{ color: TEXT, fontWeight: 600 }}>{result.filledCount} of {result.totalCount}</b> fields filled</span>
+                <div role="img" aria-label={`${result.filledCount} of ${result.totalCount} fields filled`} style={{ width: 88, height: 6, borderRadius: 999, background: BORDER, overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.round((result.filledCount / Math.max(1, result.totalCount)) * 100)}%`, height: '100%', background: TEAL, borderRadius: 999 }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>
+                  {result.drafts.length > 1
+                    ? `Drafted ${result.drafts.length} requirements · ${result.drafts.map((d) => d.label).join(' and ')}`
+                    : result.license
+                      ? `Drafted from license ${result.license.licenseId}${result.sourceText ? ` and ${sourceLabel}` : ''}`
+                      : `Drafted from ${sourceLabel}`}
+                </p>
+                <p style={{ margin: 0, fontSize: 14 }}>
+                  {result.license
+                    ? 'Customer, location, seats and size carried over. Commercial terms were not.'
+                    : 'Review the marked fields, then create the requirement.'}
+                </p>
+                {result.licenseError && <p style={{ margin: 0, fontSize: 13, color: '#b45309' }}>{result.licenseError}</p>}
+              </div>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: MUTED }}>
+                <Sparkles size={12} color={TEAL_TEXT} aria-hidden="true" /> Agent-filled fields are marked
+              </span>
+            </section>
           )}
 
           {/* Draft switcher (multiple locations) */}
@@ -425,22 +470,40 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
             </div>
           )}
 
-          {/* Open questions */}
-          {agentRun && draft.questions.length > 0 && (
-            <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontFamily: FONT }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
-                  Open questions{drafts.length > 1 ? ` (${draft.label})` : ''}
-                </div>
-                <button type="button" onClick={() => { navigator.clipboard?.writeText(missingDetailsMessage(draft.fields.location ? `${draft.fields.location}` : draft.fields.name, draft.questions, result?.contact)); toast.success('Message for the customer copied.'); }}
-                  style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  <Copy size={13} /> Copy for customer
+          {/* ── Needed from customer ── */}
+          {agentRun && checklist.length > 0 && (
+            <section aria-label="Needed from customer" style={{ border: `1px solid ${BORDER}`, borderRadius: 12, overflow: 'hidden', marginBottom: 16, fontFamily: FONT, color: TEXT }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px 12px 20px', borderBottom: `1px solid ${HAIRLINE}` }}>
+                <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Needed from customer{drafts.length > 1 ? ` · ${draft.label}` : ''}</h2>
+                <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 8px', borderRadius: 999, background: HAIRLINE, color: MUTED, fontVariantNumeric: 'tabular-nums' }}>{checklist.length}</span>
+                <span style={{ flex: 1 }} />
+                <button type="button"
+                  onClick={() => { navigator.clipboard?.writeText(missingDetailsMessage(draft.fields.location ? `${draft.fields.location}` : draft.fields.name, draft.questions, result?.contact)); toast.success('Missing details copied'); }}
+                  style={{ height: 30, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', color: TEXT, fontFamily: FONT, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                  <Copy size={14} /> Copy Missing Details
                 </button>
               </div>
-              <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
-                {draft.questions.map((q) => <li key={q}>{q}</li>)}
-              </ol>
-              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>Saved with the requirement, along with a Task for the customer to provide them.</div>
+              {checklist.map((row, i) => (
+                <div key={`${row.field}-${i}`} style={{ display: 'grid', gridTemplateColumns: '160px minmax(0, 1fr)', columnGap: 16, alignItems: 'baseline', padding: '10px 20px', borderBottom: i < checklist.length - 1 ? `1px solid ${HAIRLINE}` : 'none' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{row.label}</span>
+                  <span style={{ fontSize: 13, color: MUTED }}>{row.hint}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: '#f8f9fa', borderTop: `1px solid ${BORDER}`, fontSize: 12, color: MUTED }}>
+                <CheckSquare size={13} aria-hidden="true" />
+                <span>On create, a task asks {draft.fields.company.trim() || 'the customer'} for these details.</span>
+              </div>
+            </section>
+          )}
+
+          {agentRun && (
+            <div role="group" aria-label="Field view" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              {([[false, `All fields · ${ALL_FIELDS.length}`], [true, `Needs review · ${reviewCount}`]] as const).map(([val, label]) => (
+                <button key={label} type="button" aria-pressed={reviewOnly === val} onClick={() => setReviewOnly(val)}
+                  style={{ height: 30, padding: '0 12px', borderRadius: 6, border: `1px solid ${reviewOnly === val ? LS_500 : '#d1d5db'}`, background: reviewOnly === val ? '#e6f1f8' : '#fff', color: reviewOnly === val ? LS_500 : TEXT, fontFamily: FONT, fontSize: 13, fontWeight: reviewOnly === val ? 600 : 500, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }}>
+                  {label}
+                </button>
+              ))}
             </div>
           )}
 
