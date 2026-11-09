@@ -53,7 +53,7 @@ describe('Agent summary and questions', () => {
     const r = runIntake(SAMPLE_EMAIL, '', { today: TODAY });
     expect(r.drafts.map((d) => d.label)).toEqual(['Lisbon', 'Porto']);
     expect(r.drafts[1].questions.some((q) => /budget/.test(q) && /Porto/.test(q))).toBe(true);
-    expect(r.drafts[0].questions).toEqual([]);
+    expect(r.drafts[0].questions.some((q) => /budget|start date|many people/i.test(q))).toBe(false);
   });
 
   it('reports no requirement when the text has none', () => {
@@ -243,5 +243,28 @@ describe('Create, save, reopen, update (state flow)', () => {
     expect(p2.unchanged).toEqual(expect.arrayContaining(['capacity', 'startDate']));
     // 5. questions track the record
     expect(openQuestions(record).filter((q) => q.tier === 'critical')).toEqual([]);
+  });
+});
+
+describe('Short, direct update instructions', () => {
+  const cur = saved({ location: 'Madrid', capacity: '25', budget: '30000', termLength: '12', startDate: '2026-10-01', size: '3000' });
+  const one = (text: string) => proposeUpdate(cur, text, { today: TODAY }).changes.filter((c) => c.field !== 'name').map((c) => [c.field, c.to]);
+  it('reads the phrasings people actually type', () => {
+    expect(one('Change capacity to 35. Keep other details the same')).toEqual([['capacity', '35']]);
+    expect(one('Capacity should be 40')).toEqual([['capacity', '40']]);
+    expect(one('Headcount: 40')).toEqual([['capacity', '40']]);
+    expect(one('Make it 40 people')).toEqual([['capacity', '40']]);
+    expect(one('Increase the headcount from 25 to 32')).toEqual([['capacity', '32']]);
+    expect(one('Budget is now $35,000')).toEqual([['budget', '35000']]);
+    expect(one('Budget to 35k')).toEqual([['budget', '35000']]);
+    expect(one('Push the start date to May 1, 2027')).toEqual([['startDate', '2027-05-01']]);
+    expect(one('Term should be 18 months')).toEqual([['termLength', '18']]);
+    expect(one('Change the size to 5,000 sq ft')).toEqual([['size', '5000']]);
+  });
+  it('finds a contact name for the missing-details task', () => {
+    const r = runIntake(case_('short-incomplete'), '', { today: TODAY });
+    expect(r.found).toBe(true);
+    const named = runIntake('We need space in Madrid for 25 people.\n\nThanks,\nMaria Alves\nSlalom', '', { today: TODAY });
+    expect(named.contact).toBe('Maria Alves');
   });
 });

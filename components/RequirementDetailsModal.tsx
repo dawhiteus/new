@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, ChevronsUpDown, Sparkles, Copy } from 'lucide-react';
 import { toast } from './ui/toast';
-import { proposeUpdate, FIELD_LABEL, type FieldKey } from './data/intakeAgent';
+import { proposeUpdate, missingDetailsMessage, FIELD_LABEL, type FieldKey } from './data/intakeAgent';
 import { RequirementTimelineTab } from './RequirementTimelineTab';
 import { RequirementDocumentsTab } from './RequirementDocumentsTab';
 import { RequirementTeamTab } from './RequirementTeamTab';
@@ -11,6 +11,7 @@ import { RequirementWorkflowTab } from './RequirementWorkflowTab';
 import { STAGES, ACTIVE_REQUIRED, ACTIVE_REQUIRED_LABEL, type MvpRequirement, type RequirementDetails, type WorkflowTask, type TeamMember, type RequirementDocument, type TimelineEvent, CURRENT_USER_EMAIL } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
+const MISSING_TASK_ID = 'intake-complete-missing-details';
 const BLUE = '#0D619B';
 const INK = '#0F2A3D';
 const STATUSES = ['Active', 'Draft', 'Executed', 'Archived'];
@@ -134,7 +135,12 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
   });
   /** Apply a change, log timeline events for it, and persist to the table row. */
   const commit = (patch: Partial<FormState>, events: TimelineEvent[]) => {
-    const next = { ...f, ...patch, events: [...f.events, ...events] };
+    let next = { ...f, ...patch, events: [...f.events, ...events] };
+    // When nothing is left to ask the customer, the missing-details Task is done.
+    const open = next.tasks.find((t) => t.id === MISSING_TASK_ID && t.status !== 'Completed');
+    if (open && (next.intake?.questions.length ?? 0) === 0) {
+      next = { ...next, tasks: next.tasks.map((t) => (t.id === MISSING_TASK_ID ? { ...t, status: 'Completed' as const } : t)), events: [...next.events, ev('task', 'Task Updated', `'${open.name}' completed: no details are missing.`)] };
+    }
     setF(next);
     onSave(buildUpdated(next));
   };
@@ -378,7 +384,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
                   ) : (
                     <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: 12 }}>
                       {proposals.length === 0 ? (
-                        <div style={{ fontSize: 13, color: '#374151' }}>I didn't find anything new in that text.</div>
+                        <div style={{ fontSize: 13, color: '#374151' }}>I didn't find any changes in that text. The requirement already matches it, or it doesn't mention requirement details.</div>
                       ) : proposals.map((x, i) => (
                         <div key={x.k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderTop: i ? '1px solid #F3F4F6' : 'none', fontSize: 13 }}>
                           <div>
@@ -396,8 +402,9 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
                         </div>
                       ))}
                       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                        <button type="button" onClick={applyReply} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Apply</button>
+                        {proposals.length > 0 && <button type="button" onClick={applyReply} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Apply</button>}
                         <button type="button" onClick={() => setProposals(null)} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer' }}>Back</button>
+                        {proposals.length === 0 && <button type="button" onClick={() => { setReplyOpen(false); setReplyText(''); setProposals(null); }} style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>}
                       </div>
                     </div>
                   )}
@@ -408,9 +415,9 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Open questions <span style={{ fontWeight: 400, color: '#6B7280', fontSize: 12 }}>· saved with this requirement</span></div>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <button type="button" onClick={() => { navigator.clipboard?.writeText(f.intake!.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')); toast.success('Questions copied.'); }}
+                    <button type="button" onClick={() => { navigator.clipboard?.writeText(missingDetailsMessage(f.location || f.name, f.intake!.questions, f.intake!.contact)); toast.success('Message for the customer copied.'); }}
                       style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <Copy size={13} /> Copy
+                      <Copy size={13} /> Copy for customer
                     </button>
                     <button type="button" aria-label="Dismiss open questions" title="Dismiss: no longer needed" onClick={() => { commit({ intake: { ...f.intake!, questions: [] } }, []); toast.success('Open questions dismissed.'); }}
                       style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', padding: 0, marginLeft: 12, display: 'inline-flex' }}>

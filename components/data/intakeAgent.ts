@@ -75,6 +75,8 @@ export interface IntakeResult {
   drafts: IntakeDraft[];
   /** False when the text held no workplace requirement at all. */
   found: boolean;
+  /** The customer's name, when the text has a signature or From line. */
+  contact?: string;
   license?: LicenseRecord;
   licenseError?: string;
   sourceText: string;
@@ -144,7 +146,7 @@ export function openQuestions(f: IntakeFields, ctx: QCtx = {}): OpenQuestion[] {
   if (has('location') && !AREA.test(f.otherFunctional) && !/area:/i.test(f.otherFunctional)) q('otherFunctional', 'useful', `Which neighborhoods, or what radius, should we search in ${f.location}?`);
   if (!has('size') && Number(f.capacity) > 0) {
     const est = Math.round((Number(f.capacity) * 150) / 50) * 50;
-    q('size', 'useful', `No size was given. At about 150 sq ft per person, ${f.capacity} people is roughly ${est.toLocaleString('en-US')} sq ft. Use that as an estimate?`, { value: String(est), note: `Estimated at 150 sq ft per person from the headcount. Confirm with the customer.` });
+    q('size', 'useful', `Do they have a size in mind${where} (sq ft)? At about 150 sq ft per person, ${f.capacity} people would be roughly ${est.toLocaleString('en-US')} sq ft.`, { value: String(est), note: `Estimated at 150 sq ft per person from the headcount. Confirm with the customer.` });
   }
   if (!has('company')) q('company', 'useful', 'Which company is this requirement for?');
   const crit = out.filter((x) => x.tier === 'critical');
@@ -157,6 +159,12 @@ export const OPTIONAL_FIELDS: { key: FieldKey; label: string }[] = [
 ];
 export const optionalMissing = (f: IntakeFields) => OPTIONAL_FIELDS.filter((o) => !String(f[o.key] ?? '').trim()).map((o) => o.label);
 export const questionFieldMap = (qs: OpenQuestion[]) => Object.fromEntries(qs.map((q) => [q.text, q.field])) as Record<string, FieldKey>;
+
+/** A ready-to-send note asking the customer for what is still missing. */
+export function missingDetailsMessage(label: string, questions: string[], contact?: string): string {
+  const first = contact?.split(' ')[0];
+  return `${first ? `Hi ${first},` : 'Hi,'}\n\nThanks for the details${label ? ` on the ${label} requirement` : ''}. To start on options, could you tell us:\n\n${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\nThanks!`;
+}
 
 // ── Summary: generated from the fields as they stand ──────────────────────────────────────────────────
 export interface AgentSummary { text: string; assumptions: string[]; needed: string[] }
@@ -236,13 +244,14 @@ export function runIntake(text: string, licenseIdRaw: string, opts: { today?: st
     });
     return {
       id: `draft-${idx}`, label: sc.label || f.location || 'Requirement', fields: f, prov,
-      questions: open.filter((x) => x.tier === 'critical').map((x) => x.text),
-      useful: open.filter((x) => x.tier === 'useful').map((x) => x.text),
+      // Everything still missing, most important first: this is what gets sent back to the customer.
+      questions: open.map((x) => x.text),
+      useful: [],
       open, ambiguities, notes: sc.data.notes,
     };
   });
   const filledCount = drafts.reduce((n, d) => n + ATTEMPTED.filter((k) => d.fields[k]).length, 0);
-  return { drafts, found: anyFound || !!license, license, licenseError, sourceText, filledCount, totalCount: ATTEMPTED.length * drafts.length };
+  return { drafts, found: anyFound || !!license, contact: parsed.contact, license, licenseError, sourceText, filledCount, totalCount: ATTEMPTED.length * drafts.length };
 }
 
 // ── Updates: new correspondence against what is already recorded ──────────────────────────────────────

@@ -22,3 +22,6 @@ Compares new text with the record and shows each change as before and after (Acc
 
 ## Known limits
 English only. Rules, not understanding: unusual phrasing can be missed, and the agent then leaves the field empty rather than guessing. Two cities in one requirement are split into two. Currency is never converted. Persistence is the prototype's in-memory store, so a page reload resets it.
+
+## Missing details and the customer Task
+Everything still missing after extraction (most important first) is listed as open questions on the new requirement. **Copy for customer** copies a ready-to-send message ("Hi Maria, thanks for the details on the Madrid requirement…"). Saving the requirement also creates an Intake Task, "Complete missing details for Madrid requirement", assigned to the customer (their name from the signature, else the company), which appears on the Tasks page. When Update from text or edits answer every open question, the Task is marked Completed and a Timeline event is logged.

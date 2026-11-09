@@ -30,6 +30,8 @@ export interface ParsedScope {
   notes: string[];
 }
 export interface ParsedResult {
+  /** The customer's name from the signature or From line, when there is one. */
+  contact?: string;
   /** One scope per requirement found (several when the text asks for more than one city). */
   scopes: { label: string; city: string; data: ParsedScope }[];
   /** What was read after quoted history, signatures and disclaimers were set aside. */
@@ -291,6 +293,7 @@ function extractCapacity(s: Sentence, out: Cand[]) {
     { re: new RegExp(`${hedge}(?<a>${NUM})(?:\\s*\\+)?(?:\\s*(?:-|–|—|to|or)\\s*(?<b>${NUM}))?\\s*${unit}\\b`, 'gi'), kind: 'plain' },
     { re: new RegExp(`\\b(?:team|group|staff|crew|office|company|headcount|squad|department)\\s+(?:of|is|at|:)\\s+${hedge}(?<a>${NUM})\\b${tail}`, 'gi'), kind: 'plain' },
     { re: new RegExp(`\\b(?<a>${NUM})[- ]person\\b`, 'gi'), kind: 'plain' },
+    { re: new RegExp(`\\b(?:capacity|head ?count|team size|number of (?:people|seats)|seats|people|staff|desks)\\s*(?:(?:from\\s+${NUM}\\s+)?to|of|is|are|at|=|:|should be|will be|now|up to)\\s+${hedge}(?<a>${NUM})\\b${tail}`, 'gi'), kind: 'plain' },
     { re: new RegExp(`\\b(?:grow(?:ing)?|expand(?:ing)?|scal(?:e|ing)|ramp(?:ing)?|reach(?:ing)?|hir(?:e|ing) up|rising)\\s+(?:up\\s+)?(?:to|towards)\\s+${hedge}(?<a>${NUM})\\b${tail}`, 'gi'), kind: 'growth' },
     { re: new RegExp(`\\b(?:space|room|seats?|desks?|offices?)\\s+for\\s+${hedge}(?<a>${NUM})\\b${tail}`, 'gi'), kind: 'plain' },
   ];
@@ -374,6 +377,16 @@ function extractBudget(s: Sentence, out: Cand[], ctx: Ctx) {
     if (hi !== null) note = `Range ${fmtMoney(lo)} to ${fmtMoney(hi)}; entered the upper end.${note ? ' ' + note : ''}`;
     out.push({ ...base, value: String(value), conf, note, approx: hedge || hi !== null, target: target && !ceiling, role: ceiling ? 'ceiling' : 'plain' });
   }
+}
+
+function extractBareBudget(s: Sentence, out: Cand[]) {
+  const t = s.text;
+  if (/[$€£]/.test(t)) return;
+  const m = t.match(new RegExp(`\\bbudget\\s*(?:(?:from\\s+${NUM}\\s+)?to|of|is|at|=|:|now|should be)\\s+(?:(?:about|around|roughly|approximately)\\s+)?(${NUM})\\s?(k\\b|K\\b)?`, 'i'));
+  if (!m) return;
+  const n = toNum(m[1]) * (m[2] ? 1000 : 1);
+  if (!Number.isFinite(n) || n < 1000) return;
+  out.push({ field: 'budget', value: String(n), quote: m[0].trim(), conf: 'inferred', msg: s.msg, idx: s.idx, note: 'No currency or period given; read as USD per month.', conditional: condBefore(t, m.index!), revision: REVISION.test(t), role: 'plain' });
 }
 
 function extractTerm(s: Sentence, out: Cand[], ctx: Ctx) {
@@ -615,6 +628,17 @@ function extractCompany(messages: Message[]): { value: string; note: string; con
   return null;
 }
 
+function extractContact(messages: Message[]): string | undefined {
+  for (const m of messages) {
+    const from = m.header.match(/^\s*from:\s*"?([A-Z][A-Za-z'’.-]+(?:\s+[A-Z][A-Za-z'’.-]+){0,2})"?\s*</im)?.[1];
+    const addr = m.header.match(/<[^@>]+@([^>]+)>/)?.[1] ?? '';
+    if (from && !/liquidspace/i.test(addr)) return from;
+    const first = m.signature.split('\n').map((l) => l.trim()).filter(Boolean)[0];
+    if (first && /^[A-Z][a-z]+(?:\s[A-Z][a-z.'’-]+){1,2}$/.test(first)) return first;
+  }
+  return undefined;
+}
+
 // ───────────────────────────── resolution ─────────────────────────────
 const toPlain = (field: PField, v: string) => (field === 'startDate' || field === 'closeDate' ? fmtDate(v) : v);
 const FIELD_NAME: Record<PField, string> = { company: 'Company', name: 'Name', location: 'Location', workspaceType: 'Workspace type', capacity: 'Headcount', size: 'Size', programNeeds: 'Program needs', amenityNeeds: 'Amenities', configuration: 'Configuration', otherFunctional: 'Other requirements', startDate: 'Start date', termLength: 'Term', closeDate: 'Close date', budget: 'Budget', otherCommercial: 'Commercial terms' };
@@ -786,7 +810,7 @@ export function parseRequirement(raw: string, opts: ParseOptions = {}): ParsedRe
     const used = new Set<number>();
     all.forEach((s) => {
       const before = cands.length;
-      extractCapacity(s, cands); extractBudget(s, cands, ctx); extractTerm(s, cands, ctx); extractSize(s, cands); extractType(s, cands);
+      extractCapacity(s, cands); extractBudget(s, cands, ctx); extractBareBudget(s, cands); extractTerm(s, cands, ctx); extractSize(s, cands); extractType(s, cands);
       extractProgramAndAmenities(s, cands); extractConfiguration(s, cands); extractDates(s, cands, ctx); extractArea(s, cands);
       for (let i = before; i < cands.length; i++) { const at = s.text.indexOf(cands[i].quote.trim()); const win = at >= 0 ? s.text.slice(Math.max(0, at - 28), at + cands[i].quote.trim().length) : ''; cands[i].tentative = TENT.test(win); if (SOFT.test(win) && ['capacity', 'size', 'budget', 'termLength', 'startDate'].includes(cands[i].field)) cands[i].approx = true; }
       if (cands.length > before || cityMentions(s.text).some((c) => c.role !== 'current')) used.add(s.idx);
@@ -854,5 +878,5 @@ export function parseRequirement(raw: string, opts: ParseOptions = {}): ParsedRe
     scopes.push({ label: targetCities[0] ?? 'Requirement', city: targetCities[0] ?? '', data: buildScope(targetCities[0] ?? '', sentences, []) });
   }
   void wordCount; messages = messages;
-  return { scopes, usedMessages: messages.length, empty: false };
+  return { scopes, usedMessages: messages.length, empty: false, contact: extractContact(messages) };
 }

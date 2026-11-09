@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
-import { AGENT_NAME, AGENT_EMAIL, DEMO_LICENSES } from './data/intakeAgent';
+import { AGENT_NAME, AGENT_EMAIL, DEMO_LICENSES, missingDetailsMessage } from './data/intakeAgent';
 import { capacityBand } from './data/collectionAgent';
 import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
@@ -450,6 +450,19 @@ export function RequirementsHome() {
       });
     }
     const loc = d.location.trim();
+    // Details the customer still owes: a Task assigned to the customer, so it shows on the Tasks page.
+    const owed = d.intake?.questions ?? [];
+    const tasks = defaultTasks('Intake');
+    if (owed.length) {
+      const who = d.intake?.contact || company || 'Customer';
+      tasks.push({
+        id: 'intake-complete-missing-details', stage: 'Intake', name: `Complete missing details for ${loc || d.name} requirement`,
+        description: `${owed.length} ${owed.length === 1 ? 'detail is' : 'details are'} still missing. The message to send is in the task notes.`,
+        status: 'Not Started', assignee: `${who} (customer)`, dueDate: '', dependsOn: '',
+        output: missingDetailsMessage(loc || d.name, owed, d.intake?.contact),
+      });
+      events.push({ id: `e-${Date.now()}-${seq}-task`, type: 'task', title: 'Task Added', description: `'Complete missing details for ${loc || d.name} requirement' assigned to ${who} (customer).`, date: dispDate, actor: AGENT_EMAIL });
+    }
     return {
       id: `req-${Date.now()}-${seq}`,
       name: d.name,
@@ -464,7 +477,7 @@ export function RequirementsHome() {
       details: {
         ...EMPTY_DETAILS,
         createdDate: today,
-        tasks: defaultTasks('Intake'),
+        tasks,
         team: defaultTeam(),
         events,
         notes,

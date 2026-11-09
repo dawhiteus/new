@@ -239,7 +239,7 @@ export function RequirementWorkflowTab({ status, currentStage, lastUpdated, task
                 <label style={fieldLabel}>Assigned To</label>
                 <div style={{ position: 'relative' }}>
                   <select value={draft.assignee} onChange={(e) => setDraft({ ...draft, assignee: e.target.value })} style={{ ...fieldInput, appearance: 'none', WebkitAppearance: 'none', paddingRight: 32 }}>
-                    {ASSIGNEES.map((a) => <option key={a}>{a}</option>)}
+                    {[...new Set([...ASSIGNEES, draft.assignee].filter(Boolean))].map((a) => <option key={a}>{a}</option>)}
                   </select>
                   <ChevronsUpDown size={13} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: INK }} />
                 </div>

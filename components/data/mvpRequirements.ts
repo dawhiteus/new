@@ -175,6 +175,8 @@ export interface RequirementDetails {
     /** Context the customer gave that has no field of its own. */
     notes?: string[];
     licenseId?: string;
+    /** The customer's name, used for the greeting and the missing-details Task. */
+    contact?: string;
   };
 }
 

@@ -5,7 +5,7 @@ import { X, ChevronsUpDown, Bot, Loader2, Sparkles, Copy, ArrowUp, Paperclip } f
 import { toast } from './ui/toast';
 import {
   AGENT_NAME, REQUIRED, FIELD_LABEL,
-  runIntake,
+  runIntake, missingDetailsMessage,
   type IntakeDraft, type IntakeFields, type IntakeResult, type FieldKey, type Provenance,
 } from './data/intakeAgent';
 
@@ -20,7 +20,7 @@ const CONFIGURATIONS = ['Single space', 'Collection of spaces'];
 
 export type NewRequirementData = IntakeFields & {
   /** Present when the Requirement Agent drafted this requirement. */
-  intake?: { sourceText: string; sourceLabel: string; questions: string[]; licenseId?: string };
+  intake?: { sourceText: string; sourceLabel: string; questions: string[]; licenseId?: string; contact?: string };
   /** Fields the agent filled, with their sources. */
   prov?: Partial<Record<FieldKey, Provenance>>;
 };
@@ -171,7 +171,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
       drafts.map((d) => ({
         ...d.fields,
         prov: Object.keys(d.prov).length ? d.prov : undefined,
-        intake: agentRun && result ? { sourceText: result.sourceText, sourceLabel, questions: d.questions, licenseId: result.license?.licenseId } : undefined,
+        intake: agentRun && result ? { sourceText: result.sourceText, sourceLabel, questions: d.questions, licenseId: result.license?.licenseId, contact: result.contact } : undefined,
       })),
     );
     close();
@@ -432,15 +432,15 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
                   Open questions{drafts.length > 1 ? ` (${draft.label})` : ''}
                 </div>
-                <button type="button" onClick={() => { navigator.clipboard?.writeText(draft.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')); toast.success('Questions copied.'); }}
+                <button type="button" onClick={() => { navigator.clipboard?.writeText(missingDetailsMessage(draft.fields.location ? `${draft.fields.location}` : draft.fields.name, draft.questions, result?.contact)); toast.success('Message for the customer copied.'); }}
                   style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  <Copy size={13} /> Copy
+                  <Copy size={13} /> Copy for customer
                 </button>
               </div>
               <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
                 {draft.questions.map((q) => <li key={q}>{q}</li>)}
               </ol>
-              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>Saved with the requirement. You'll see them on it until you have the answers.</div>
+              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>Saved with the requirement, along with a Task for the customer to provide them.</div>
             </div>
           )}
 
