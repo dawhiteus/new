@@ -802,7 +802,6 @@ export function RequirementsHome() {
         onClose={() => { holdPillHover(); setAssessForId(null); }}
         onAssessed={logAssessment}
         onUpdate={(r) => { setAssessForId(null); setUpdateForId(r.id); }}
-        onEdit={(r) => setDetailId(r.id)}
         onGroupChange={(r, text) => {
           const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
           setRows((rs) => rs.map((x) => (x.id !== r.id || !x.collection ? x : {

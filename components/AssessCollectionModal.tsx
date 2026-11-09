@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, Bot, ExternalLink, ChevronDown, GripVertical, Check, Users, Building2, DollarSign, MapPin, AlertTriangle, Info } from 'lucide-react';
+import { X, Bot, ExternalLink, ChevronDown, GripVertical, Check, AlertTriangle, Info, Lock } from 'lucide-react';
 import { assess, addedWhy, recordRun, requirementChanges, CONFIRMED_NEEDED, GROUPS, groupOf, setGroup, type Group, type RunInfo, type SpaceResult } from './data/assessmentAgent';
-import { capacityBand } from './data/collectionAgent';
+import { capacityBand, criteriaFor } from './data/collectionAgent';
+import { builtByAgent } from './data/assessmentData';
 import type { MvpRequirement } from './data/mvpRequirements';
 import { ASSESS_LAYOUT } from './data/assessLayout';
 
@@ -29,8 +30,14 @@ const NUM: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const rag = (p: number) => (p >= 0.7 ? SUCCESS : p >= 0.4 ? WARNING : DANGER);
 
-const Chip = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 28, padding: '0 10px', borderRadius: 9999, background: PAGE, border: `1px solid ${BORDER}`, fontSize: 13, fontWeight: 500, color: TEXT, whiteSpace: 'nowrap' }}>{icon}{children}</span>
+type Prov = 'Provided' | 'Derived' | 'Assumed';
+const PROV: Record<Prov, React.CSSProperties> = {
+  Provided: { background: '#e6f1f8', border: '1px solid #cce3f1', color: '#004d7d' },
+  Derived: { background: HAIR, border: `1px solid ${BORDER}`, color: MUTED },
+  Assumed: { background: '#fffbeb', border: '1px solid #fde68a', color: AMBER_TEXT },
+};
+const ProvPill = ({ p }: { p: Prov }) => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', height: 18, padding: '0 7px', borderRadius: 9999, fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap', ...PROV[p] }}>{p}</span>
 );
 const Count = ({ n, blue }: { n: number; blue?: boolean }) => (
   <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 7px', borderRadius: 9999, fontSize: 12, fontWeight: 600, ...NUM, ...(blue ? { background: '#e6f1f8', border: '1px solid #cce3f1', color: '#004d7d' } : { background: HAIR, color: MUTED }) }}>{n}</span>
@@ -43,13 +50,11 @@ interface Props {
   onAssessed: (req: MvpRequirement, text: string) => void;
   /** Open Update collection for this requirement. */
   onUpdate?: (req: MvpRequirement) => void;
-  /** Open Requirement Details to edit the criteria. */
-  onEdit?: (req: MvpRequirement) => void;
   /** A space was moved to another group. */
   onGroupChange?: (req: MvpRequirement, text: string) => void;
 }
 
-export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpdate, onEdit, onGroupChange }: Props) {
+export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpdate, onGroupChange }: Props) {
   const [run, setRun] = useState<RunInfo | null>(null);
   const [showSpaces, setShowSpaces] = useState(false);
   const [openRow, setOpenRow] = useState<string | null>(null);
@@ -84,17 +89,55 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   const bandShort = band ? `${band[0]}–${band[1]}` : '';
   const typeCount = c.type ? a.results.filter((x) => x.space.type === c.type).length : null;
 
-  // ── Requirement chips ──────────────────────────────────────────────────────────────────────────────────────────
-  const ic = { size: 13, color: MUTED, strokeWidth: 2, 'aria-hidden': true } as const;
-  const requirementRow = ok && (
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-      <span style={{ ...EYEBROW, marginRight: 4 }}>Requirement</span>
-      {band && <Chip icon={<Users {...ic} />}>{bandShort} people</Chip>}
-      {c.type && <Chip icon={<Building2 {...ic} />}>{c.type}</Chip>}
-      {c.budget ? <Chip icon={<DollarSign {...ic} />}><span style={NUM}>Under {money(c.budget)}/mo</span></Chip> : null}
-      <Chip icon={<MapPin {...ic} />}>Within {c.radiusMi} mi of {c.centerLabel}</Chip>
-      {onEdit && <button type="button" onClick={() => onEdit(requirement)} style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: '4px 0', color: BLUE, fontWeight: 600, fontFamily: FONT, fontSize: 13, cursor: 'pointer' }}>Edit Requirement</button>}
+  // ── Context ledger: what the requirement says, and what the agent searched with (read-only) ───────────────────
+  const src = criteriaFor(requirement);
+  const startDate = src.startDate ? new Date(src.startDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+  const stated: { k: string; v: string }[] = [
+    { k: 'Headcount', v: c.capacity ? plural(c.capacity, 'person').replace(/persons$/, 'people') : '' },
+    { k: 'Budget', v: c.budget ? `${money(c.budget)}/mo` : '' },
+    { k: 'Location', v: c.location },
+    { k: 'Workspace type', v: c.type },
+    { k: 'Start date', v: startDate },
+    { k: 'Term', v: c.termMonths ? plural(c.termMonths, 'month') : '' },
+  ];
+  const searched: { k: string; v: string; why?: string; prov: Prov }[] = [
+    ...(band ? [{ k: 'Seats', v: bandShort, why: 'from headcount', prov: 'Derived' as Prov }] : []),
+    ...(c.budget ? [{ k: 'Price', v: `Up to ${money(c.budget)}/mo`, prov: 'Provided' as Prov }] : []),
+    { k: 'Area', v: `${c.radiusMi} mi of ${c.centerLabel}`, why: c.radiusIsDefault ? 'no search area given' : undefined, prov: (c.radiusIsDefault ? 'Assumed' : 'Provided') as Prov },
+    ...(c.type ? [{ k: 'Type', v: c.type, prov: 'Provided' as Prov }] : []),
+  ];
+  const thisYear = String(new Date().getFullYear());
+  const colDate = col.updated.endsWith(`, ${thisYear}`) ? col.updated.slice(0, -6) : col.updated;
+  const ledgerRow = (label: string, children: React.ReactNode, shaded?: boolean) => (
+    <div style={{ display: 'grid', gridTemplateColumns: '156px minmax(0, 1fr)', background: shaded ? PAGE : undefined, borderTop: shaded ? `1px solid ${HAIR}` : undefined }}>
+      <div style={{ ...EYEBROW, display: 'flex', alignItems: 'center', padding: '12px 20px', borderRight: `1px solid ${HAIR}` }}>{label}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 28px', padding: '12px 20px' }}>{children}</div>
     </div>
+  );
+  const requirementRow = (
+    <section aria-label="What this collection was built from" style={{ border: `1px solid ${BORDER}`, borderRadius: 16, overflow: 'hidden' }}>
+      {ledgerRow('Requirement says', stated.map((s) => (
+        <span key={s.k} style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
+          <span style={{ fontSize: 12, color: MUTED }}>{s.k}</span>
+          <span style={{ fontSize: 13, fontWeight: s.v ? 600 : 500, color: s.v ? TEXT : MUTED, ...NUM }}>{s.v || 'Not stated'}</span>
+        </span>
+      )))}
+      {ledgerRow('Agent searched', searched.map((s) => (
+        <span key={s.k} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12, color: MUTED }}>{s.k}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: TEXT, ...NUM }}>{s.v}</span>
+          {s.why && <span style={{ fontSize: 12, color: MUTED }}>· {s.why}</span>}
+          <ProvPill p={s.prov} />
+        </span>
+      )), true)}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderTop: `1px solid ${BORDER}`, fontSize: 12, color: MUTED }}>
+        <Lock size={12} strokeWidth={2} aria-hidden />
+        <span>
+          {builtByAgent(col.url) ? `Collection built by Create Collection Agent · updated ${colDate}` : `Collection updated ${colDate}`}
+          {reqChanges.length > 0 ? ' · requirement changed since' : ' · requirement unchanged since'}
+        </span>
+      </div>
+    </section>
   );
 
   // ── Scorecard: how many spaces pass each criterion ─────────────────────────────────────────────────────────────
@@ -240,13 +283,17 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: TEXT }}>Group
-                <select value={g} onClick={(e) => e.stopPropagation()} onChange={(e) => move(r, e.target.value as Group)} style={{ height: 36, padding: '0 12px', border: `1px solid ${BORDER_STRONG}`, borderRadius: 12, background: '#fff', fontFamily: FONT, fontSize: 13, color: TEXT }}>
-                  {GROUPS.map((x) => <option key={x}>{x}</option>)}
-                </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingTop: 2 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: MUTED }}>Group
+                <span style={{ position: 'relative', display: 'inline-flex' }}>
+                  <select className="ac-group-select" value={g} onClick={(e) => e.stopPropagation()} onChange={(e) => move(r, e.target.value as Group)} style={{ appearance: 'none', WebkitAppearance: 'none', height: 32, minWidth: 168, padding: '0 32px 0 12px', border: `1px solid ${BORDER_STRONG}`, borderRadius: 8, background: '#fff', fontFamily: FONT, fontSize: 13, fontWeight: 500, color: TEXT, cursor: 'pointer', outline: 'none', transition: 'border-color 150ms ease, box-shadow 150ms ease' }}>
+                    {GROUPS.map((x) => <option key={x}>{x}</option>)}
+                  </select>
+                  <ChevronDown size={14} color={MUTED} aria-hidden style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                </span>
               </label>
-              {r.space.url && <a href={r.space.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none' }}>Open Listing <ExternalLink size={13} aria-hidden /></a>}
+              {r.space.url && <a href={r.space.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none' }}>Open Listing <ExternalLink size={13} aria-hidden /></a>}
+              <style>{`.ac-group-select:hover{border-color:#9CA3AF!important}.ac-group-select:focus-visible{border-color:${BLUE}!important;box-shadow:0 0 0 3px rgba(0,91,148,.15)}`}</style>
             </div>
           </div>
         )}
@@ -285,7 +332,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
             </div>
             <div style={{ overflowX: 'auto' }}>
               <div style={{ minWidth: 760 }}>
-                <div style={{ ...rowGrid, alignItems: 'end', padding: '10px 16px', background: PAGE, borderBottom: `1px solid ${BORDER}` }}>
+                <div style={{ ...rowGrid, alignItems: 'start', padding: '10px 16px', background: PAGE, borderBottom: `1px solid ${BORDER}` }}>
                   <span />
                   {head('Space')}
                   {head('Distance', `≤ ${c.radiusMi} mi`)}
