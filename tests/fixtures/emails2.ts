@@ -87,3 +87,12 @@ VP Operations
 Brightline Health`,
   expect: [{ city: 'Denver', fields: { company: 'Brightline Health', location: 'Denver', capacity: '18', workspaceType: 'Private Office', startDate: '2027-01-01', termLength: '24', budget: '22000' }, contains: { programNeeds: ['4 private offices', '2 meeting rooms', 'open workstations'], amenityNeeds: ['phone booths'], otherFunctional: ['LoDo', 'Union Station'] }, prov: { capacity: 'suggested', startDate: 'suggested' }, target: ['startDate', 'budget'], approx: ['capacity', 'budget'] }],
 });
+
+CASES2.push({
+  id: 'signature-no-signoff', title: 'Name and company closing the email without a sign-off word',
+  text: `We need space in Madrid for about 25 people, starting October 1, 2026 for 12 months. Private offices. Budget around $30,000 per month.
+
+Maria Alves
+Slalom`,
+  expect: [{ city: 'Madrid', fields: { company: 'Slalom', location: 'Madrid', capacity: '25', startDate: '2026-10-01', termLength: '12', budget: '30000', workspaceType: 'Private Office' } }],
+});

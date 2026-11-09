@@ -125,8 +125,16 @@ export function splitMessages(raw: string): Message[] {
     // signature: last sign-off line near the end
     let sigAt = -1;
     for (let i = ls.length - 1; i >= Math.max(0, ls.length - 12); i--) if (SIGNOFF.test(ls[i]) && ls[i].trim().length < 40) { sigAt = i; break; }
-    const signature = sigAt >= 0 ? ls.slice(sigAt + 1).join('\n') : '';
+    let signature = sigAt >= 0 ? ls.slice(sigAt + 1).join('\n') : '';
     if (sigAt >= 0) ls = ls.slice(0, sigAt);
+    else {
+      // No sign-off word: a closing "Name / Company" pair of short lines is still a signature.
+      const tail = ls.filter((l) => l.trim()).slice(-2);
+      if (tail.length === 2 && /^[A-Z][a-z]+(?:\s[A-Z][a-z.]+){1,2}$/.test(tail[0].trim()) && /^[A-Z][\w&.,' -]{1,40}$/.test(tail[1].trim()) && !/[.!?]$/.test(tail[1].trim())) {
+        const at = ls.lastIndexOf(tail[0]);
+        signature = ls.slice(at).join('\n'); ls = ls.slice(0, at);
+      }
+    }
     ls = ls.filter((l) => !DISCLAIMER.test(l) && !/^\s*(sent from my|get outlook)/i.test(l));
     while (ls.length && GREETING.test(ls[0])) ls.shift();
     return { body: ls.join('\n').trim(), signature, header: c.header.join('\n'), quoted: c.quoted };

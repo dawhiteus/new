@@ -489,6 +489,8 @@ export function RequirementsHome() {
   const handleCreate = (items: NewRequirementData[]) => {
     const created = items.map((d, i) => buildRequirement(d, i));
     setRows((rs) => [...created, ...rs]);
+    // Make sure the new requirement is visible: clear filters and show newest first.
+    setStatusFilter(''); setStageFilter(''); setCityFilter(''); setSort({ key: 'lastUpdated', dir: 'desc' }); setPage(1);
     const drafts = created.filter((c, i) => c.status === 'Draft' && items[i].status !== 'Draft');
     const base = created.length === 1 ? `Requirement "${created[0].name}" ${created[0].status === 'Draft' ? 'saved as a Draft' : 'created'}.` : `${created.length} requirements created: ${created.map((c) => c.name).join(', ')}.`;
     const nQ = items.reduce((n, it) => n + (it.intake?.questions.length ?? 0), 0);
