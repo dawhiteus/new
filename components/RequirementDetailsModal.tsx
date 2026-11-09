@@ -1,7 +1,7 @@
 import { quickStatus, lastRun, assess as assessReq } from './data/assessmentAgent';
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, ChevronsUpDown, Sparkles, Copy } from 'lucide-react';
+import { X, ChevronsUpDown, Sparkles, Copy, Bot } from 'lucide-react';
 import { toast } from './ui/toast';
 import { proposeUpdate, missingDetailsMessage, FIELD_LABEL, type FieldKey } from './data/intakeAgent';
 import { RequirementTimelineTab } from './RequirementTimelineTab';
@@ -14,12 +14,15 @@ const FONT = 'Inter, sans-serif';
 const MISSING_TASK_ID = 'intake-complete-missing-details';
 const BLUE = '#0D619B';
 const INK = '#0F2A3D';
-// LS design system v4 tokens (interactive, interactive-subtle, tint-blue, text-muted).
+// LS design system v4 tokens (interactive, interactive-subtle, text-muted).
 const LS = '#005b94';
 const LS_SUBTLE = '#e6f1f8';
-const TINT_BLUE_BORDER = '#cce3f1';
-const TINT_BLUE_TEXT = '#004d7d';
 const MUTED = '#6b7280';
+// Agents are teal everywhere (agent tile, tint-teal badge and notices).
+const TEAL = '#00b8c4';
+const TINT_TEAL_BG = '#ecfeff';
+const TINT_TEAL_BORDER = '#a5f3fc';
+const TINT_TEAL_TEXT = '#0e7490';
 const STATUSES =['Active', 'Draft', 'Executed', 'Archived'];
 const WORKSPACE_TYPES = ['Office Suite', 'Private Office', 'Team Office', 'Coworking', 'Meeting Space'];
 const CONFIGURATIONS = ['Single space', 'Collection of spaces'];
@@ -168,7 +171,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
       { ...(forcedDraft ? { status: 'Draft' } : {}), intake: prune(f) },
       [
         ev('update', 'Requirement Updated', `${f.name} requirement details were updated.`),
-        ...(textKeys.length ? [ev('update', 'Requirement Updated', `${textKeys.map((k) => FIELD_LABEL[k]).join(', ')} updated from pasted text.`)] : []),
+        ...(textKeys.length ? [ev('update', 'Requirement Updated', `${textKeys.map((k) => FIELD_LABEL[k]).join(', ')} updated by the Requirement Agent from pasted text.`)] : []),
       ],
     );
     setFromText({});
@@ -408,7 +411,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
 
               {replyOpen ? (
                 <div style={{ border: `1px solid ${'#e5e7eb'}`, background: '#f8f9fa', borderRadius: 8, padding: 12, marginBottom: 16, fontFamily: FONT }}>
-                  <textarea autoFocus value={replyText} onChange={(e) => { setReplyText(e.target.value); setNoChanges(false); }} placeholder="Paste a reply, call notes or a revised brief."
+                  <textarea autoFocus value={replyText} onChange={(e) => { setReplyText(e.target.value); setNoChanges(false); }} placeholder="Paste a reply, call notes or a revised brief. The Requirement Agent reads it and updates the fields."
                     style={{ width: '100%', minHeight: 90, border: '1px solid #d1d5db', borderRadius: 12, padding: 10, fontSize: 13, fontFamily: FONT, background: '#fff', boxSizing: 'border-box' }} />
                   {noChanges && <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>No changes found. The requirement already matches this text, or the text doesn't mention requirement details.</div>}
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
@@ -417,20 +420,21 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
                   </div>
                 </div>
               ) : textCount > 0 ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px 8px 14px', background: LS_SUBTLE, border: `1px solid ${TINT_BLUE_BORDER}`, borderRadius: 8, marginBottom: 16, fontFamily: FONT }}>
-                  <Sparkles size={16} color={TINT_BLUE_TEXT} style={{ flexShrink: 0 }} />
-                  <div style={{ flex: 1, fontSize: 13, color: TINT_BLUE_TEXT }}>
-                    <b style={{ fontWeight: 600 }}>{textCount} field{textCount === 1 ? '' : 's'} updated from pasted text.</b> Check the highlighted fields, then Save Changes.
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px 8px 14px', background: TINT_TEAL_BG, border: `1px solid ${TINT_TEAL_BORDER}`, borderRadius: 8, marginBottom: 16, fontFamily: FONT }}>
+                  <Bot size={16} color={TINT_TEAL_TEXT} style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1, fontSize: 13, color: TINT_TEAL_TEXT }}>
+                    <b style={{ fontWeight: 600 }}>Requirement Agent updated {textCount} field{textCount === 1 ? '' : 's'}.</b> Check the highlighted fields, then Save Changes.
                   </div>
-                  <button type="button" onClick={() => setReplyOpen(true)} style={{ background: 'none', border: 'none', height: 30, padding: '0 8px', color: TINT_BLUE_TEXT, fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>Paste More</button>
-                  <button type="button" onClick={() => undoFromText(Object.keys(fromText) as FieldKey[])} style={{ background: 'none', border: 'none', height: 30, padding: '0 8px', color: TINT_BLUE_TEXT, fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>Undo All</button>
+                  <button type="button" onClick={() => setReplyOpen(true)} style={{ background: 'none', border: 'none', height: 30, padding: '0 8px', color: TINT_TEAL_TEXT, fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>Paste More</button>
+                  <button type="button" onClick={() => undoFromText(Object.keys(fromText) as FieldKey[])} style={{ background: 'none', border: 'none', height: 30, padding: '0 8px', color: TINT_TEAL_TEXT, fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>Undo All</button>
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#f8f9fa', border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 16, fontFamily: FONT }}>
                   <button type="button" onClick={() => setReplyOpen(true)} style={{ background: 'none', border: 'none', padding: 0, color: LS, fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                    <Sparkles size={14} /> Update from Text
+                    <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: 6, background: TEAL, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Bot size={13} /></span>
+                    Use Requirement Agent
                   </button>
-                  <span style={{ fontSize: 12, color: MUTED }}>Paste a reply or call notes. Changes go straight into the fields below.</span>
+                  <span style={{ fontSize: 12, color: MUTED }}>Paste a reply or call notes and the agent fills in the fields below.</span>
                 </div>
               )}
 
@@ -511,7 +515,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
                 {area('Other Commercial Requirements', 'otherCommercial', 'Any other commercial terms')}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <button onClick={save} style={primaryBtn}>Save Changes</button>
-                  {textCount > 0 && <span style={{ fontSize: 12, color: MUTED, fontFamily: FONT }}>{textCount} field{textCount === 1 ? '' : 's'} from pasted text not saved yet</span>}
+                  {textCount > 0 && <span style={{ fontSize: 12, color: MUTED, fontFamily: FONT }}>{textCount} field{textCount === 1 ? '' : 's'} from the Requirement Agent not saved yet</span>}
                 </div>
               </div>
 

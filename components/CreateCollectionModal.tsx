@@ -154,14 +154,14 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                   <Zap size={15} color={BLUE} />
                 </div>
                 <div style={{ fontSize: 14, lineHeight: 1.55, color: '#1E3A5F' }}>
-                  <b style={{ fontWeight: 600 }}>The Create Collection Agent</b> will source spaces based on this requirement's metadata: location, headcount, budget and workspace type. It uses public listings. Proposals from venues are added later, as private listings.
+                  <b style={{ fontWeight: 600 }}>The Create Collection Agent</b> searches LiquidSpace for spaces that match this requirement's location, headcount and workspace type, and builds the collection for you. You can add or remove spaces at any time.
                 </div>
               </div>
-              <div style={{ fontSize: 13.5, color: '#6B7280', lineHeight: 1.55 }}>
-                {criteria.location
-                  ? <>Once the collection is ready, a <b style={{ color: '#374151', fontWeight: 600 }}>collection link</b> and <b style={{ color: '#374151', fontWeight: 600 }}>fitness assessment</b> will appear in the Requirements table.</>
-                  : <>This requirement needs a location first. Add one, or link an existing collection.</>}
-              </div>
+              {!criteria.location && (
+                <div style={{ fontSize: 13.5, color: '#6B7280', lineHeight: 1.55 }}>
+                  This requirement needs a location first. Add one, or link an existing collection.
+                </div>
+              )}
             </div>
             <div style={footer}>
               <button type="button" onClick={() => setView('existing')} disabled={stage === 'working'} style={{ background: 'none', border: 'none', color: BLUE, fontSize: 14, fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: FONT }}>
