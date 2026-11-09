@@ -3,7 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, ChevronsUpDown, Sparkles, Copy } from 'lucide-react';
 import { toast } from './ui/toast';
-import { runIntake, FIELD_LABEL, type FieldKey } from './data/intakeAgent';
+import { AGENT_NAME, FIELD_LABEL, describeChange, applyChanges, type FieldChange, type IntakeFields } from './data/intakeAgent';
+import { RequirementAgentCard, pruneQuestions } from './RequirementAgentCard';
+import { FieldMark, InferredNote } from './AgentMark';
 import { RequirementTimelineTab } from './RequirementTimelineTab';
 import { RequirementDocumentsTab } from './RequirementDocumentsTab';
 import { RequirementTeamTab } from './RequirementTeamTab';
@@ -87,16 +89,12 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
   const [tab, setTab] = useState<Tab>('Overview');
   const [f, setF] = useState<FormState | null>(null);
   const [note, setNote] = useState('');
-  const [replyOpen, setReplyOpen] = useState(false);
-  const [replyText, setReplyText] = useState('');
-  const [proposals, setProposals] = useState<{ k: FieldKey; from: string; to: string; note: string; accept: boolean }[] | null>(null);
 
   useEffect(() => {
     if (isOpen && requirement) {
       setF(toForm(requirement));
       setTab('Overview');
       setNote('');
-      setReplyOpen(false); setReplyText(''); setProposals(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, requirement?.id]);
@@ -141,9 +139,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
 
   const missingActive = (form: FormState) => ACTIVE_REQUIRED.filter((k) => !String(form[k] ?? '').trim());
 
-  const prune = (form: FormState) => form.intake
-    ? { ...form.intake, questions: form.intake.questions.filter((q) => { const hit = Q_FIELD.find(([re]) => re.test(q)); return !(hit && String((form as any)[hit[1]] ?? '').trim()); }) }
-    : form.intake;
+  const prune = (form: FormState) => (form.intake ? pruneQuestions(form.intake, form as unknown as Partial<IntakeFields>) : form.intake);
 
   const save = () => {
     // Saving progress never loses anything. If required details are still missing, the requirement stays (or becomes) a Draft.
@@ -169,31 +165,25 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
     setNote('');
   };
 
-  const REPLY_FIELDS: FieldKey[] = ['workspaceType', 'capacity', 'size', 'programNeeds', 'amenityNeeds', 'configuration', 'otherFunctional', 'startDate', 'termLength', 'budget'];
-  const Q_FIELD: [RegExp, FieldKey][] = [[/neighborhood|radius/i, 'otherFunctional'], [/budget/i, 'budget'], [/start/i, 'startDate'], [/term|long/i, 'termLength'], [/how many people/i, 'capacity'], [/type/i, 'workspaceType'], [/size|square/i, 'size']];
-  const reviewReply = () => {
-    const d = runIntake(replyText, '').drafts[0];
-    const found = REPLY_FIELDS.filter((k) => d.fields[k] && String(d.fields[k]) !== String((f as any)[k] ?? ''))
-      .map((k) => { const from0 = String((f as any)[k] ?? ''); return ({ k, from: from0, to: k === 'otherFunctional' && from0 ? `${from0}\n${d.fields[k]}` : String(d.fields[k]), note: d.prov[k]?.note ?? 'Stated in the text you pasted', accept: true }); });
-    setProposals(found);
-  };
-  const applyReply = () => {
-    const chosen = (proposals ?? []).filter((x) => x.accept);
-    const patch: any = {};
-    const prov = { ...(f.provenance ?? {}) } as any;
-    chosen.forEach((x) => { patch[x.k] = x.to; prov[x.k] = { kind: 'source', note: 'From the text you pasted' }; });
-    const next = { ...f, ...patch };
-    const stillOpen = (f.intake?.questions ?? []).filter((q) => {
-      const hit = Q_FIELD.find(([re]) => re.test(q));
-      return !(hit && String(next[hit[1]] ?? '').trim());
-    });
-    const answered = (f.intake?.questions.length ?? 0) - stillOpen.length;
+  /** Apply accepted changes from the Requirement Agent card: values, provenance, questions, timeline and a note, all together. */
+  const applyAgentChanges = (changes: FieldChange[], sourceText: string) => {
+    const dateIso = new Date().toISOString().slice(0, 10);
+    const applied = applyChanges(changes, dateIso);
+    const patch: any = { ...applied.fields };
+    const prov = { ...(f.provenance ?? {}), ...applied.prov } as any;
+    const next = { ...f, ...patch } as FormState;
+    const before = f.intake?.questions.length ?? 0;
+    const intake = f.intake ? pruneQuestions(f.intake, next as unknown as Partial<IntakeFields>) : f.intake;
+    const answered = before - (intake?.questions.length ?? 0);
+    const lines = changes.map(describeChange);
     commit(
-      { ...patch, provenance: prov, intake: f.intake ? { ...f.intake, questions: stillOpen } : f.intake },
-      chosen.length ? [ev('update', 'Requirement Updated', `${chosen.map((x) => FIELD_LABEL[x.k]).join(', ')} updated from pasted text.`)] : [],
+      {
+        ...patch, provenance: prov, intake,
+        notes: [...f.notes, { author: AGENT_NAME, date: today(), text: `Update from pasted text. ${lines.join('; ')}.\n\nText provided:\n${sourceText}` }],
+      },
+      [ev('update', 'Requirement Updated', `Updated from pasted text: ${lines.join('; ')}.`)],
     );
-    toast.success(chosen.length ? `${chosen.length} field${chosen.length === 1 ? '' : 's'} updated. ${answered} question${answered === 1 ? '' : 's'} answered.` : 'No changes made.');
-    setProposals(null); setReplyText(''); setReplyOpen(false);
+    toast.success(`${changes.length} ${changes.length === 1 ? 'field' : 'fields'} updated.${answered ? ` ${answered} question${answered === 1 ? '' : 's'} answered.` : ''}`);
   };
 
   const onTasks = (tasks: WorkflowTask[]) => {
@@ -225,28 +215,20 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
   const text = (k: keyof FormState, opts: { type?: string; disabled?: boolean } = {}) => (
     <input type={opts.type || 'text'} value={String(f[k] ?? '')} onChange={set(k)} disabled={opts.disabled} style={opts.disabled ? disabledInput : input} />
   );
-  const mark = (k: keyof FormState) => {
-    const p = f.provenance?.[k as string];
-    if (!p) return null;
-    const color = p.kind === 'source' ? '#0F7B4F' : p.kind === 'license' ? BLUE : '#B45309';
-    const what = p.kind === 'source' ? 'from the customer input' : p.kind === 'license' ? 'from the license' : 'suggested, please confirm';
-    return (
-      <span title={`${what}: ${p.note}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color, padding: '0 2px', marginLeft: 8, cursor: 'help', verticalAlign: 'middle' }}>
-        <Sparkles size={11} />
-      </span>
-    );
-  };
+  const mark = (k: keyof FormState) => <FieldMark prov={f.provenance?.[k as string] as any} />;
+  const inferred = (k: keyof FormState) => <InferredNote prov={f.provenance?.[k as string] as any} field={k as string} />;
   const notProvided = (k: keyof FormState) =>
     (ACTIVE_REQUIRED as readonly string[]).includes(k as string) && k !== 'name' && !String(f[k] ?? '').trim() ? (
       <div style={{ fontSize: 12, color: '#B45309', marginTop: 5, fontFamily: FONT }}>Not provided</div>
     ) : null;
   const field = (l: string, node: React.ReactNode, k?: keyof FormState) => (
-    <div><label style={label}>{l}{k === 'name' ? ' *' : ''}{k && mark(k)}</label>{node}{k && notProvided(k)}</div>
+    <div><label style={label}>{l}{k === 'name' ? ' *' : ''}{k && mark(k)}</label>{node}{k && inferred(k)}{k && notProvided(k)}</div>
   );
   const area = (l: string, k: keyof FormState, ph: string) => (
     <div style={{ marginBottom: 18 }}>
       <label style={label}>{l}{mark(k)}</label>
       <textarea value={String(f[k] ?? '')} onChange={set(k)} placeholder={ph} rows={3} style={{ ...input, resize: 'vertical' }} />
+      {inferred(k)}
     </div>
   );
   const chip = (selected: boolean, l: string, onClick: () => void, grow = false) => (
@@ -363,73 +345,15 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
                 Authoritative summary of client requirements and deal parameters
               </div>
 
-              <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '10px 16px', marginBottom: 16, fontFamily: FONT }}>
-                  {!replyOpen ? (
-                    <button type="button" onClick={() => setReplyOpen(true)} style={{ background: 'none', border: 'none', padding: 0, color: '#0F7B4F', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <Sparkles size={14} /> Update from text
-                    </button>
-                  ) : !proposals ? (
-                    <div>
-                      <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Paste a reply, call notes or a revised brief."
-                        style={{ width: '100%', minHeight: 90, border: '1px solid #D1D5DB', borderRadius: 8, padding: 10, fontSize: 14, fontFamily: FONT, background: '#fff' }} />
-                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                        <button type="button" disabled={!replyText.trim()} onClick={reviewReply} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: replyText.trim() ? 1 : 0.5 }}>Review changes</button>
-                        <button type="button" onClick={() => { setReplyOpen(false); setReplyText(''); }} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: 12 }}>
-                      {proposals.length === 0 ? (
-                        <div style={{ fontSize: 13, color: '#374151' }}>I didn't find anything new in that text.</div>
-                      ) : proposals.map((x, i) => (
-                        <div key={x.k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderTop: i ? '1px solid #F3F4F6' : 'none', fontSize: 13 }}>
-                          <div>
-                            <div style={{ fontWeight: 600, color: '#111827' }}>{FIELD_LABEL[x.k]}</div>
-                            <div style={{ color: '#374151' }}>{x.from ? <span style={{ textDecoration: 'line-through', color: '#9CA3AF' }}>{x.from}</span> : <span style={{ color: '#9CA3AF' }}>Empty</span>} → <b>{x.to}</b></div>
-                            <div style={{ color: '#6B7280', fontSize: 12 }}>{x.note}</div>
-                          </div>
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            {(['Accept', 'Keep mine'] as const).map((lbl) => {
-                              const on = (lbl === 'Accept') === x.accept;
-                              return <button key={lbl} type="button" onClick={() => setProposals((p) => p && p.map((y) => y.k === x.k ? { ...y, accept: lbl === 'Accept' } : y))}
-                                style={{ border: `1px solid ${on ? BLUE : '#D1D5DB'}`, background: on ? BLUE : '#fff', color: on ? '#fff' : '#374151', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{lbl}</button>;
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                        <button type="button" onClick={applyReply} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Apply</button>
-                        <button type="button" onClick={() => setProposals(null)} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer' }}>Back</button>
-                      </div>
-                    </div>
-                  )}
-              </div>
-
-              {f.intake && f.intake.questions.length > 0 && (
-                <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontFamily: FONT }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Open questions <span style={{ fontWeight: 400, color: '#6B7280', fontSize: 12 }}>· saved with this requirement</span></div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <button type="button" onClick={() => { navigator.clipboard?.writeText(f.intake!.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')); toast.success('Questions copied.'); }}
-                      style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <Copy size={13} /> Copy
-                    </button>
-                    <button type="button" aria-label="Dismiss open questions" title="Dismiss: no longer needed" onClick={() => { commit({ intake: { ...f.intake!, questions: [] } }, []); toast.success('Open questions dismissed.'); }}
-                      style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', padding: 0, marginLeft: 12, display: 'inline-flex' }}>
-                      <X size={16} />
-                    </button>
-                    </div>
-                  </div>
-                  <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
-                    {f.intake.questions.map((q) => (
-                      <li key={q}>{q}{' '}
-                        <button type="button" onClick={() => commit({ intake: { ...f.intake!, questions: f.intake!.questions.filter((x) => x !== q) } }, [])}
-                          style={{ background: 'none', border: 'none', color: BLUE, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Mark answered</button>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
+              <RequirementAgentCard
+                key={requirement.id}
+                fields={f as unknown as IntakeFields}
+                prov={(f.provenance ?? {}) as any}
+                intake={f.intake}
+                hasCollection={!!requirement.collection}
+                onApply={applyAgentChanges}
+                onIntakeChange={(next) => commit({ intake: { ...f.intake!, ...next } }, [])}
+              />
 
               <div style={{ border: '1px solid #E5E7EB', borderRadius: 16, padding: '16px 24px 24px' }}>
                 <div style={section}>Deal Details</div>

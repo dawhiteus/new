@@ -128,6 +128,10 @@ export const CURRENT_USER_EMAIL = 'david@liquidspace.com';
 export interface FieldProvenance {
   kind: 'source' | 'license' | 'suggested';
   note: string;
+  /** The customer gave this as approximate ("about 20"). */
+  approx?: boolean;
+  /** The customer gave this as a target or wish, not a commitment. */
+  target?: boolean;
 }
 
 /** Fields required before a requirement can be Active. A Draft only needs a name. */
@@ -160,7 +164,18 @@ export interface RequirementDetails {
   /** Which fields the Requirement Agent filled, and where from. Cleared per field when Sales edits it. */
   provenance?: Record<string, FieldProvenance>;
   /** The original customer input and the agent's follow-up questions, kept with the requirement. */
-  intake?: { sourceText: string; questions: string[]; licenseId?: string };
+  intake?: {
+    sourceText: string;
+    /** Critical questions: what sourcing needs. */
+    questions: string[];
+    /** Useful to know, but sourcing can proceed without them. */
+    useful?: string[];
+    /** Which field each question is about, so answering the field closes the question. */
+    fieldOfQuestion?: Record<string, string>;
+    /** Context the customer gave that has no field of its own. */
+    notes?: string[];
+    licenseId?: string;
+  };
 }
 
 export const EMPTY_DETAILS: RequirementDetails = {

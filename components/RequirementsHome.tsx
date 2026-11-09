@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
-import { AGENT_NAME, AGENT_EMAIL, DEMO_LICENSES } from './data/intakeAgent';
+import { AGENT_NAME, AGENT_EMAIL, DEMO_LICENSES, summarize } from './data/intakeAgent';
 import { capacityBand } from './data/collectionAgent';
 import { realCollectionFor } from './data/collectionAgent';
 import { CreateCollectionModal, type CollectionOutcome } from './CreateCollectionModal';
@@ -433,16 +433,16 @@ export function RequirementsHome() {
     const notes: MvpRequirement['details']['notes'] = [];
     if (d.intake) {
       // One note: the complete source plus the open questions (a requirement takes a single initial note).
-      const qs = d.intake.questions.length
-        ? `\n\nOpen questions:\n${d.intake.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`
-        : '';
+      const qs = (d.intake.questions.length ? `\n\nOpen questions (needed for sourcing):\n${d.intake.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` : '')
+        + (d.intake.useful?.length ? `\n\nUseful to know:\n${d.intake.useful.map((q, i) => `${i + 1}. ${q}`).join('\n')}` : '');
+      const summary = summarize({ ...d, status: d.status } as any, d.prov ?? {}).text;
       const lic = d.intake.licenseId ? DEMO_LICENSES[d.intake.licenseId] : undefined;
       const fmtD = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       const renewal = lic
         ? `Renewal of license ${lic.licenseId} · Incumbent: ${lic.operator} · ${lic.termEnd ? `Term ends ${fmtD(lic.termEnd)}` : 'Auto-renews'}${lic.noticeDate ? ` · Customer must decide by ${fmtD(lic.noticeDate)}` : ''}`
         : '';
       const src = d.intake.sourceText ? `Source provided by Sales (${d.intake.sourceLabel}), kept in full:\n\n${d.intake.sourceText}` : '';
-      notes.push({ author: AGENT_NAME, date: dispDate, text: ([renewal, src].filter(Boolean).join('\n\n') + qs).trim() });
+      notes.push({ author: AGENT_NAME, date: dispDate, text: ([summary, renewal, src].filter(Boolean).join('\n\n') + qs).trim() });
       events.push({
         id: `e-${Date.now()}-${seq}-agent`, type: 'note', title: 'Draft Prepared',
         description: `${AGENT_NAME} drafted this requirement from ${d.intake.sourceLabel}${d.intake.licenseId ? ` and license ${d.intake.licenseId}` : ''}. Reviewed and saved by Sales.`,
@@ -700,7 +700,7 @@ export function RequirementsHome() {
                 ) : (
                   visible.map((r, i) => (
                     <tr key={r.id} onClick={() => setDetailId(r.id)} style={{ borderTop: '1px solid #E5E7EB', background: r.origin && !r.origin.seen ? '#E8F4FD' : i % 2 ? '#F9FAFB' : '#fff', boxShadow: r.origin && !r.origin.seen ? 'inset 4px 0 0 #0D619B' : undefined, cursor: 'pointer' }}>
-                      <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                      <td style={{ ...td, minWidth: 170 }}>
                         {r.name}
                         {(r.details.intake?.questions.length ?? 0) > 0 && (
                           <div style={{ marginTop: 3 }}>
