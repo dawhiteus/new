@@ -344,7 +344,7 @@ export function proposeUpdate(current: Partial<IntakeFields>, text: string, opts
   const sourcing = changes.filter((c) => c.sourcing && c.kind !== 'new');
   const consequence = opts.hasCollection && changes.some((c) => c.sourcing)
     ? `${cap1(joinList(changes.filter((c) => c.sourcing)  .map((c) => FIELD_LABEL[c.field].replace(/ \(.*\)/, '').toLowerCase())))} ${changes.filter((c) => c.sourcing).length === 1 ? 'is' : 'are'} used to build the Collection. The Collection is not changed automatically; once you apply this you can choose Update collection.`
-      : changes.some((c) => c.sourcing && c.kind !== 'new') ? `${cap1(joinList(sourcing.map((c) => FIELD_LABEL[c.field].replace(/ \(.*\)/, '').toLowerCase())))} shape sourcing, so sourcing will use the new values.` : null;
+        : null;
   void TENTATIVE_FALLBACK;
   return { changes, unchanged, unclear: [...new Set(unclear)], notes: [...new Set(notes)], consequence, found: hasAny || unclear.length > 0 };
 }

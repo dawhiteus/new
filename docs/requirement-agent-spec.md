@@ -11,17 +11,14 @@ The Requirement Agent reads pasted correspondence, says what it understood, asks
 
 Distinctions kept: approximate vs exact headcount, budget target vs firm ceiling, target vs confirmed start date, current office vs new location, employees vs seats (hybrid), meeting rooms vs Meeting Space as the workspace type, per-person and annual budgets (converted and disclosed), other currencies (not converted), lease expiry (context, not the start date). Context with no field is kept in Other Functional or Other Commercial Requirements, or in the agent's notes.
 
-## Summary and questions
-The summary is generated from the fields as they stand and updates when a field is edited. Questions are tiered: *Needed for sourcing* (city, headcount, budget, start date), *Useful to know* (term, workspace type, search area, size estimate, confirm an inferred date), and *Optional* (listed, never asked). A size estimate is offered with one click and never filled automatically. A free-text answer is read by the same parser and updates the draft without starting over.
-
-## Field marks
-Green dot: stated in the text. Blue dot: from the license. Amber dot with the reason shown under the field: inferred or assumed. "Not provided" under a field: nothing found. Editing a field removes its mark.
+## Create
+Form first. The customer pastes an email or description and chooses Extract requirement; the existing form is filled and the agent bar collapses to one line of feedback (how many fields were filled, up to two conflicts or ambiguities, the license used). Edit text reopens the input. Missing information stays blank. Two or more cities become separate requirements, switched with tabs, each created separately. Nothing is saved with the requirement except the original text, in its first note.
 
 ## Update from text
-Compares new text with the record. Shows each change as before and after, with the reason, and applies the checked changes together. Existing values stay unless the text changes them. Unsure statements ("might", "not sure") and conflicts are listed as needing a call and are not applied. Lists (program needs, amenities) are added to, not replaced; only the area line of Other Functional Requirements is replaced. When there is a Collection and a sourcing field changes, the review says the Collection is not changed automatically. Applying records a Timeline event and a note with the text and the before/after values. A generated name (Account - City - N seats) follows a headcount change.
+Compares new text with the record, shows each change as before and after, and applies them together with one Apply. Existing values stay unless the text changes them. Unsure statements ("might", "not sure") and conflicts are listed as needing a call and are not applied. Lists (program needs, amenities) are added to, not replaced; only the area line of Other Functional Requirements is replaced. When there is a Collection and a sourcing field changes, the review says the Collection is not changed automatically. Applying records a Timeline event and a note with the text and the before/after values. A generated name (Account - City - N seats) follows a headcount change.
 
 ## Tests
-`npm test` runs `tests/requirementParser.test.ts` (40 emails in `tests/fixtures`, asserting exact values, fields that must stay empty, provenance and flags) and `tests/requirementAgent.test.ts` (summary, questions, update flow, create-reopen-update state flow). Test emails are data only and are not referenced by the app.
+`npm test` runs `tests/requirementParser.test.ts` (40 emails in `tests/fixtures`, asserting exact values, fields that must stay empty, provenance and flags) and `tests/requirementAgent.test.ts` (agent logic, update flow, create-reopen-update state flow). The summary and question helpers remain in `intakeAgent.ts` and are tested but no longer shown in the UI. Test emails are data only and are not referenced by the app.
 
 ## Known limits
 English only. Rules, not understanding: unusual phrasing can be missed, and the agent then leaves the field empty rather than guessing. Two cities in one requirement are split into two. Currency is never converted. Persistence is the prototype's in-memory store, so a page reload resets it.

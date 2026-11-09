@@ -5,10 +5,9 @@ import { X, ChevronsUpDown, Bot, Loader2, Sparkles, Copy, ArrowUp, Paperclip } f
 import { toast } from './ui/toast';
 import {
   AGENT_NAME, REQUIRED, FIELD_LABEL,
-  runIntake, summarize, openQuestions, optionalMissing, proposeUpdate, applyChanges, describeChange, questionFieldMap,
+  runIntake,
   type IntakeDraft, type IntakeFields, type IntakeResult, type FieldKey, type Provenance,
 } from './data/intakeAgent';
-import { FieldMark, InferredNote, MarkLegend } from './AgentMark';
 
 const FONT = 'Inter, sans-serif';
 const BLUE = '#0D619B';
@@ -62,6 +61,8 @@ interface Props {
 }
 
 type Phase = 'closed' | 'open' | 'working' | 'review';
+const EXTRACTED: FieldKey[] = ['company', 'location', 'workspaceType', 'capacity', 'size', 'programNeeds', 'amenityNeeds', 'configuration', 'otherFunctional', 'startDate', 'termLength', 'closeDate', 'budget', 'otherCommercial'];
+const ATTEMPTED_COUNT = (f: IntakeFields) => EXTRACTED.filter((k) => String(f[k] ?? '').trim()).length;
 
 export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseId, existing = [] }: Props) {
   const [dupWarn, setDupWarn] = useState<string | null>(null);
@@ -74,20 +75,16 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
   const [fileName, setFileName] = useState('');
   const [fileText, setFileText] = useState('');
   const [fileUnreadable, setFileUnreadable] = useState(false);
-  const [reviewOnly, setReviewOnly] = useState(false);
   const fileRef = React.useRef<HTMLInputElement>(null);
   const [workMsg, setWorkMsg] = useState('');
   const [result, setResult] = useState<IntakeResult | null>(null);
   const [drafts, setDrafts] = useState<IntakeDraft[]>([manualDraft()]);
   const [active, setActive] = useState(0);
   const [notice, setNotice] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [answerMsg, setAnswerMsg] = useState('');
-  const [dismissed, setDismissed] = useState<string[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
-    setPhase('closed'); setText(''); setLicenseId(''); setFileName(''); setFileText(''); setFileUnreadable(false); setReviewOnly(false); setResult(null); setDrafts([manualDraft()]); setActive(0); setDupWarn(null); setNotice(''); setAnswer(''); setAnswerMsg(''); setDismissed([]);
+    setPhase('closed'); setText(''); setLicenseId(''); setFileName(''); setFileText(''); setFileUnreadable(false); setResult(null); setDrafts([manualDraft()]); setActive(0); setDupWarn(null); setNotice('');
     if (initialLicenseId) { setLicenseId(initialLicenseId); setPhase('open'); setAutoRun(true); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -99,7 +96,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
 
   const close = () => onClose();
   const draft = drafts[active] ?? drafts[0];
-  const agentRun = phase === 'review' && result !== null;
+  const agentRun = result !== null;
 
   const TEXT_FILE = /\.(txt|eml|md|csv|rtf)$/i;
   const attachFile = async (file: File | undefined) => {
@@ -136,7 +133,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
         setPhase('open');
         return;
       }
-      setNotice(''); setAnswer(''); setAnswerMsg(''); setDismissed([]);
+      setNotice('');
       setResult(r);
       setDrafts(r.drafts);
       setActive(0);
@@ -144,7 +141,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
     }, steps.length * 700);
   };
 
-  const startOver = () => { setNotice(''); setPhase('closed'); setResult(null); setDrafts([manualDraft()]); setActive(0); setText(''); setLicenseId(''); setFileName(''); setFileText(''); setFileUnreadable(false); setReviewOnly(false); };
+  const startOver = () => { setNotice(''); setPhase('closed'); setResult(null); setDrafts([manualDraft()]); setActive(0); setText(''); setLicenseId(''); setFileName(''); setFileText(''); setFileUnreadable(false); };
 
   const setField = (k: FieldKey, v: string) =>
     setDrafts((ds) => ds.map((d, i) => {
@@ -176,17 +173,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
     onCreate?.(
       drafts.map((d) => ({
         ...d.fields,
-        prov: Object.keys(d.prov).length ? d.prov : undefined,
-        intake: agentRun && result ? (() => {
-          const qs = openQuestionsFor(d).filter((q) => !dismissed.includes(q.text));
-          return {
-            sourceText: result.sourceText, sourceLabel, licenseId: result.license?.licenseId,
-            questions: qs.filter((q) => q.tier === 'critical').map((q) => q.text),
-            useful: qs.filter((q) => q.tier === 'useful').map((q) => q.text),
-            fieldOfQuestion: questionFieldMap(qs),
-            notes: [...(d.notes ?? []), ...(d.ambiguities ?? [])],
-          };
-        })() : undefined,
+        intake: agentRun && result ? { sourceText: result.sourceText, sourceLabel, questions: [], licenseId: result.license?.licenseId } : undefined,
       })),
     );
     close();
@@ -211,37 +198,8 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
     create();
   };
 
-  const termEndFor = (d: IntakeDraft) => (result?.license && result.license.termEnd && (!d.fields.location || d.fields.location.toLowerCase() === result.license.city.toLowerCase()) ? new Date(result.license.termEnd + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '');
-  const openQuestionsFor = (d: IntakeDraft) => openQuestions(d.fields, { where: drafts.length > 1 ? d.label : '', ambiguities: d.ambiguities, prov: d.prov, termEnd: termEndFor(d) });
-
-  /** Fold a free-text answer into the draft. Fields the answer states are updated; nothing else moves. */
-  const submitAnswer = () => {
-    const text = answer.trim();
-    if (!text) return;
-    const p = proposeUpdate(draft.fields, text, {});
-    if (!p.changes.length) {
-      setAnswerMsg(p.found && p.unclear.length ? p.unclear[0] : p.found ? 'That is already in the requirement.' : "I couldn't find an answer to the open questions in that. Try something like “$25k a month, starting June 1”.");
-      return;
-    }
-    const applied = applyChanges(p.changes, undefined, 'your answer');
-    setDrafts((ds) => ds.map((d, i) => i !== active ? d : ({ ...d, fields: { ...d.fields, ...applied.fields }, prov: { ...d.prov, ...applied.prov } })));
-    setAnswerMsg(`Added: ${p.changes.map(describeChange).join('; ')}.${p.unclear.length ? ' ' + p.unclear[0] : ''}`);
-    setAnswer('');
-  };
-  const useEstimate = (q: { field: FieldKey; suggest?: { value: string; note: string } }) => {
-    if (!q.suggest) return;
-    setDrafts((ds) => ds.map((d, i) => i !== active ? d : ({ ...d, fields: { ...d.fields, [q.field]: q.suggest!.value }, prov: { ...d.prov, [q.field]: { kind: 'suggested' as const, note: q.suggest!.note } } })));
-  };
-
-  const marker = (k: FieldKey) => <FieldMark prov={draft.prov[k]} />;
-  // Fields to review: anything missing that Active needs, anything the agent only suggested, plus the name and company.
-  const needsReview = (k: FieldKey) =>
-    k === 'name' || k === 'company' ||
-    (REQUIRED.includes(k) && !draft.fields[k].trim()) ||
-    draft.prov[k]?.kind === 'suggested';
-  const vis = (k: FieldKey) => !(agentRun && reviewOnly) || needsReview(k);
-  const ALL_FIELDS: FieldKey[] = ['company', 'name', 'location', 'workspaceType', 'capacity', 'size', 'programNeeds', 'amenityNeeds', 'configuration', 'otherFunctional', 'startDate', 'termLength', 'closeDate', 'budget', 'otherCommercial'];
-  const hiddenCount = ALL_FIELDS.filter((k) => !needsReview(k) && String(draft.fields[k] ?? '').trim()).length;
+  const marker = (_k: FieldKey) => null;
+  const vis = (_k: FieldKey) => true;
   const missingFlag = (k: FieldKey) => agentRun && REQUIRED.includes(k) && k !== 'name' && !draft.fields[k];
 
   const field = (k: FieldKey, type = 'text') => (
@@ -253,7 +211,6 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
         onChange={(e) => setField(k, e.target.value)}
         style={inputStyle}
       />
-      <InferredNote prov={draft.prov[k]} field={k} />
       {missingFlag(k) && <div style={{ fontSize: 12, color: '#B45309', marginTop: 5, fontFamily: FONT }}>Not provided</div>}
     </div>
   );
@@ -267,7 +224,6 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
         rows={3}
         style={{ ...inputStyle, resize: 'vertical' }}
       />
-      <InferredNote prov={draft.prov[k]} field={k} />
     </div>
   );
   const chip = (selected: boolean, label: string, onClick: () => void, grow = false) => (
@@ -305,7 +261,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
               <AgentAvatar small />
               <div style={{ flex: 1, minWidth: 0, fontFamily: FONT }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{AGENT_NAME}</div>
-                <div style={{ fontSize: 13, color: '#6B7280' }}>I can draft this from a pasted email, a description, or a license ID.</div>
+                <div style={{ fontSize: 13, color: '#6B7280' }}>Paste an email or description and I'll fill in the form.</div>
               </div>
               <button type="button" onClick={() => setPhase('open')}
                 style={{ background: '#fff', border: `1px solid ${GREEN}`, color: GREEN, borderRadius: 8, padding: '8px 14px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -315,15 +271,18 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
           )}
 
           {phase !== 'closed' && (
-            <div style={{ border: '1.5px solid #E5E7EB', background: '#F9FAFB', borderRadius: 16, padding: 16, marginBottom: 20 }}>
+            <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 14, padding: phase === 'review' ? '10px 14px' : 16, marginBottom: 20 }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <AgentAvatar spinning={phase === 'working'} />
                 <div style={{ flex: 1, minWidth: 0, fontFamily: FONT }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                     <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{AGENT_NAME}</span>
                     <span style={{ flex: 1 }} />
+                    {phase === 'review' && (
+                      <button type="button" onClick={() => setPhase('open')} style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', padding: 0 }}>Edit text</button>
+                    )}
                     {phase === 'open' && (
-                      <button type="button" onClick={startOver} aria-label="Close agent" title="Close"
+                      <button type="button" onClick={result ? () => setPhase('review') : startOver} aria-label="Close agent" title="Close"
                         style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', display: 'inline-flex', padding: 2 }}>
                         <X size={16} />
                       </button>
@@ -339,13 +298,9 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
                           onChange={(e) => setText(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); startAgent(); } }}
                           placeholder="Paste or type requirements here."
-                          rows={4}
-                          style={{ ...inputStyle, resize: 'vertical', background: '#fff', paddingRight: 52 }}
+                          rows={3}
+                          style={{ ...inputStyle, resize: 'vertical', background: '#fff' }}
                         />
-                        <button type="button" onClick={startAgent} disabled={!canDraft} aria-label="Draft requirement" title="Draft requirement (Ctrl/Cmd + Enter)"
-                          style={{ position: 'absolute', right: 10, bottom: 10, width: 32, height: 32, borderRadius: '50%', border: 'none', background: canDraft ? GREEN : '#C7D9CF', color: '#fff', cursor: canDraft ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <ArrowUp size={18} />
-                        </button>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
                         <input ref={fileRef} type="file" accept=".txt,.eml,.md,.csv,.rtf,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={(e) => attachFile(e.target.files?.[0])} />
@@ -411,6 +366,13 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
                           );
                         })()}
                       </div>
+                      <div style={{ display: 'flex', gap: 12, marginTop: 12, alignItems: 'center' }}>
+                        <button type="button" onClick={startAgent} disabled={!canDraft} aria-label="Extract requirement" title="Extract (Ctrl/Cmd + Enter)"
+                          style={{ background: canDraft ? GREEN : '#C7D9CF', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: canDraft ? 'pointer' : 'default' }}>
+                          Extract requirement
+                        </button>
+                        {result && <button type="button" onClick={() => setPhase('review')} style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: FONT }}>Cancel</button>}
+                      </div>
                       {notice && <div role="status" style={{ marginTop: 10, fontSize: 13.5, color: '#92400E', lineHeight: 1.5 }}>{notice}</div>}
                     </>
                   )}
@@ -418,40 +380,21 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
                   {phase === 'working' && <div style={{ fontSize: 14, color: '#374151', padding: '6px 0' }}>{workMsg}</div>}
 
                   {phase === 'review' && result && (() => {
-                    const sm = summarize(draft.fields, draft.prov, { ambiguities: draft.ambiguities });
+                    const n = ATTEMPTED_COUNT(draft.fields);
                     return (
-                      <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.55 }}>
-                        {result.drafts.length > 1 && <div style={{ marginBottom: 6 }}>I found <b>{result.drafts.length} requirements</b> ({result.drafts.map((d) => d.label).join(' and ')}). Showing {draft.label}.</div>}
-                        <div>{sm.text}</div>
-                        {sm.assumptions.length > 0 && <div style={{ marginTop: 6, color: '#92400E' }}><b>Assumed:</b> {sm.assumptions.join('; ')}.</div>}
-                        {sm.needed.length > 0 && <div style={{ marginTop: 6 }}><b>Still needed:</b> {sm.needed.join(', ')}.</div>}
-                        {(draft.ambiguities?.length ?? 0) > 0 && (
-                          <div style={{ marginTop: 6 }}><b>Needs your call:</b>
-                            <ul style={{ margin: '2px 0 0', paddingLeft: 18 }}>{draft.ambiguities!.map((a) => <li key={a}>{a}</li>)}</ul>
-                          </div>
-                        )}
-                        {(draft.notes?.length ?? 0) > 0 && <div style={{ marginTop: 6, color: '#6B7280' }}>{draft.notes!.join(' ')}</div>}
-                        <MarkLegend prov={draft.prov} />
-                        {result.license && (
-                          <div style={{ fontSize: 13, color: '#6B7280', marginTop: 8 }}>
-                            I used the customer, location, seats and size from license <b>{result.license.licenseId}</b>{result.license.noticeDate ? <> (customer must decide by {fmtShort(result.license.noticeDate)})</> : null}, but not its commercial terms.
-                          </div>
-                        )}
-                        {result.licenseError && <div style={{ fontSize: 13, color: '#B45309', marginTop: 6 }}>{result.licenseError}</div>}
+                      <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.5 }}>
+                        {result.drafts.length > 1
+                          ? <>Found <b>{result.drafts.length} requirements</b> ({result.drafts.map((d) => d.label).join(' and ')}). Each is created separately.</>
+                          : <>Filled {n} {n === 1 ? 'field' : 'fields'} from your text. Review and edit below.</>}
+                        {(draft.ambiguities ?? []).slice(0, 2).map((a) => <div key={a} style={{ color: '#92400E', marginTop: 4 }}>{a}</div>)}
+                        {result.license && <div style={{ color: '#6B7280', marginTop: 4 }}>Used the customer, location, seats and size from license {result.license.licenseId}.</div>}
+                        {result.licenseError && <div style={{ color: '#B45309', marginTop: 4 }}>{result.licenseError}</div>}
                       </div>
                     );
                   })()}
                 </div>
               </div>
             </div>
-          )}
-
-          {agentRun && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#374151', fontFamily: FONT, margin: '-8px 0 16px', cursor: 'pointer' }}>
-              <input type="checkbox" checked={reviewOnly} onChange={(e) => setReviewOnly(e.target.checked)} />
-              Show only fields to review
-              {reviewOnly && <span style={{ color: '#6B7280' }}>· {hiddenCount} filled field{hiddenCount === 1 ? '' : 's'} hidden</span>}
-            </label>
           )}
 
           {/* Draft switcher (multiple locations) */}
@@ -465,51 +408,6 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
               ))}
             </div>
           )}
-
-          {/* Open questions: most consequential first, answerable in plain language */}
-          {agentRun && (() => {
-            const qs = openQuestionsFor(draft).filter((q) => !dismissed.includes(q.text));
-            const crit = qs.filter((q) => q.tier === 'critical'); const useful = qs.filter((q) => q.tier === 'useful');
-            const optional = optionalMissing(draft.fields);
-            if (!qs.length && !optional.length) return null;
-            const li = (q: typeof qs[number]) => (
-              <li key={q.text} style={{ marginBottom: 3 }}>{q.text}{' '}
-                {q.suggest && <button type="button" onClick={() => useEstimate(q)} style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Use estimate</button>}
-                {!q.suggest && <button type="button" onClick={() => setDismissed((d) => [...d, q.text])} style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 12.5, cursor: 'pointer', padding: 0 }}>Skip</button>}
-              </li>
-            );
-            return (
-              <div style={{ border: '1px solid #E5E7EB', background: '#F9FAFB', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontFamily: FONT }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Open questions{drafts.length > 1 ? ` (${draft.label})` : ''}</div>
-                  <button type="button" onClick={() => { navigator.clipboard?.writeText(qs.map((q, i) => `${i + 1}. ${q.text}`).join('\n')); toast.success('Questions copied.'); }}
-                    style={{ background: 'none', border: 'none', color: BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                    <Copy size={13} /> Copy
-                  </button>
-                </div>
-                {crit.length > 0 && <>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6B7280', margin: '4px 0' }}>Needed for sourcing</div>
-                  <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.6 }}>{crit.map(li)}</ol>
-                </>}
-                {useful.length > 0 && <>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6B7280', margin: '10px 0 4px' }}>Useful to know</div>
-                  <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.6 }}>{useful.map(li)}</ul>
-                </>}
-                {!crit.length && <div style={{ fontSize: 14, color: '#374151' }}>Nothing is needed before sourcing can start.</div>}
-                {optional.length > 0 && <div style={{ fontSize: 12.5, color: '#6B7280', marginTop: 8 }}>Optional, can stay open: {optional.join(', ')}.</div>}
-                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                  <textarea value={answer} onChange={(e) => { setAnswer(e.target.value); setAnswerMsg(''); }} rows={1}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitAnswer(); } }}
-                    placeholder="Answer here in your own words, for example “$25k a month, starting June 1”"
-                    style={{ ...inputStyle, fontSize: 14, padding: '8px 12px', resize: 'vertical', background: '#fff' }} />
-                  <button type="button" onClick={submitAnswer} disabled={!answer.trim()}
-                    style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '0 16px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: answer.trim() ? 'pointer' : 'default', opacity: answer.trim() ? 1 : 0.5, whiteSpace: 'nowrap' }}>Add answer</button>
-                </div>
-                {answerMsg && <div role="status" style={{ fontSize: 13, color: '#374151', marginTop: 8 }}>{answerMsg}</div>}
-                <div style={{ fontSize: 12, color: '#6B7280', marginTop: 8 }}>Saved with the requirement. You'll see them on it until you have the answers.</div>
-              </div>
-            );
-          })()}
 
           {/* ── The requirement form ── */}
           {(['company'] as FieldKey[]).some(vis) && <div style={sectionStyle}>Deal Details</div>}

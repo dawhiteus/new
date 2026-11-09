@@ -4,8 +4,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dial
 import { X, ChevronsUpDown, Sparkles, Copy } from 'lucide-react';
 import { toast } from './ui/toast';
 import { AGENT_NAME, FIELD_LABEL, describeChange, applyChanges, type FieldChange, type IntakeFields } from './data/intakeAgent';
-import { RequirementAgentCard, pruneQuestions } from './RequirementAgentCard';
-import { FieldMark, InferredNote } from './AgentMark';
+import { RequirementAgentCard } from './RequirementAgentCard';
 import { RequirementTimelineTab } from './RequirementTimelineTab';
 import { RequirementDocumentsTab } from './RequirementDocumentsTab';
 import { RequirementTeamTab } from './RequirementTeamTab';
@@ -139,14 +138,12 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
 
   const missingActive = (form: FormState) => ACTIVE_REQUIRED.filter((k) => !String(form[k] ?? '').trim());
 
-  const prune = (form: FormState) => (form.intake ? pruneQuestions(form.intake, form as unknown as Partial<IntakeFields>) : form.intake);
-
   const save = () => {
     // Saving progress never loses anything. If required details are still missing, the requirement stays (or becomes) a Draft.
     const missing = missingActive(f);
     const forcedDraft = missing.length > 0 && f.status !== 'Draft';
     commit(
-      { ...(forcedDraft ? { status: 'Draft' } : {}), intake: prune(f) },
+      { ...(forcedDraft ? { status: 'Draft' } : {}) },
       [ev('update', 'Requirement Updated', `${f.name} requirement details were updated.`)],
     );
     toast.success(
@@ -166,24 +163,18 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
   };
 
   /** Apply accepted changes from the Requirement Agent card: values, provenance, questions, timeline and a note, all together. */
+  /** Apply the changes accepted in the Update from text review: values, a Timeline event and a note with the text. */
   const applyAgentChanges = (changes: FieldChange[], sourceText: string) => {
-    const dateIso = new Date().toISOString().slice(0, 10);
-    const applied = applyChanges(changes, dateIso);
-    const patch: any = { ...applied.fields };
-    const prov = { ...(f.provenance ?? {}), ...applied.prov } as any;
-    const next = { ...f, ...patch } as FormState;
-    const before = f.intake?.questions.length ?? 0;
-    const intake = f.intake ? pruneQuestions(f.intake, next as unknown as Partial<IntakeFields>) : f.intake;
-    const answered = before - (intake?.questions.length ?? 0);
+    const applied = applyChanges(changes);
     const lines = changes.map(describeChange);
     commit(
       {
-        ...patch, provenance: prov, intake,
+        ...(applied.fields as any),
         notes: [...f.notes, { author: AGENT_NAME, date: today(), text: `Update from pasted text. ${lines.join('; ')}.\n\nText provided:\n${sourceText}` }],
       },
       [ev('update', 'Requirement Updated', `Updated from pasted text: ${lines.join('; ')}.`)],
     );
-    toast.success(`${changes.length} ${changes.length === 1 ? 'field' : 'fields'} updated.${answered ? ` ${answered} question${answered === 1 ? '' : 's'} answered.` : ''}`);
+    toast.success(`${changes.length} ${changes.length === 1 ? 'field' : 'fields'} updated.`);
   };
 
   const onTasks = (tasks: WorkflowTask[]) => {
@@ -215,8 +206,8 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
   const text = (k: keyof FormState, opts: { type?: string; disabled?: boolean } = {}) => (
     <input type={opts.type || 'text'} value={String(f[k] ?? '')} onChange={set(k)} disabled={opts.disabled} style={opts.disabled ? disabledInput : input} />
   );
-  const mark = (k: keyof FormState) => <FieldMark prov={f.provenance?.[k as string] as any} />;
-  const inferred = (k: keyof FormState) => <InferredNote prov={f.provenance?.[k as string] as any} field={k as string} />;
+  const mark = (_k: keyof FormState) => null;
+  const inferred = (_k: keyof FormState) => null;
   const notProvided = (k: keyof FormState) =>
     (ACTIVE_REQUIRED as readonly string[]).includes(k as string) && k !== 'name' && !String(f[k] ?? '').trim() ? (
       <div style={{ fontSize: 12, color: '#B45309', marginTop: 5, fontFamily: FONT }}>Not provided</div>
@@ -348,11 +339,8 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
               <RequirementAgentCard
                 key={requirement.id}
                 fields={f as unknown as IntakeFields}
-                prov={(f.provenance ?? {}) as any}
-                intake={f.intake}
                 hasCollection={!!requirement.collection}
                 onApply={applyAgentChanges}
-                onIntakeChange={(next) => commit({ intake: { ...f.intake!, ...next } }, [])}
               />
 
               <div style={{ border: '1px solid #E5E7EB', borderRadius: 16, padding: '16px 24px 24px' }}>
