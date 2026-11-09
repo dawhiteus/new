@@ -363,12 +363,12 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
                   create: {
                     line: `${col.name} · ${col.totalSpaces} space${col.totalSpaces === 1 ? '' : 's'} · updated ${col.updated}`,
                     warn: ch.length ? `The requirement has changed since this collection was built: ${ch.join('; ')}.` : undefined,
-                    actions: [{ label: 'View collection', onClick: () => collectionActions.view(requirement) }, { label: 'Add space', onClick: () => collectionActions.add(requirement) }, ...(ch.length ? [{ label: 'Update collection', onClick: () => collectionActions.update(requirement) }] : [])],
+                    actions: [{ label: 'View Collection', onClick: () => collectionActions.view(requirement) }, { label: 'Add Space', onClick: () => collectionActions.add(requirement) }, ...(ch.length ? [{ label: 'Update Collection', onClick: () => collectionActions.update(requirement) }] : [])],
                   },
                   assess: {
                     line: a && a.state === 'ok' && run ? `${a.confirmedFits} of ${a.total} meet every criterion · assessed ${run.at}` : 'Not assessed yet',
                     warn: q?.stale ? 'The collection has changed since it was last assessed.' : undefined,
-                    actions: [{ label: 'Assess collection', onClick: () => collectionActions.assess(requirement) }],
+                    actions: [{ label: 'Assess Collection', onClick: () => collectionActions.assess(requirement) }],
                   },
                 };
               })()}

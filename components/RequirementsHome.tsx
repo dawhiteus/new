@@ -13,6 +13,9 @@ import {
   DollarSign,
   Users,
   ArrowRight,
+  Bot,
+  Plus,
+  RefreshCw,
 } from 'lucide-react';
 import { NewRequirementModal, type NewRequirementData } from './NewRequirementModal';
 import { toast } from './ui/toast';
@@ -176,14 +179,14 @@ function RowMenu({ onAction, hasCollection, assessable }: { onAction: (a: string
           <div style={{ height: 1, background: '#E5E7EB', margin: '4px 0' }} />
           {hasCollection ? (
             <>
-              {item('View collection')}
-              {item('Assess collection')}
-              {item('Add space')}
-              {item('Update collection')}
+              {item('View Collection')}
+              {item('Assess Collection')}
+              {item('Add Space')}
+              {item('Update Collection')}
               {item('Remove collection')}
             </>
           ) : (
-            item('Create collection')
+            item('Create Collection')
           )}
         </div>
       )}
@@ -191,12 +194,20 @@ function RowMenu({ onAction, hasCollection, assessable }: { onAction: (a: string
   );
 }
 
+/** After a modal closes the cursor may rest on another row's pill; hold hover popovers briefly so the user isn't dropped into the wrong collection. */
+let pillHoverBlockedUntil = 0;
+const holdPillHover = () => { pillHoverBlockedUntil = Date.now() + 700; };
+
 function CollectionPill({ req, onOpen, onAssess, onAdd, onUpdate }: { req: MvpRequirement & { collection: NonNullable<MvpRequirement['collection']> }; onOpen: () => void; onAssess: () => void; onAdd: () => void; onUpdate: () => void }) {
   const c = req.collection;
   const status = quickStatus(req);
   const [show, setShow] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>();
-  const row = (Icon: typeof MapPin, label: string, n: number) => (
+  const needsUpdate = !!status && status.changes.length > 0;
+  /** Every action closes the popover first, so it isn't left hanging open behind the modal or after it closes. */
+  const act = (fn: () => void) => () => { clearTimeout(timer.current); setShow(false); fn(); };
+  const secondary: React.CSSProperties = { height: 36, background: '#fff', color: '#374151', border: '1px solid #D1D5DB', borderRadius: 6, fontSize: 13, fontWeight: 500, fontFamily: FONT, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 };
+  const row =(Icon: typeof MapPin, label: string, n: number) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 14, padding: '3px 0' }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9CA3AF' }}>
         <Icon size={13} /> {label}
@@ -207,7 +218,8 @@ function CollectionPill({ req, onOpen, onAssess, onAdd, onUpdate }: { req: MvpRe
   return (
     <div
       style={{ position: 'relative', display: 'inline-block' }}
-      onMouseEnter={() => { clearTimeout(timer.current); setShow(true); }}
+      onMouseEnter={() => { clearTimeout(timer.current); if (Date.now() >= pillHoverBlockedUntil) setShow(true); }}
+      onMouseMove={() => { if (!show && Date.now() >= pillHoverBlockedUntil) setShow(true); }}
       onMouseLeave={() => { timer.current = setTimeout(() => setShow(false), 120); }}
     >
         <span
@@ -221,7 +233,7 @@ function CollectionPill({ req, onOpen, onAssess, onAdd, onUpdate }: { req: MvpRe
       <div style={{ width: 240, padding: 0, fontFamily: FONT, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', border: '1px solid #E5E7EB' }}>
         <div style={{ padding: '12px 12px 10px' }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: '#0F2A3D' }}>{c.name}</div>
-          <div style={{ fontSize: 13, color: '#6B7280' }}>{c.totalSpaces} spaces total</div>
+          <div style={{ fontSize: 12, color: '#6B7280' }}>{c.totalSpaces} spaces total · Updated {c.updated}</div>
           {status && <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginTop: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: status.status === 'Plenty' ? '#2E9D4A' : status.status === 'Few' ? '#E8A91C' : '#9CA3AF' }} />{status.text}</div>}
           {status && status.changes.length > 0 ? <div style={{ fontSize: 12.5, color: '#B45309', marginTop: 3, lineHeight: 1.4 }}>The requirement has changed since this collection was built: {status.changes.join('; ')}.</div> : status?.stale ? <div style={{ fontSize: 12.5, color: '#B45309', marginTop: 3, lineHeight: 1.4 }}>The collection has changed since it was last assessed.</div> : null}
         </div>
@@ -240,25 +252,21 @@ function CollectionPill({ req, onOpen, onAssess, onAdd, onUpdate }: { req: MvpRe
             <div style={{ fontSize: 12, color: '#6B7280' }}>Shortlisted</div>
           </div>
         </div>
-        <div style={{ borderTop: '1px solid #E5E7EB', padding: '8px 12px 12px' }}>
-          <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Updated {c.updated}</div>
+        <div style={{ borderTop: '1px solid #E5E7EB', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button
-            onClick={onOpen}
-            style={{ width: '100%', background: '#005B94', color: '#fff', border: 'none', borderRadius: 4, padding: '8px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            type="button"
+            onClick={act(onOpen)}
+            className="cp-primary"
+            style={{ width: '100%', height: 36, background: '#005B94', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
             View Collection <ArrowRight size={14} />
           </button>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-            {([...(status && status.changes.length > 0 ? [['Update collection', onUpdate] as const] : []), ['Assess collection', onAssess], ['Add space', onAdd]] as const).map(([label, fn]) => (
-              <button
-                key={label}
-                onClick={fn}
-                style={{ width: '100%', background: '#fff', color: '#005B94', border: '1px solid #005B94', borderRadius: 4, padding: '7px 8px', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: 'pointer', whiteSpace: 'nowrap' }}
-              >
-                {label}
-              </button>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {needsUpdate && <button type="button" onClick={act(onUpdate)} className="cp-secondary" style={{ ...secondary, gridColumn: '1 / -1' }}><RefreshCw size={14} />Update Collection</button>}
+            <button type="button" onClick={act(onAssess)} className="cp-secondary" style={secondary}><Bot size={14} />Assess</button>
+            <button type="button" onClick={act(onAdd)} className="cp-secondary" style={secondary}><Plus size={14} />Add Space</button>
           </div>
+          <style>{`.cp-primary:hover{background:#004D7D!important}.cp-secondary:hover{background:#F8F9FA!important;border-color:#9CA3AF!important}.cp-primary:focus-visible,.cp-secondary:focus-visible{outline:3px solid rgba(0,91,148,.35);outline-offset:2px}`}</style>
         </div>
       </div>
       </div>
@@ -594,14 +602,14 @@ export function RequirementsHome() {
   };
 
   /** A space added by hand: the collection grows by one, and the timeline says so. */
-  const logAdded = (req: MvpRequirement, _sp: unknown, text: string) => {
+  const logAdded = (req: MvpRequirement, sp: { title: string }, text: string) => {
     const dispDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     setRows((rs) => rs.map((r) => (r.id !== req.id || !r.collection ? r : {
       ...r,
       collection: { ...r.collection, totalSpaces: r.collection.totalSpaces + 1 },
       details: { ...r.details, events: [...r.details.events, { id: `e-${Date.now()}-sp`, type: 'collection', title: 'Spaces Added', description: text, date: dispDate, actor: CURRENT_USER_EMAIL }] },
     })));
-    toast.success('Space added to the collection.');
+    toast.success(`Space added · ${sp.title} → ${req.collection?.name ?? 'collection'}`);
   };
 
   const handleAction = (req: MvpRequirement, action: string) => {
@@ -613,15 +621,15 @@ export function RequirementsHome() {
         rs.map((r) => (r.id === req.id ? { ...r, collection: null } : r)),
       );
       toast.success(`Collection for "${req.name}" removed.`);
-    } else if (action === 'Create collection') {
+    } else if (action === 'Create Collection') {
       setCollectionForId(req.id);
-    } else if (action === 'Assess collection') {
+    } else if (action === 'Assess Collection') {
       setAssessForId(req.id);
-    } else if (action === 'Add space') {
+    } else if (action === 'Add Space') {
       setAddForId(req.id);
-    } else if (action === 'Update collection') {
+    } else if (action === 'Update Collection') {
       setUpdateForId(req.id);
-    } else if (action === 'View collection') {
+    } else if (action === 'View Collection') {
       openCollection(req);
     } else if (action === 'View Requirement') {
       setDetailId(req.id);
@@ -780,18 +788,18 @@ export function RequirementsHome() {
       />
       <UpdateCollectionModal
         requirement={rows.find((r) => r.id === updateForId) ?? null}
-        onClose={() => setUpdateForId(null)}
+        onClose={() => { holdPillHover(); setUpdateForId(null); }}
         onConfirm={updateCollection}
       />
       <AddSpaceModal
         requirement={rows.find((r) => r.id === addForId) ?? null}
-        onClose={() => setAddForId(null)}
+        onClose={() => { holdPillHover(); setAddForId(null); }}
         onAdded={logAdded}
         addSpace={addSpace}
       />
       <AssessCollectionModal
         requirement={rows.find((r) => r.id === assessForId) ?? null}
-        onClose={() => setAssessForId(null)}
+        onClose={() => { holdPillHover(); setAssessForId(null); }}
         onAssessed={logAssessment}
         onUpdate={(r) => { setAssessForId(null); setUpdateForId(r.id); }}
         onEdit={(r) => setDetailId(r.id)}

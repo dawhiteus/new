@@ -165,7 +165,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
             </div>
             <div style={footer}>
               <button type="button" onClick={() => setView('existing')} disabled={stage === 'working'} style={{ background: 'none', border: 'none', color: BLUE, fontSize: 14, fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: FONT }}>
-                Link an existing collection
+                Link an Existing Collection
               </button>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="button" onClick={onClose} disabled={stage === 'working'} style={secondary}>Cancel</button>
