@@ -411,7 +411,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
 
               {replyOpen ? (
                 <div style={{ border: `1px solid ${'#e5e7eb'}`, background: '#f8f9fa', borderRadius: 8, padding: 12, marginBottom: 16, fontFamily: FONT }}>
-                  <textarea autoFocus value={replyText} onChange={(e) => { setReplyText(e.target.value); setNoChanges(false); }} placeholder="Paste a reply, call notes or a revised brief. The Requirement Agent reads it and updates the fields."
+                  <textarea autoFocus value={replyText} onChange={(e) => { setReplyText(e.target.value); setNoChanges(false); }} placeholder="Paste or type a reply, call notes or the changes you need. The Requirement Agent reads it and updates the fields."
                     style={{ width: '100%', minHeight: 90, border: '1px solid #d1d5db', borderRadius: 12, padding: 10, fontSize: 13, fontFamily: FONT, background: '#fff', boxSizing: 'border-box' }} />
                   {noChanges && <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>No changes found. The requirement already matches this text, or the text doesn't mention requirement details.</div>}
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
@@ -423,9 +423,9 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px 8px 14px', background: TINT_TEAL_BG, border: `1px solid ${TINT_TEAL_BORDER}`, borderRadius: 8, marginBottom: 16, fontFamily: FONT }}>
                   <Bot size={16} color={TINT_TEAL_TEXT} style={{ flexShrink: 0 }} />
                   <div style={{ flex: 1, fontSize: 13, color: TINT_TEAL_TEXT }}>
-                    <b style={{ fontWeight: 600 }}>Requirement Agent updated {textCount} field{textCount === 1 ? '' : 's'}.</b> Check the highlighted fields, then Save Changes.
+                    <b style={{ fontWeight: 600 }}>Requirement Agent updated {textCount} field{textCount === 1 ? '' : 's'}.</b> Review the highlights, then save.
                   </div>
-                  <button type="button" onClick={() => setReplyOpen(true)} style={{ background: 'none', border: 'none', height: 30, padding: '0 8px', color: TINT_TEAL_TEXT, fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>Paste More</button>
+                  <button type="button" onClick={() => setReplyOpen(true)} style={{ background: 'none', border: 'none', height: 30, padding: '0 8px', color: TINT_TEAL_TEXT, fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>Make Additional Changes</button>
                   <button type="button" onClick={() => undoFromText(Object.keys(fromText) as FieldKey[])} style={{ background: 'none', border: 'none', height: 30, padding: '0 8px', color: TINT_TEAL_TEXT, fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>Undo All</button>
                 </div>
               ) : (
