@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, Bot } from 'lucide-react';
 import { listingByUrl, type AssessSpace } from './data/assessmentData';
-import { assess, hasSpace, proposalSpace } from './data/assessmentAgent';
+import { assess, hasSpace } from './data/assessmentAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
 
 const FONT = 'Inter, sans-serif';
@@ -10,8 +10,6 @@ const BLUE = '#0D619B';
 const INK = '#0F2A3D';
 const LABEL: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280', marginBottom: 6 };
 const INPUT: React.CSSProperties = { width: '100%', border: '1px solid #D1D5DB', borderRadius: 8, padding: '9px 12px', fontSize: 14, fontFamily: FONT, color: INK, background: '#fff', outline: 'none', boxSizing: 'border-box' };
-const WORKSPACE_TYPES = ['Team Office', 'Private Office', 'Office Suite', 'Coworking Desk', 'Dedicated Desk'];
-const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 interface Props {
   requirement: MvpRequirement | null;
@@ -22,12 +20,10 @@ interface Props {
 }
 
 export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props) {
-  const [mode, setMode] = useState<'link' | 'proposal'>('link');
   const [url, setUrl] = useState('');
   const [msg, setMsg] = useState('');
-  const [f, setF] = useState({ venue: '', title: '', type: '', desks: '', rate: '', miles: '', validUntil: iso(new Date(Date.now() + 30 * 864e5)), availableFrom: '' });
 
-  useEffect(() => { setMode('link'); setUrl(''); setMsg(''); }, [requirement?.id]);
+  useEffect(() => { setUrl(''); setMsg(''); }, [requirement?.id]);
 
   const a = requirement ? assess(requirement) : null;
   if (!requirement || !requirement.collection || !a) return <Dialog open={false}><DialogContent className="hidden" /></Dialog>;
@@ -45,16 +41,6 @@ export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props
     if (hasSpace(requirement, hit.space)) { setMsg('That space is already in this collection.'); return; }
     finish(hit.space);
   };
-  const num = (v: string) => (v.trim() === '' || isNaN(+v) ? null : +v);
-  const proposalOk = f.venue.trim() && f.title.trim() && f.type && num(f.desks) && num(f.rate) != null && num(f.miles) != null && f.availableFrom;
-  const addProposal = () => {
-    const p = proposalSpace(requirement, { venue: f.venue.trim(), title: f.title.trim(), type: f.type, desks: num(f.desks) as number, rate: num(f.rate) as number, miles: num(f.miles) as number, validUntil: f.validUntil, availableFrom: f.availableFrom });
-    if (p) finish(p);
-  };
-
-  const field = (label: string, node: React.ReactNode, flex = 1) => <div style={{ flex }}><div style={LABEL}>{label}</div>{node}</div>;
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
-  const linkBtn: React.CSSProperties = { background: 'none', border: 'none', padding: 0, color: BLUE, fontWeight: 600, fontFamily: FONT, fontSize: 13.5, cursor: 'pointer' };
   const primary = (on: boolean): React.CSSProperties => ({ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '0 22px', height: 40, whiteSpace: 'nowrap', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: on ? 'pointer' : 'default', opacity: on ? 1 : 0.5 });
 
   return (
@@ -75,7 +61,7 @@ export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props
 
           {!ready && <div style={{ fontSize: 14, color: '#374151', marginTop: 16, lineHeight: 1.55 }}>This requirement has no location I can find, so spaces can't be added here yet.</div>}
 
-          {ready && mode === 'link' && (
+          {ready && (
             <div style={{ marginTop: 18 }}>
               <div style={LABEL}>Listing link</div>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -83,32 +69,9 @@ export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props
                 <button type="button" onClick={addLink} disabled={!url.trim()} style={primary(!!url.trim())}>Add</button>
               </div>
               {msg && <div style={{ fontSize: 13.5, color: '#374151', marginTop: 10 }}>{msg}</div>}
-              <div style={{ marginTop: 14 }}><button type="button" onClick={() => { setMode('proposal'); setMsg(''); }} style={linkBtn}>Add a venue proposal instead</button></div>
             </div>
           )}
 
-          {ready && mode === 'proposal' && (
-            <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
-              <div style={{ display: 'flex', gap: 12 }}>
-                {field('Venue', <input style={INPUT} value={f.venue} onChange={set('venue')} />)}
-                {field('Space', <input style={INPUT} value={f.title} onChange={set('title')} />)}
-              </div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                {field('Workspace type', <select style={INPUT} value={f.type} onChange={set('type')}><option value="">Choose</option>{WORKSPACE_TYPES.map((t) => <option key={t}>{t}</option>)}</select>)}
-                {field('Seats', <input style={INPUT} inputMode="numeric" value={f.desks} onChange={set('desks')} />)}
-                {field('Price per month', <input style={INPUT} inputMode="numeric" value={f.rate} onChange={set('rate')} />)}
-              </div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                {field(`Miles from ${a.criteria.centerLabel}`, <input style={INPUT} inputMode="decimal" value={f.miles} onChange={set('miles')} />)}
-                {field('Available from', <input style={INPUT} type="date" value={f.availableFrom} onChange={set('availableFrom')} />)}
-                {field('Quote valid until', <input style={INPUT} type="date" value={f.validUntil} onChange={set('validUntil')} />)}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <button type="button" onClick={() => setMode('link')} style={linkBtn}>Use a listing link instead</button>
-                <button type="button" onClick={addProposal} disabled={!proposalOk} style={primary(!!proposalOk)}>Add</button>
-              </div>
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>

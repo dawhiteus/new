@@ -444,16 +444,6 @@ export function evaluateFor(r: MvpRequirement, sp: AssessSpace): SpaceResult | n
   return evaluate(sp, a.criteria, mediansFor([...members, ...marketPool(a.criteria.city)]));
 }
 
-export interface ProposalInput { venue: string; title: string; type: string; desks: number; rate: number; miles: number; validUntil: string; availableFrom: string }
-
-/** A venue proposal entered by hand. It sits `miles` due north of the search center, since a proposal carries no coordinates here. */
-export function proposalSpace(r: MvpRequirement, p: ProposalInput): AssessSpace | null {
-  const a = assess(r);
-  if (!a || a.state !== 'ok') return null;
-  return { id: `prop-${Date.now()}`, url: '', venue: p.venue, title: p.title, type: p.type, desks: p.desks, rate: p.rate, lat: a.criteria.lat + p.miles / 69, lng: a.criteria.lng, modified: new Date().toISOString().slice(0, 10), inCollection: true, visibility: 'Private', validUntil: p.validUntil, availableFrom: p.availableFrom };
-}
-
-
 /** What updating the collection would do: search again with the current requirement and replace the Recommendations. Shortlist and Favorites stay. */
 export function previewUpdate(r: MvpRequirement): { keepRecs: AssessSpace[]; curated: AssessSpace[]; add: number; remove: number } | null {
   const a = assess(r);
