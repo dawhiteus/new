@@ -116,7 +116,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   );
   const requirementRow = (
     <section aria-label="What this collection was built from" style={{ border: `1px solid ${BORDER}`, borderRadius: 16, overflow: 'hidden' }}>
-      {ledgerRow('Requirement says', stated.map((s) => (
+      {ledgerRow('Requirement details', stated.map((s) => (
         <span key={s.k} style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
           <span style={{ fontSize: 12, color: MUTED }}>{s.k}</span>
           <span style={{ fontSize: 13, fontWeight: s.v ? 600 : 500, color: s.v ? TEXT : MUTED, ...NUM }}>{s.v || 'Not stated'}</span>
@@ -280,18 +280,11 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingTop: 2 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: MUTED }}>Group
-                <span style={{ position: 'relative', display: 'inline-flex' }}>
-                  <select className="ac-group-select" value={g} onClick={(e) => e.stopPropagation()} onChange={(e) => move(r, e.target.value as Group)} style={{ appearance: 'none', WebkitAppearance: 'none', height: 32, minWidth: 168, padding: '0 32px 0 12px', border: `1px solid ${BORDER_STRONG}`, borderRadius: 8, background: '#fff', fontFamily: FONT, fontSize: 13, fontWeight: 500, color: TEXT, cursor: 'pointer', outline: 'none', transition: 'border-color 150ms ease, box-shadow 150ms ease' }}>
-                    {GROUPS.map((x) => <option key={x}>{x}</option>)}
-                  </select>
-                  <ChevronDown size={14} color={MUTED} aria-hidden style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-                </span>
-              </label>
-              {r.space.url && <a href={r.space.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none' }}>Open Listing <ExternalLink size={13} aria-hidden /></a>}
-              <style>{`.ac-group-select:hover{border-color:#9CA3AF!important}.ac-group-select:focus-visible{border-color:${BLUE}!important;box-shadow:0 0 0 3px rgba(0,91,148,.15)}`}</style>
-            </div>
+            {r.space.url && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 2 }}>
+                <a href={r.space.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: BLUE, textDecoration: 'none' }}>Open Listing <ExternalLink size={13} aria-hidden /></a>
+              </div>
+            )}
           </div>
         )}
       </div>
