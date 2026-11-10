@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, Bot, ExternalLink, ChevronDown, GripVertical, AlertTriangle, Info, Lock } from 'lucide-react';
+import { X, Bot, ExternalLink, ChevronDown, GripVertical, AlertTriangle, Info, Lock, Share2, Link2, Download, Check, Loader2 } from 'lucide-react';
+import { buildReportData } from './report/buildReportData';
 import { assess, addedWhy, recordRun, requirementChanges, CONFIRMED_NEEDED, GROUPS, groupOf, setGroup, type Group, type RunInfo, type SpaceResult } from './data/assessmentAgent';
 import { capacityBand, criteriaFor } from './data/collectionAgent';
 import { builtByAgent } from './data/assessmentData';
@@ -59,6 +60,8 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   const [showSpaces, setShowSpaces] = useState(false);
   const [openRow, setOpenRow] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareState, setShareState] = useState<'idle' | 'copied' | 'building' | 'error'>('idle');
   const [overGroup, setOverGroup] = useState<Group | null>(null);
   const [, setTick] = useState(0);
   const ran = useRef<string | null>(null);
@@ -294,6 +297,55 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   const groups = GROUPS.map((g) => ({ g, list: rows.filter((r) => groupOf(requirement, r.space) === g) }));
   const emptyGroups = groups.filter((x) => x.list.length === 0);
   const fullGroups = groups.filter((x) => x.list.length > 0);
+
+  // ── Share: copy the collection link, or build a PDF report from this assessment ──────────────────────────────
+  const canShare = ok && total > 0;
+  const resetShareSoon = () => setTimeout(() => { setShareState('idle'); setShareOpen(false); }, 1400);
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(col.url ?? ''); setShareState('copied'); } catch { setShareState('error'); }
+    resetShareSoon();
+  };
+  const downloadPdf = async () => {
+    setShareState('building');
+    try {
+      const { downloadAssessmentReport } = await import('./report/downloadAssessmentReport');
+      const data = buildReportData(requirement);
+      if (!data) throw new Error('Nothing to report');
+      await downloadAssessmentReport(data, `${col.name} - Assessment - ${new Date().toISOString().slice(0, 10)}.pdf`);
+      setShareState('idle');
+      setShareOpen(false);
+    } catch (e) {
+      console.error('PDF report failed', e);
+      setShareState('error');
+      resetShareSoon();
+    }
+  };
+  const shareItem = (icon: React.ReactNode, title: string, sub: string, onClick: () => void, busy = false) => (
+    <button type="button" role="menuitem" onClick={onClick} disabled={shareState === 'building'} className="ac-share-item" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, width: '100%', padding: '10px 12px', border: 0, borderRadius: 8, background: 'transparent', textAlign: 'left', fontFamily: FONT, color: TEXT, cursor: shareState === 'building' ? 'wait' : 'pointer', opacity: shareState === 'building' && !busy ? 0.4 : 1 }}>
+      <span style={{ display: 'inline-flex', width: 28, height: 28, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: '#e6f1f8', color: BLUE }}>{icon}</span>
+      <span style={{ display: 'flex', flexDirection: 'column' }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{title}</span>
+        <span style={{ fontSize: 12, color: MUTED }}>{sub}</span>
+      </span>
+    </button>
+  );
+  const shareMenu = canShare && (
+    <div style={{ position: 'relative' }}>
+      <button type="button" aria-haspopup="menu" aria-expanded={shareOpen} onClick={() => setShareOpen((x) => !x)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', border: `1px solid ${shareOpen ? BLUE : BORDER_STRONG}`, borderRadius: 12, background: shareOpen ? '#e6f1f8' : '#fff', color: shareOpen ? BLUE : TEXT, fontFamily: FONT, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+        <Share2 size={14} aria-hidden /> Share
+      </button>
+      {shareOpen && (
+        <>
+          <div onClick={() => shareState !== 'building' && setShareOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} aria-hidden />
+          <div role="menu" onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setShareOpen(false); } }} style={{ position: 'absolute', right: 0, top: 40, zIndex: 41, width: 296, padding: 6, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
+            {col.url && shareItem(shareState === 'copied' ? <Check size={14} /> : <Link2 size={14} />, shareState === 'copied' ? 'Link Copied' : 'Copy Link', 'Anyone with the link can view the collection', copyLink)}
+            {shareItem(shareState === 'building' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />, shareState === 'building' ? 'Building Report…' : 'Download PDF Report', shareState === 'error' ? "Couldn't build the report. Try again." : 'This assessment, formatted to attach or print', downloadPdf, true)}
+            <style>{`.ac-share-item:hover:not(:disabled){background:${PAGE}!important}.ac-share-item:focus-visible{outline:3px solid rgba(0,91,148,.35);outline-offset:-2px}`}</style>
+          </div>
+        </>
+      )}
+    </div>
+  );
   const tableBody = (
     <>
       {emptyGroups.length > 0 && (
@@ -374,6 +426,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 26, padding: '0 10px', borderRadius: 9999, background: '#ecfeff', border: '1px solid #a5f3fc', color: '#0e7490', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
               <Bot size={13} aria-hidden /> Collection Assessment Agent
             </span>
+            {shareMenu}
             <button type="button" onClick={onClose} aria-label="Close" style={{ width: 32, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, borderRadius: 8, background: 'transparent', color: MUTED, cursor: 'pointer' }}><X size={18} /></button>
           </div>
         </div>
