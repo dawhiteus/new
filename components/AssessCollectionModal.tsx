@@ -214,7 +214,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
     onDrop: (e: React.DragEvent) => { e.preventDefault(); const r = rows.find((x) => x.space.id === dragId); setDragId(null); setOverGroup(null); if (r) move(r, g); },
   });
 
-  const GRID = ['16px', 'minmax(0, 1fr)', '88px', band ? '80px' : '', c.budget ? '136px' : '', c.type ? '124px' : '', '84px', '32px'].filter(Boolean).join(' ');
+  const GRID = ['16px', 'minmax(0, 1fr)', '112px', band ? '104px' : '', c.budget ? '144px' : '', c.type ? '132px' : '', '124px', '32px'].filter(Boolean).join(' ');
   const rowGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: GRID, columnGap: 10 };
   const head = (t: string, sub?: string) => (
     <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -222,24 +222,46 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
       {sub !== undefined && <span style={{ fontSize: 12, color: MUTED, ...NUM }}>{sub}</span>}
     </span>
   );
-  const cell = (value: React.ReactNode, pass: boolean | null, lines: { text: string; color?: string }[] = []) => (
+  // One rule for every criterion: a value that meets is just the value; a miss is one red chip with the gap in
+  // words; a value we don't have is the muted word "Unknown". `note` is neutral context, never a status.
+  const cell = (value: React.ReactNode, pass: boolean | null, gap = '', note = '') => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {pass === true && <Check size={14} color={SUCCESS} strokeWidth={2.5} aria-label="Meets" style={{ flexShrink: 0 }} />}
-        {pass === false && <X size={14} color={DANGER} strokeWidth={2.5} aria-label="Misses" style={{ flexShrink: 0 }} />}
-        <span style={{ fontSize: 13, ...NUM, color: pass === false ? DANGER : TEXT, fontWeight: pass === false ? 600 : 400, paddingLeft: pass === null ? 20 : 0 }}>{value}</span>
-      </div>
-      {lines.filter((l) => l.text).map((l) => <span key={l.text} style={{ fontSize: 12, lineHeight: 1.4, color: l.color ?? MUTED, paddingLeft: 20, ...NUM }}>{l.text}</span>)}
+      {value === 'Unknown'
+        ? <span style={{ fontSize: 13, color: MUTED }}>Unknown</span>
+        : pass === false
+          ? <span style={{ alignSelf: 'flex-start', padding: '0 6px', borderRadius: 4, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: 13, fontWeight: 600, lineHeight: '20px', ...NUM }}>{value}{gap ? ` · ${gap}` : ''}</span>
+          : <span style={{ fontSize: 13, lineHeight: '22px', color: TEXT, ...NUM }}>{value}</span>}
+      {note && <span style={{ fontSize: 12, lineHeight: 1.4, color: MUTED, ...NUM }}>{note}</span>}
     </div>
   );
+  const LABEL = { area: 'Distance', capacity: 'Seats', budget: 'Price', type: 'Type' } as const;
+  const missesOf = (r: SpaceResult) => (Object.keys(LABEL) as (keyof typeof LABEL)[]).filter((k) => r.pass[k] === false).map((k) => LABEL[k]);
+  const resultBadge = (r: SpaceResult) => {
+    const m = missesOf(r);
+    const okRow = m.length === 0;
+    return (
+      <span style={{ justifySelf: 'start', alignSelf: 'start', display: 'inline-flex', alignItems: 'center', gap: 4, height: 22, padding: '0 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', ...(okRow ? { background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d' } : { background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c' }) }}>
+        {okRow ? <Check size={11} strokeWidth={3} aria-hidden /> : <X size={11} strokeWidth={3} aria-hidden />}
+        {okRow ? 'Meets all' : m.length === 1 ? `Misses ${m[0]}` : `Misses ${m.length}`}
+      </span>
+    );
+  };
+  const groupSummary = (list: SpaceResult[]) => {
+    const n = list.map((r) => missesOf(r).length);
+    const all = n.filter((x) => x === 0).length, one = n.filter((x) => x === 1).length, more = n.filter((x) => x > 1).length;
+    return [
+      all ? `${all} ${all === 1 ? 'meets' : 'meet'} all` : '',
+      one ? `${one} ${one === 1 ? 'misses' : 'miss'} one` : '',
+      more ? `${more} ${more === 1 ? 'misses' : 'miss'} 2 or more` : '',
+    ].filter(Boolean).join(' · ');
+  };
 
   const spaceRow = (r: SpaceResult, g: Group, first: boolean) => {
     const id = r.space.id; const open = openRow === id;
     const priv = r.space.visibility === 'Private';
-    const checks = [r.pass.area, r.pass.capacity, r.pass.budget, r.pass.type].filter((x) => x !== null) as boolean[];
-    const n = metCount(r);
-    const overMarket = r.detail.some((d) => d.k === 'Rate');
-    const seatHint = band && r.pass.capacity === false ? (r.space.desks < band[0] ? `Below ${band[0]}` : `Above ${band[1]}`) : '';
+    const seatGap = band && r.pass.capacity === false ? (r.space.desks < band[0] ? `${band[0] - r.space.desks} short` : `${r.space.desks - band[1]} over`) : '';
+    const distGap = r.pass.area === false ? `${Math.max(0.1, r.miles - c.radiusMi).toFixed(1)} mi over` : '';
+    const priceGap = c.budget && r.pass.budget === false && r.space.rate != null ? `${money(r.space.rate - c.budget)} over` : '';
     const listing = priv ? (r.space.validUntil ? `Private · quote to ${shortDate(r.space.validUntil)}` : 'Private · no quote date') : `Public · updated ${r.ageDays} d ago`;
     return (
       <div key={id} {...dz(g)} style={{ borderTop: first ? undefined : `1px solid ${HAIR}`, background: open ? PAGE : '#fff', opacity: dragId === id ? 0.45 : 1 }}>
@@ -256,19 +278,11 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
             <span style={{ fontSize: 12, lineHeight: 1.4, color: MUTED }}>{r.space.venue}{!c.type ? ` · ${r.space.type}` : ''}</span>
             <span style={{ fontSize: 12, lineHeight: 1.4, color: r.confirmed ? MUTED : DANGER }}>{listing}{r.confirmed ? '' : ' · unconfirmed'}</span>
           </div>
-          {cell(`${r.miles.toFixed(1)} mi`, r.pass.area, [{ text: r.pass.area ? '' : `Outside ${c.radiusMi} mi`, color: DANGER }])}
-          {band ? cell(r.space.desks, r.pass.capacity, [{ text: seatHint, color: DANGER }]) : null}
-          {c.budget ? cell(r.space.rate != null ? money(r.space.rate) : 'Unknown', r.pass.budget, [
-            { text: r.costPP != null ? `${money(r.costPP)} / person` : '' },
-            { text: r.pass.budget === false ? 'Over budget' : overMarket ? 'Above market' : '', color: r.pass.budget === false ? DANGER : AMBER_TEXT },
-          ]) : null}
-          {c.type ? cell(r.space.type, r.pass.type) : null}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: TEXT, ...NUM }}>{n} of {checks.length}</span>
-            <div style={{ display: 'flex', gap: 3 }} aria-hidden>
-              {checks.map((p, i) => <span key={i} style={{ width: 14, height: 4, borderRadius: 9999, background: p ? SUCCESS : BORDER }} />)}
-            </div>
-          </div>
+          {cell(`${r.miles.toFixed(1)} mi`, r.pass.area, distGap)}
+          {band ? cell(r.space.desks, r.pass.capacity, seatGap) : null}
+          {c.budget ? cell(r.space.rate != null ? money(r.space.rate) : 'Unknown', r.pass.budget, priceGap, r.costPP != null ? `${money(r.costPP)} / person` : '') : null}
+          {c.type ? cell(r.space.type, r.pass.type, 'not requested') : null}
+          {resultBadge(r)}
           <button type="button" aria-label={open ? 'Hide details' : 'Show details'} aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpenRow(open ? null : id); }} style={{ width: 32, height: 32, marginTop: -6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, borderRadius: 8, background: 'transparent', color: MUTED, cursor: 'pointer' }}>
             <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 150ms ease' }} />
           </button>
@@ -322,13 +336,12 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
       )}
       {fullGroups.map(({ g, list }) => {
         const over = overGroup === g && dragId !== null;
-        const meet = list.filter((r) => r.fit && r.confirmed).length;
         return (
           <div key={g} style={{ border: `1px solid ${over ? BLUE : BORDER}`, borderRadius: 16, overflow: 'hidden', transition: 'border-color 150ms ease' }}>
             <div {...dz(g)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px', borderBottom: `1px solid ${BORDER}`, background: over ? '#e6f1f8' : '#fff' }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>{g}</span>
               <Count n={list.length} blue />
-              <span style={{ marginLeft: 'auto', fontSize: 12, color: MUTED, ...NUM }}>{meet} of {list.length} meet every criterion</span>
+              <span style={{ marginLeft: 'auto', fontSize: 12, color: MUTED, ...NUM }}>{groupSummary(list)}</span>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <div style={{ minWidth: 760 }}>
@@ -339,7 +352,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                   {band ? head('Seats', bandShort) : null}
                   {c.budget ? head('Price / mo', `≤ ${money(c.budget)}`) : null}
                   {c.type ? head('Type', c.type) : null}
-                  {head('Match')}
+                  {head('Result')}
                   <span />
                 </div>
                 {list.map((r, i) => spaceRow(r, g, i === 0))}
