@@ -63,18 +63,18 @@ export function buildReportData(requirement: MvpRequirement, today = new Date())
   const rowOf = (r: SpaceResult): ReportRow => {
     const listing = r.space.visibility === 'Private'
       ? (r.space.validUntil ? `Private · quote to ${fmt(r.space.validUntil, false)}` : 'Private · no quote date')
-      : `Public · updated ${r.ageDays} d ago`;
+      : r.space.detailsPending ? 'Public · no listing record yet' : `Public · updated ${r.ageDays} d ago`;
     return {
       title: r.space.title,
-      venue: `${r.space.venue}${!c.type ? ` · ${r.space.type}` : ''}`,
+      venue: `${r.space.venue}${!c.type && r.space.type ? ` · ${r.space.type}` : ''}`,
       listing: `${listing}${r.confirmed ? '' : ' · unconfirmed'}`,
       cells: {
-        area: { value: `${r.miles.toFixed(1)} mi`, miss: r.pass.area === false },
-        capacity: { value: String(r.space.desks), miss: r.pass.capacity === false },
+        area: Number.isFinite(r.miles) ? { value: `${r.miles.toFixed(1)} mi`, miss: r.pass.area === false } : { value: 'Unknown', miss: false, unknown: true },
+        capacity: r.space.detailsPending && !r.space.desks ? { value: 'Unknown', miss: false, unknown: true } : { value: String(r.space.desks), miss: r.pass.capacity === false },
         budget: r.space.rate == null
           ? { value: 'Unknown', miss: false, unknown: true }
           : { value: money(r.space.rate), miss: r.pass.budget === false, note: r.costPP != null ? `${money(r.costPP)} / person` : undefined },
-        type: { value: r.space.type, miss: r.pass.type === false },
+        type: r.space.type ? { value: r.space.type, miss: r.pass.type === false } : { value: 'Unknown', miss: false, unknown: true },
       },
     };
   };

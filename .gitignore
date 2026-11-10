@@ -4,3 +4,6 @@ dist/
 .DS_Store
 tsconfig.tsbuildinfo
 .claude/worktrees/
+
+# Raw Pulse export; scripts/build-listing-directory.mjs turns it into components/data/listingDirectory.json
+pulse-listings.csv

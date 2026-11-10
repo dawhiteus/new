@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { X, Bot } from 'lucide-react';
-import { listingByUrl, type AssessSpace } from './data/assessmentData';
+import { findListing, type AssessSpace } from './data/assessmentData';
 import { assess, hasSpace } from './data/assessmentAgent';
 import type { MvpRequirement } from './data/mvpRequirements';
 
@@ -22,8 +22,9 @@ interface Props {
 export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props) {
   const [url, setUrl] = useState('');
   const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => { setUrl(''); setMsg(''); }, [requirement?.id]);
+  useEffect(() => { setUrl(''); setMsg(''); setBusy(false); }, [requirement?.id]);
 
   const a = requirement ? assess(requirement) : null;
   if (!requirement || !requirement.collection || !a) return <Dialog open={false}><DialogContent className="hidden" /></Dialog>;
@@ -32,14 +33,21 @@ export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props
 
   const finish = (sp: AssessSpace) => {
     addSpace(requirement, sp);
-    onAdded(requirement, sp, `Added “${sp.title}” (${sp.venue}, ${sp.visibility === 'Private' ? 'private' : 'public'}) to ${col.name}.`);
+    const pending = sp.detailsPending ? ' I have no listing record for it yet, so its location, seats and price are Unknown.' : '';
+    onAdded(requirement, sp, `Added “${sp.title}” (${sp.venue}, ${sp.visibility === 'Private' ? 'private' : 'public'}) to ${col.name}.${pending}`);
     onClose();
   };
-  const addLink = () => {
-    const hit = listingByUrl(url);
-    if (!hit) { setMsg("I can't find that listing."); return; }
-    if (hasSpace(requirement, hit.space)) { setMsg('That space is already in this collection.'); return; }
-    finish(hit.space);
+  const addLink = async () => {
+    if (busy) return;
+    setBusy(true); setMsg('');
+    try {
+      const hit = await findListing(url);
+      if (!hit) { setMsg("That isn't a LiquidSpace listing link. Copy the link from a space's page on liquidspace.com."); return; }
+      if (hasSpace(requirement, hit.space)) { setMsg('That space is already in this collection.'); return; }
+      finish(hit.space);
+    } finally {
+      setBusy(false);
+    }
   };
   const primary = (on: boolean): React.CSSProperties => ({ background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: '0 22px', height: 40, whiteSpace: 'nowrap', fontSize: 14, fontWeight: 600, fontFamily: FONT, cursor: on ? 'pointer' : 'default', opacity: on ? 1 : 0.5 });
 
@@ -65,8 +73,8 @@ export function AddSpaceModal({ requirement, onClose, onAdded, addSpace }: Props
             <div style={{ marginTop: 18 }}>
               <div style={LABEL}>Listing link</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <input style={{ ...INPUT, height: 40 }} placeholder="https://liquidspace.com/us/…" value={url} onChange={(e) => { setUrl(e.target.value); setMsg(''); }} onKeyDown={(e) => { if (e.key === 'Enter' && url.trim()) addLink(); }} />
-                <button type="button" onClick={addLink} disabled={!url.trim()} style={primary(!!url.trim())}>Add</button>
+                <input style={{ ...INPUT, height: 40 }} placeholder="https://liquidspace.com/us/…" value={url} onChange={(e) => { setUrl(e.target.value); setMsg(''); }} onKeyDown={(e) => { if (e.key === 'Enter' && url.trim()) void addLink(); }} />
+                <button type="button" onClick={addLink} disabled={!url.trim() || busy} style={primary(!!url.trim() && !busy)}>{busy ? 'Checking…' : 'Add'}</button>
               </div>
               {msg && <div style={{ fontSize: 13.5, color: '#374151', marginTop: 10 }}>{msg}</div>}
             </div>

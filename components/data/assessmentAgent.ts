@@ -37,7 +37,7 @@ export interface SpaceResult {
   /** Further recorded facts about the space and its venue: booking method, response, reviews, demand, dedicated record. */
   extra: string[];
   /** Which criteria this space meets: true, false, or null when the requirement does not state it (or the rate is unknown). */
-  pass: { area: boolean; capacity: boolean | null; budget: boolean | null; type: boolean | null };
+  pass: { area: boolean | null; capacity: boolean | null; budget: boolean | null; type: boolean | null };
   /** Venue and listing facts, for the expanded row. */
   detail: { k: string; v: string }[];
   /** Monthly price per seat, or null when the space has no monthly price. */
@@ -143,13 +143,17 @@ function membersFor(r: MvpRequirement): { members: AssessSpace[]; recorded: bool
 }
 
 function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, number>): SpaceResult {
-  const mi = miles(sp, c);
-  const area: Dim = mi <= c.radiusMi ? 'pass' : 'fail';
+  // A space added from a link with no listing record has unknown location, seats and type: never a pass or a miss.
+  const mi = Number.isFinite(sp.lat) && Number.isFinite(sp.lng) ? miles(sp, c) : NaN;
+  const areaKnown = Number.isFinite(mi);
+  const seatsKnown = !(sp.detailsPending && !sp.desks);
+  const typeKnown = !!sp.type;
+  const area: Dim = !areaKnown ? 'na' : mi <= c.radiusMi ? 'pass' : 'fail';
   let capacity: Dim = 'na';
-  if (c.capacity) { const [lo, hi] = capacityBand(c.capacity); capacity = sp.desks >= lo && sp.desks <= hi ? 'pass' : sp.desks > hi ? 'near' : 'fail'; }
+  if (c.capacity && seatsKnown) { const [lo, hi] = capacityBand(c.capacity); capacity = sp.desks >= lo && sp.desks <= hi ? 'pass' : sp.desks > hi ? 'near' : 'fail'; }
   let budget: Dim | 'unknown' = 'na';
   if (c.budget) budget = sp.rate == null ? 'unknown' : sp.rate <= c.budget ? 'pass' : 'fail';
-  const type: Dim = c.type ? (sp.type === c.type ? 'pass' : 'fail') : 'na';
+  const type: Dim = c.type && typeKnown ? (sp.type === c.type ? 'pass' : 'fail') : 'na';
   const fit = area === 'pass' && (capacity === 'pass' || capacity === 'na') && (budget === 'pass' || budget === 'unknown' || budget === 'na') && (type === 'pass' || type === 'na');
   const priv = sp.visibility === 'Private';
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -159,7 +163,8 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
   const mps = medians[sp.type];
 
   const issues: string[] = [];
-  if (area !== 'pass') issues.push(`${mi.toFixed(1)} mi from ${c.centerLabel}`);
+  if (sp.detailsPending) issues.push('no listing record yet: location, seats and price unknown');
+  else if (area !== 'pass') issues.push(`${mi.toFixed(1)} mi from ${c.centerLabel}`);
   if (budget === 'fail') issues.push(`${money((sp.rate as number) - (c.budget as number))}/mo over budget`);
   if (capacity === 'near') issues.push(`larger than needed (${sp.desks} seats)`);
   if (capacity === 'fail') issues.push(`holds ${sp.desks}, needs ${c.capacity}`);
@@ -168,7 +173,7 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
   if (!priv && age > 90) issues.push(`listing not updated in ${age} days`);
   if (priv && !quoteOk) issues.push('quote has expired');
   const fdate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  const facts = [`${mi.toFixed(1)} mi`, `${sp.desks} seats`, sp.rate != null ? `${money(sp.rate)}/mo` : 'not priced monthly', priv ? (sp.validUntil ? `quote valid until ${fdate(sp.validUntil)}` : 'quote validity not given') : `updated ${age} day${age === 1 ? '' : 's'} ago`].join(' · ');
+  const facts = [areaKnown ? `${mi.toFixed(1)} mi` : 'location unknown', seatsKnown ? `${sp.desks} seats` : 'seats unknown', sp.rate != null ? `${money(sp.rate)}/mo` : 'not priced monthly', priv ? (sp.validUntil ? `quote valid until ${fdate(sp.validUntil)}` : 'quote validity not given') : sp.modified ? `updated ${age} day${age === 1 ? '' : 's'} ago` : 'update date unknown'].join(' · ');
   const st = venueStats(sp.url);
   const rt = st?.responseMin ? (st.responseMin < 60 ? `${Math.round(st.responseMin)} min` : st.responseMin < 1440 ? `${Math.round(st.responseMin / 60)} h` : `${Math.round(st.responseMin / 1440)} days`) : '';
   const extra = [
@@ -183,7 +188,7 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
   ].filter(Boolean);
   const detail: { k: string; v: string }[] = [
     { k: 'Booking', v: sp.booking || 'Not recorded' },
-    ...(priv ? [{ k: 'Quote valid until', v: sp.validUntil ? fdate(sp.validUntil) : 'Not given' }, { k: 'Available from', v: sp.availableFrom ? fdate(sp.availableFrom) : 'Not given' }] : [{ k: 'Listing updated', v: `${age} day${age === 1 ? '' : 's'} ago${age > 90 ? ' (over 90 days)' : ''}` }]),
+    ...(priv ? [{ k: 'Quote valid until', v: sp.validUntil ? fdate(sp.validUntil) : 'Not given' }, { k: 'Available from', v: sp.availableFrom ? fdate(sp.availableFrom) : 'Not given' }] : [{ k: 'Listing updated', v: sp.modified ? `${age} day${age === 1 ? '' : 's'} ago${age > 90 ? ' (over 90 days)' : ''}` : 'Not recorded' }]),
     { k: 'Minimum term', v: sp.minTerm || 'Not recorded' },
     ...(perSeat != null && mps && perSeat > mps * 1.15 ? [{ k: 'Rate', v: 'More than 15% above the local market per seat' }] : []),
     { k: 'Guest reviews', v: st?.reviews ? `${st.stars} stars (${st.reviews})` : st ? 'None' : 'No venue record' },
@@ -191,7 +196,12 @@ function evaluate(sp: AssessSpace, c: AssessCriteria, medians: Record<string, nu
     { k: 'Lead response', v: rt ? `${rt}${st?.responseRate ? ` (${Math.round(st.responseRate)}% rate)` : ''}` : 'Not recorded' },
     { k: 'Dedicated contracts', v: st?.dedicatedSpaces ? `On record at this venue, last billed ${st.lastDedicated}` : st ? 'None on record' : 'No venue record' },
   ];
-  const pass = { area: area === 'pass', capacity: c.capacity ? capacity === 'pass' : null, budget: c.budget ? (budget === 'unknown' ? null : budget === 'pass') : null, type: c.type ? type === 'pass' : null };
+  const pass = {
+    area: areaKnown ? area === 'pass' : null,
+    capacity: c.capacity && seatsKnown ? capacity === 'pass' : null,
+    budget: c.budget ? (budget === 'unknown' ? null : budget === 'pass') : null,
+    type: c.type && typeKnown ? type === 'pass' : null,
+  };
   const am = amenitiesFor(sp.url);
   const amText = am ? `${am.top}${am.n > 3 ? `, +${am.n - 3}` : ''}` : '';
   detail.push({ k: 'Amenities', v: am ? `${am.n} listed, including ${am.top}` : 'None recorded' });
@@ -305,10 +315,10 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
 
   // Non-empty. The cards carry the counts; the gaps carry the detail behind them.
   const off = (f: (x: SpaceResult) => boolean) => results.filter(f).length;
-  const dist = results.map((x) => x.miles);
+  const dist = results.map((x) => x.miles).filter(Number.isFinite);
   const tooFar = off((x) => x.miles > c.radiusMi);
   const gaps: { label: string; text: string }[] = [];
-  if (tooFar) gaps.push({ label: 'Area', text: `The nearest space is ${Math.min(...dist).toFixed(1)} mi from ${c.centerLabel} and the farthest is ${Math.max(...dist).toFixed(1)} mi.${c.radiusIsDefault ? ' No search area was given, so the city center and 5 miles are used.' : ''}` });
+  if (tooFar && dist.length) gaps.push({ label: 'Area', text: `The nearest space is ${Math.min(...dist).toFixed(1)} mi from ${c.centerLabel} and the farthest is ${Math.max(...dist).toFixed(1)} mi.${c.radiusIsDefault ? ' No search area was given, so the city center and 5 miles are used.' : ''}` });
   if (c.budget) {
     const priced = results.filter((x) => x.space.rate != null);
     const over = priced.filter((x) => (x.space.rate as number) > (c.budget as number));
@@ -316,16 +326,17 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   }
   if (c.capacity) {
     const [lo, hi] = capacityBand(c.capacity);
-    const bad = off((x) => x.space.desks < lo || x.space.desks > hi);
-    if (bad) gaps.push({ label: 'Capacity', text: `Spaces here hold ${Math.min(...results.map((x) => x.space.desks))} to ${Math.max(...results.map((x) => x.space.desks))} people. You need ${band}.` });
+    const seated = results.filter((x) => x.pass.capacity !== null);
+    const bad = seated.filter((x) => x.space.desks < lo || x.space.desks > hi).length;
+    if (bad) gaps.push({ label: 'Capacity', text: `Spaces here hold ${Math.min(...seated.map((x) => x.space.desks))} to ${Math.max(...seated.map((x) => x.space.desks))} people. You need ${band}.` });
   }
   if (c.type) {
-    const mix = Object.entries(results.reduce((m: Record<string, number>, x) => { m[x.space.type] = (m[x.space.type] ?? 0) + 1; return m; }, {})).map(([t, n]) => `${n} ${t}`).join(', ');
-    if (off((x) => x.space.type !== c.type)) gaps.push({ label: 'Workspace type', text: `This collection holds ${mix}. You asked for ${c.type}.` });
+    const mix = Object.entries(results.reduce((m: Record<string, number>, x) => { const t = x.space.type || 'of unknown type'; m[t] = (m[t] ?? 0) + 1; return m; }, {})).map(([t, n]) => `${n} ${t}`).join(', ');
+    if (off((x) => x.pass.type === false)) gaps.push({ label: 'Workspace type', text: `This collection holds ${mix}. You asked for ${c.type}.` });
   }
   const overMarket = off((x) => x.issues.includes('over the local market rate'));
   if (overMarket) gaps.push({ label: 'Rate', text: `${plural(overMarket, 'space')} ${overMarket === 1 ? 'is' : 'are'} more than 15% above the local market rate per seat.` });
-  const stale = off((x) => !x.confirmed);
+  const stale = off((x) => !x.confirmed && !x.space.detailsPending);
   if (stale) gaps.push({ label: 'Listings', text: `${plural(stale, 'listing')} ${stale === 1 ? "hasn't" : "haven't"} been updated in 90 days, so ${stale === 1 ? 'its' : 'their'} price and details are unconfirmed.` });
   const termsM = results.map((x) => x.space.minTerm?.match(/(\d+)\s*month/)).filter(Boolean).map((m) => +(m as RegExpMatchArray)[1]);
   if (c.termMonths) {
@@ -358,7 +369,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
     { n: tooFar, text: `area (${tooFar === total ? 'all' : tooFar} too far)`, name: 'area' },
     ...(c.capacity ? [{ n: off((x) => { const [lo, hi] = capacityBand(c.capacity as number); return x.space.desks < lo || x.space.desks > hi; }), text: `capacity (outside ${band})`, name: 'capacity' }] : []),
     ...(c.budget ? [{ n: off((x) => x.space.rate != null && x.space.rate > (c.budget as number)), text: 'budget', name: 'budget' }] : []),
-    ...(c.type ? [{ n: off((x) => x.space.type !== c.type), text: `workspace type (not ${c.type})`, name: 'workspace type' }] : []),
+    ...(c.type ? [{ n: off((x) => x.pass.type === false), text: `workspace type (not ${c.type})`, name: 'workspace type' }] : []),
   ].filter((x) => x.n > 0).sort((x, y) => y.n - x.n).slice(0, 2);
   const names = reasons.map((x) => x.name);
   const gapPhrase = names.length ? `${names.join(' and ').replace(/^./, (m) => m.toUpperCase())} ${names.length > 1 ? 'are' : 'is'} the main gap${names.length > 1 ? 's' : ''}.` : '';

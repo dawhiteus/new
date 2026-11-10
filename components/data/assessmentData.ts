@@ -25,6 +25,9 @@ export interface AssessSpace {
   availableFrom?: string;
   /** Added by hand to the collection after it was built. */
   addedByHand?: boolean;
+  /** Added from a link the demo has no record of: only the names from the link are known. Location, seats, type
+   *  and price are unknown (lat/lng NaN, desks 0, type '', rate null) and are never counted as meeting a criterion. */
+  detailsPending?: boolean;
 }
 
 /** Search centers: the city center. Used when a Requirement gives no search area. */
@@ -248,6 +251,65 @@ export function listingByUrl(url: string): { space: AssessSpace; city: string } 
     if (hit) return { space: hit, city };
   }
   return null;
+}
+
+// ── Listing lookup for Add Space ──────────────────────────────────────────────────────────────────────────────────
+// 1. Listings recorded above (collection members and the nearby pool).
+// 2. The listing directory: a Pulse export of public listings around each demo city (scripts/pulse-listings.sql →
+//    scripts/build-listing-directory.mjs). Loaded on first use so it stays out of the main bundle.
+// 3. Any other well-formed LiquidSpace listing link: names come from the link, everything else is unknown.
+
+type DirRow = [string, string, string, string, number, number | null, number | null, number | null, string, string, string];
+let directory: Promise<Record<string, DirRow[]>> | null = null;
+const loadDirectory = () => (directory ??= import('./listingDirectory.json').then((m) => (m.default as unknown as { cities: Record<string, DirRow[]> }).cities));
+
+const titleCase = (slug: string) => slug.replace(/-[0-9a-f]{4}$/i, '').split('-').filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+/** A LiquidSpace listing link's parts, or null when it isn't one: liquidspace.com/{country}/{…region}/{city}/{venue}/{space}. */
+export function parseListingLink(url: string): { path: string; city: string; venueSlug: string; spaceSlug: string } | null {
+  let u: URL;
+  try { u = new URL(url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`); } catch { return null; }
+  if (!/(^|\.)liquidspace\.com$/i.test(u.hostname)) return null;
+  const parts = u.pathname.split('/').filter(Boolean).map((p) => p.toLowerCase());
+  if (parts.length < 4) return null;
+  const [spaceSlug, venueSlug, city] = [parts[parts.length - 1], parts[parts.length - 2], parts[parts.length - 3]];
+  return { path: parts.join('/'), city, venueSlug, spaceSlug };
+}
+
+export type ListingSource = 'recorded' | 'directory' | 'link';
+
+/** Finds a listing for Add Space. Recorded listings first, then the Pulse directory, then the link itself. */
+export async function findListing(url: string): Promise<{ space: AssessSpace; source: ListingSource } | null> {
+  const recorded = listingByUrl(url);
+  if (recorded) return { space: recorded.space, source: 'recorded' };
+  const link = parseListingLink(url);
+  if (!link) return null;
+  const full = `https://liquidspace.com/${link.path}`;
+  try {
+    const cities = await loadDirectory();
+    for (const rows of Object.values(cities)) {
+      const r = rows.find((x) => x[0].toLowerCase() === link.path);
+      if (!r) continue;
+      const [, venue, title, type, desks, rate, lat, lng, modified, booking, minTerm] = r;
+      const located = lat != null && lng != null;
+      return {
+        source: 'directory',
+        space: {
+          id: `dir:${link.path}`, url: full, venue, title, type, desks, rate, lat: lat ?? NaN, lng: lng ?? NaN, modified,
+          booking: booking || undefined, minTerm: minTerm || undefined, inCollection: false, detailsPending: located ? undefined : true,
+        },
+      };
+    }
+  } catch (e) {
+    console.warn('Listing directory unavailable', e);
+  }
+  return {
+    source: 'link',
+    space: {
+      id: `link:${link.path}`, url: full, venue: titleCase(link.venueSlug), title: titleCase(link.spaceSlug), type: '', desks: 0, rate: null,
+      lat: NaN, lng: NaN, modified: '', inCollection: false, detailsPending: true,
+    },
+  };
 }
 
 /** All recorded listings at a venue, given a venue link (one path level shorter than a space link). */

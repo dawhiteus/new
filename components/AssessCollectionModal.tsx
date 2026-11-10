@@ -249,7 +249,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   const spaceRow = (r: SpaceResult, g: Group, first: boolean) => {
     const id = r.space.id; const open = openRow === id;
     const priv = r.space.visibility === 'Private';
-    const listing = priv ? (r.space.validUntil ? `Private · quote to ${shortDate(r.space.validUntil)}` : 'Private · no quote date') : `Public · updated ${r.ageDays} d ago`;
+    const listing = priv ? (r.space.validUntil ? `Private · quote to ${shortDate(r.space.validUntil)}` : 'Private · no quote date') : r.space.detailsPending ? 'Public · no listing record yet' : `Public · updated ${r.ageDays} d ago`;
     return (
       <div key={id} {...dz(g)} style={{ borderTop: first ? undefined : `1px solid ${HAIR}`, background: open ? PAGE : '#fff', opacity: dragId === id ? 0.45 : 1 }}>
         <div
@@ -262,13 +262,13 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
           <GripVertical size={16} color={DISABLED} style={{ marginTop: 1 }} aria-hidden />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
             <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: TEXT }}>{r.space.title}</span>
-            <span style={{ fontSize: 12, lineHeight: 1.4, color: MUTED }}>{r.space.venue}{!c.type ? ` · ${r.space.type}` : ''}</span>
+            <span style={{ fontSize: 12, lineHeight: 1.4, color: MUTED }}>{r.space.venue}{!c.type && r.space.type ? ` · ${r.space.type}` : ''}</span>
             <span style={{ fontSize: 12, lineHeight: 1.4, color: r.confirmed ? MUTED : DANGER }}>{listing}{r.confirmed ? '' : ' · unconfirmed'}</span>
           </div>
-          {cell(`${r.miles.toFixed(1)} mi`, r.pass.area)}
-          {band ? cell(r.space.desks, r.pass.capacity) : null}
+          {cell(Number.isFinite(r.miles) ? `${r.miles.toFixed(1)} mi` : 'Unknown', r.pass.area)}
+          {band ? cell(r.space.detailsPending && !r.space.desks ? 'Unknown' : r.space.desks, r.pass.capacity) : null}
           {c.budget ? cell(r.space.rate != null ? money(r.space.rate) : 'Unknown', r.pass.budget, r.costPP != null ? `${money(r.costPP)} / person` : '') : null}
-          {c.type ? cell(r.space.type, r.pass.type) : null}
+          {c.type ? cell(r.space.type || 'Unknown', r.pass.type) : null}
           <button type="button" aria-label={open ? 'Hide details' : 'Show details'} aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpenRow(open ? null : id); }} style={{ width: 32, height: 32, marginTop: -6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, borderRadius: 8, background: 'transparent', color: MUTED, cursor: 'pointer' }}>
             <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 150ms ease' }} />
           </button>
