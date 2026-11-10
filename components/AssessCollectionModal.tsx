@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { X, Bot, ExternalLink, ChevronDown, GripVertical, Check, AlertTriangle, Info, Lock } from 'lucide-react';
+import { X, Bot, ExternalLink, ChevronDown, GripVertical, AlertTriangle, Info, Lock } from 'lucide-react';
 import { assess, addedWhy, recordRun, requirementChanges, CONFIRMED_NEEDED, GROUPS, groupOf, setGroup, type Group, type RunInfo, type SpaceResult } from './data/assessmentAgent';
 import { capacityBand, criteriaFor } from './data/collectionAgent';
 import { builtByAgent } from './data/assessmentData';
@@ -214,7 +214,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
     onDrop: (e: React.DragEvent) => { e.preventDefault(); const r = rows.find((x) => x.space.id === dragId); setDragId(null); setOverGroup(null); if (r) move(r, g); },
   });
 
-  const GRID = ['16px', 'minmax(0, 1fr)', '112px', band ? '104px' : '', c.budget ? '144px' : '', c.type ? '132px' : '', '124px', '32px'].filter(Boolean).join(' ');
+  const GRID = ['16px', 'minmax(0, 1fr)', '112px', band ? '104px' : '', c.budget ? '144px' : '', c.type ? '132px' : '', '32px'].filter(Boolean).join(' ');
   const rowGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: GRID, columnGap: 10 };
   const head = (t: string, sub?: string) => (
     <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -222,32 +222,19 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
       {sub !== undefined && <span style={{ fontSize: 12, color: MUTED, ...NUM }}>{sub}</span>}
     </span>
   );
-  // One rule for every criterion: a value that meets is just the value; a miss is one red chip with the gap in
-  // words; a value we don't have is the muted word "Unknown". `note` is neutral context, never a status.
-  const cell = (value: React.ReactNode, pass: boolean | null, gap = '', note = '') => (
+  // One rule for every criterion: a value that meets is plain; a value that misses is red and semibold (weight is
+  // the non-color cue); a value we don't have is the muted word "Unknown". `note` is neutral context, never a status.
+  const cell = (value: React.ReactNode, pass: boolean | null, note = '') => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
       {value === 'Unknown'
         ? <span style={{ fontSize: 13, color: MUTED }}>Unknown</span>
-        : pass === false
-          ? <span style={{ alignSelf: 'flex-start', padding: '0 6px', borderRadius: 4, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: 13, fontWeight: 600, lineHeight: '20px', ...NUM }}>{value}{gap ? ` · ${gap}` : ''}</span>
-          : <span style={{ fontSize: 13, lineHeight: '22px', color: TEXT, ...NUM }}>{value}</span>}
+        : <span title={pass === false ? "Doesn't meet the requirement" : undefined} style={{ fontSize: 13, color: pass === false ? DANGER : TEXT, fontWeight: pass === false ? 600 : 400, ...NUM }}>{value}</span>}
       {note && <span style={{ fontSize: 12, lineHeight: 1.4, color: MUTED, ...NUM }}>{note}</span>}
     </div>
   );
-  const LABEL = { area: 'Distance', capacity: 'Seats', budget: 'Price', type: 'Type' } as const;
-  const missesOf = (r: SpaceResult) => (Object.keys(LABEL) as (keyof typeof LABEL)[]).filter((k) => r.pass[k] === false).map((k) => LABEL[k]);
-  const resultBadge = (r: SpaceResult) => {
-    const m = missesOf(r);
-    const okRow = m.length === 0;
-    return (
-      <span style={{ justifySelf: 'start', alignSelf: 'start', display: 'inline-flex', alignItems: 'center', gap: 4, height: 22, padding: '0 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', ...(okRow ? { background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d' } : { background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c' }) }}>
-        {okRow ? <Check size={11} strokeWidth={3} aria-hidden /> : <X size={11} strokeWidth={3} aria-hidden />}
-        {okRow ? 'Meets all' : m.length === 1 ? `Misses ${m[0]}` : `Misses ${m.length}`}
-      </span>
-    );
-  };
+  const missCount = (r: SpaceResult) => [r.pass.area, r.pass.capacity, r.pass.budget, r.pass.type].filter((x) => x === false).length;
   const groupSummary = (list: SpaceResult[]) => {
-    const n = list.map((r) => missesOf(r).length);
+    const n = list.map(missCount);
     const all = n.filter((x) => x === 0).length, one = n.filter((x) => x === 1).length, more = n.filter((x) => x > 1).length;
     return [
       all ? `${all} ${all === 1 ? 'meets' : 'meet'} all` : '',
@@ -259,9 +246,6 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   const spaceRow = (r: SpaceResult, g: Group, first: boolean) => {
     const id = r.space.id; const open = openRow === id;
     const priv = r.space.visibility === 'Private';
-    const seatGap = band && r.pass.capacity === false ? (r.space.desks < band[0] ? `${band[0] - r.space.desks} short` : `${r.space.desks - band[1]} over`) : '';
-    const distGap = r.pass.area === false ? `${Math.max(0.1, r.miles - c.radiusMi).toFixed(1)} mi over` : '';
-    const priceGap = c.budget && r.pass.budget === false && r.space.rate != null ? `${money(r.space.rate - c.budget)} over` : '';
     const listing = priv ? (r.space.validUntil ? `Private · quote to ${shortDate(r.space.validUntil)}` : 'Private · no quote date') : `Public · updated ${r.ageDays} d ago`;
     return (
       <div key={id} {...dz(g)} style={{ borderTop: first ? undefined : `1px solid ${HAIR}`, background: open ? PAGE : '#fff', opacity: dragId === id ? 0.45 : 1 }}>
@@ -278,11 +262,10 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
             <span style={{ fontSize: 12, lineHeight: 1.4, color: MUTED }}>{r.space.venue}{!c.type ? ` · ${r.space.type}` : ''}</span>
             <span style={{ fontSize: 12, lineHeight: 1.4, color: r.confirmed ? MUTED : DANGER }}>{listing}{r.confirmed ? '' : ' · unconfirmed'}</span>
           </div>
-          {cell(`${r.miles.toFixed(1)} mi`, r.pass.area, distGap)}
-          {band ? cell(r.space.desks, r.pass.capacity, seatGap) : null}
-          {c.budget ? cell(r.space.rate != null ? money(r.space.rate) : 'Unknown', r.pass.budget, priceGap, r.costPP != null ? `${money(r.costPP)} / person` : '') : null}
-          {c.type ? cell(r.space.type, r.pass.type, 'not requested') : null}
-          {resultBadge(r)}
+          {cell(`${r.miles.toFixed(1)} mi`, r.pass.area)}
+          {band ? cell(r.space.desks, r.pass.capacity) : null}
+          {c.budget ? cell(r.space.rate != null ? money(r.space.rate) : 'Unknown', r.pass.budget, r.costPP != null ? `${money(r.costPP)} / person` : '') : null}
+          {c.type ? cell(r.space.type, r.pass.type) : null}
           <button type="button" aria-label={open ? 'Hide details' : 'Show details'} aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpenRow(open ? null : id); }} style={{ width: 32, height: 32, marginTop: -6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, borderRadius: 8, background: 'transparent', color: MUTED, cursor: 'pointer' }}>
             <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 150ms ease' }} />
           </button>
@@ -352,7 +335,6 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
                   {band ? head('Seats', bandShort) : null}
                   {c.budget ? head('Price / mo', `≤ ${money(c.budget)}`) : null}
                   {c.type ? head('Type', c.type) : null}
-                  {head('Result')}
                   <span />
                 </div>
                 {list.map((r, i) => spaceRow(r, g, i === 0))}
@@ -475,7 +457,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
 
         {/* Footer */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '16px 24px', borderTop: `1px solid ${BORDER}`, background: PAGE, flexShrink: 0 }}>
-          <span style={{ fontSize: 12, color: MUTED }}>{useTable ? 'Drag a space to move it between Shortlist, Favorites and Recommendations.' : ''}</span>
+          <span style={{ fontSize: 12, color: MUTED }}>{useTable ? "Values in red don't meet the requirement. Drag a space to move it between Shortlist, Favorites and Recommendations." : ''}</span>
           <button type="button" onClick={onClose} style={{ height: 36, padding: '0 18px', border: 0, borderRadius: 12, background: BLUE, color: '#fff', fontFamily: FONT, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Done</button>
         </div>
       </DialogContent>
