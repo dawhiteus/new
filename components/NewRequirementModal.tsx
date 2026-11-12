@@ -74,7 +74,7 @@ function checklistRow(q: OpenQuestion, f: IntakeFields): { field: FieldKey; labe
     termLength: 'Months of commitment',
     workspaceType: 'Office suite, private office, team office, coworking or meeting space',
     otherFunctional: f.location ? `Neighborhoods or radius in ${f.location}` : 'Neighborhoods or radius',
-    size: q.suggest ? `About ${Number(q.suggest.value).toLocaleString('en-US')} sq ft at 150 sq ft per person` : 'Square feet',
+    size: q.suggest ? `Square feet (not given; ~${Number(q.suggest.value).toLocaleString('en-US')} at 150 per person)` : 'Square feet',
     company: 'Customer company name',
   };
   return { field: q.field, label, hint: hint[q.field] ?? q.text };
@@ -452,6 +452,19 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
                 </p>
                 {result.licenseError && <p style={{ margin: 0, fontSize: 13, color: '#b45309' }}>{result.licenseError}</p>}
               </div>
+              {(() => {
+                // What the agent decided and set aside, so nothing it read is silently dropped.
+                const noticed = [...(draft.notes ?? []).filter((n) => !/currently in/.test(n)), ...(draft.ambiguities ?? [])];
+                if (!noticed.length) return null;
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: MUTED }}>What I noticed{drafts.length > 1 ? ` · ${draft.label}` : ''}</span>
+                    <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {noticed.map((n, i) => <li key={i} style={{ fontSize: 13, color: TEXT, lineHeight: 1.5 }}>{n}</li>)}
+                    </ul>
+                  </div>
+                );
+              })()}
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: MUTED }}>
                 <Sparkles size={12} color={TEAL_TEXT} aria-hidden="true" /> Agent-filled fields are marked
               </span>
@@ -498,7 +511,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
 
           {agentRun && (
             <div role="group" aria-label="Field view" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              {([[false, `All fields · ${ALL_FIELDS.length}`], [true, `Needs review · ${reviewCount}`]] as const).map(([val, label]) => (
+              {([[false, 'All fields'], [true, `Needs review · ${reviewCount}`]] as const).map(([val, label]) => (
                 <button key={label} type="button" aria-pressed={reviewOnly === val} onClick={() => setReviewOnly(val)}
                   style={{ height: 30, padding: '0 12px', borderRadius: 6, border: `1px solid ${reviewOnly === val ? LS_500 : '#d1d5db'}`, background: reviewOnly === val ? '#e6f1f8' : '#fff', color: reviewOnly === val ? LS_500 : TEXT, fontFamily: FONT, fontSize: 13, fontWeight: reviewOnly === val ? 600 : 500, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }}>
                   {label}

@@ -130,6 +130,7 @@ export function openQuestions(f: IntakeFields, ctx: QCtx = {}): OpenQuestion[] {
     q('budget', 'critical', a && /€|£|did not convert/.test(a) ? `The budget was given in another currency. What is the monthly budget in USD${where}?`
       : a && /without saying/.test(a) ? `Is that budget per month or per year${where}?`
       : a && /per person/.test(a) ? `The budget was given per person. How many people, or what total monthly budget${where}?`
+      : a && /gives/.test(a) ? `The text gives ${a.match(/gives (.+?)\. I left/)?.[1]}. Which is the monthly budget${where}?`
       : `What monthly budget should we plan around${where}?`);
   }
   if (!has('startDate')) {

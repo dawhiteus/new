@@ -1,32 +1,90 @@
-# Collection Creation
-Transaction Manager | Functional Specification | v.2
+# Create Collection Agent
+Transaction Manager | Functional Specification | v.3 (design close-out, Nov 2026)
 
-## Objective
-Reduce the time and effort required to build a LiquidSpace Collection for a Requirement. One action creates a Collection, fills it with candidate spaces that match the Requirement, and links it to the Requirement. Whether the Collection is good enough is a separate question, answered by Assessment (see collection-assessment-spec.md).
+Status: **Design complete.** Prototype: `CreateCollectionModal.tsx`, Collection pill in `RequirementsHome.tsx`. Patterns: [agent-ui-patterns.md](agent-ui-patterns.md). Index: [agents-overview.md](agents-overview.md).
 
-## 1. User Experience
-Any Requirement without a Collection shows **Create Collection** in the Collection column, regardless of stage or status (including Drafts). It opens a **New Collection** dialog:
-* The Requirement name and a suggested Collection name (editable), formed as "<Requirement> Collection".
-* A short note that the agent sources spaces from the Requirement's location, headcount, budget and workspace type, and that a collection link and fitness assessment will appear in the Requirements table.
-* **Create Collection** and **Cancel**. A secondary action, **Link an existing collection**, opens a single field for a LiquidSpace Collection URL.
+## 1. Job
+In one action, create a LiquidSpace Collection for a Requirement, fill it with candidate spaces that match, and link it to the Requirement. Whether the Collection is good enough is a separate question, answered by the Assess Collection agent ([collection-assessment-spec.md](collection-assessment-spec.md)). Creation gives no judgment of the result.
 
-After creation, a **Collection populated** confirmation offers **View Collection** (opens it in LiquidSpace) and Close.
+## 2. Entry points
+| Where | Action |
+|---|---|
+| Requirements table, Collection column | **Create Collection** on any Requirement without a Collection, any stage or status, Drafts included |
+| Requirement row menu | **Create Collection** (same condition) |
 
-## 2. Core Behavior
-1. **Create:** create the Collection, populate it with spaces that match the Requirement's location, capacity and workspace type, and attach it to the Requirement. A Location is required; without one the dialog says so and the user can link a Collection instead. No inventory is invented.
-2. **No suitable spaces:** the Collection is still created, empty, and the confirmation says no suitable spaces were found.
-3. **Link existing:** the user enters a Collection URL. Validate that it identifies a LiquidSpace Collection; if not, show a clear error. Attach it and show its name and workspace count. Do not modify its contents.
-4. **Same result for both paths:** the Collection is linked to the Requirement and the Timeline records the event. Collections are managed in LiquidSpace; Transaction Manager has no separate Collection management interface.
+Not offered: on a Requirement that already has a Collection (use Update Collection, see the assessment spec).
 
-## 3. What the Collection column shows
-The Collection pill shows the workspace count. Its hover card shows the Collection name, total spaces, three counts and the saved and shortlisted totals:
-* In the Requirement's location
-* Within the Requirement's budget per month
-* For the headcount, as a band around it (for example 5 people is shown as 4-7, 30 as 24-42)
+## 3. Inputs and outputs
+**Inputs:** the Requirement's location, headcount and workspace type (read, never edited); an editable Collection name; or, on the link path, a LiquidSpace Collection URL.
 
-When the Collection can be assessed, the card also shows a one-line status (Plenty, Few or No matches) and an **Assess collection** link. The row menu offers **Assess collection** with View, Update and Remove collection. Creation itself gives no judgment of the result; that belongs to Assessment.
+**Outputs**
+| Output | Where it lands |
+|---|---|
+| A new Collection, populated with public listings | LiquidSpace |
+| Collection linked to the Requirement | Requirement record; Collection pill shows the space count |
+| Timeline: "Collection Created" or "Collection Linked" | Timeline tab |
+| Workflow: Create Collection task reads as done | Workflow tab (read from the collection, not task status; see §7) |
+| Snapshot of the requirement values the Collection was built for | Used later to detect "the requirement has changed" |
 
-## 4. Platform notes
-* Populate returns nothing when a Requirement has a budget set, ignores the search area, and leaves the Requirement's Collection link empty. The product call sequence must handle these: create the Collection, populate (without the budget), attach the Collection to the Requirement, then restore the budget.
-* The Collection is built from public listings only. Private listings created from venue proposals enter a Collection through other steps.
-* Collections are private to their owner until shared.
+## 4. Flow and states
+| # | State | What the user sees |
+|---|---|---|
+| S1 | New Collection | Title "New Collection", subtitle "For {Requirement} · {Company}". Field "Collection name", default "{Requirement} Collection". Agent note: "**The Create Collection Agent** searches LiquidSpace for spaces that match this requirement's location, headcount and workspace type, and builds the collection for you. You can add or remove spaces at any time." Footer: **Link an Existing Collection** (left), **Cancel**, **Create Collection**. |
+| S2 | No location | Under the note: "This requirement needs a location first. Add one, or link an existing collection." **Create Collection** disabled. |
+| S3 | Working | Name field and buttons disabled; primary shows spinner and "Creating…". |
+| S4 | Populated | Check icon, "Collection populated", "“{Collection}” now has N spaces for the requirement “{Requirement}”." **Close**, **View Collection ↗** (opens in LiquidSpace). |
+| S5 | Created empty | "Collection created", "“{Collection}” was created, but no suitable spaces were found in {City}. You can add spaces in LiquidSpace." Same buttons. |
+| L1 | Link a Collection | Title "Link a Collection", "Paste the link to a Collection in LiquidSpace. Its contents aren't changed." Field "Collection URL", placeholder "https://liquidspace.com/collections/…". **Back**, **Cancel**, **Link Collection**. Enter submits. |
+| L2 | Invalid link | Inline red error under the field; clears on edit. |
+| L3 | Linked | Modal closes; pill shows the Collection's space count. |
+
+### After creation: the Collection pill
+The pill shows "N spaces". Its hover card shows:
+- Collection name; "N spaces total · Updated {date}".
+- Status line with a colored dot (green Plenty, amber Few, gray None): "N of M meet every criterion", "Empty collection" or "Not assessed". Supplied by Assessment.
+- Amber notice when relevant: "The requirement has changed since this collection was built: {changes}." or "The collection has changed since it was last assessed."
+- Three counts: in the Requirement's location; within budget per month; for the headcount band ("For 4-7 people").
+- Saved and Shortlisted totals.
+- **View Collection →**; **Update Collection** (only when the requirement changed); **Assess**; **Add Space**.
+
+Row menu with a Collection: View Collection, Assess Collection, Add Space, Update Collection, Remove collection.
+
+## 5. Rules
+- A Location is required to create. Without one, the user can still link a Collection.
+- Populate matches location, capacity and workspace type. No inventory is invented.
+- No suitable spaces: the Collection is still created, empty.
+- Headcount band: about −20% / +40% around headcount (5 → 4-7, 30 → 24-42). Function: `capacityBand` in `collectionAgent.ts`.
+- Link path: validate the URL identifies a LiquidSpace Collection; never modify its contents.
+- Both paths end the same way: Collection linked, Timeline event recorded.
+- Public listings only. Private listings from venue proposals enter later through Add Space.
+- Collections are private to their owner until shared. TM has no separate Collection management UI; Collections are managed in LiquidSpace.
+
+## 6. Copy
+All strings are quoted in §4. Agent name in the dialog: **The Create Collection Agent**.
+
+## 7. Data and platform limits
+| Capability | Production (MCP) | Prototype |
+|---|---|---|
+| Create collection | `create_collection` | Simulated; real LiquidSpace collections are used for Austin, Chicago, Minneapolis, Dallas, New York, Porto, Denver, Lisbon (name is fixed to the real one) |
+| Populate | `populate_requirement_collection`. **Returns nothing when the Requirement has a budget, ignores the search area, and leaves the Requirement's Collection link empty.** | Recorded Pulse data |
+| Attach to requirement | `update_requirement` (collection link) | In-memory |
+| Add workspaces | One at a time (`add_workspace_to_collection`) | n/a |
+| Mark Workflow task complete | **No task writes.** Workflow lines are read from the collection | Shown as completed |
+
+Required production call sequence: create the Collection → clear the budget → populate → attach the Collection to the Requirement → restore the budget. Show these operations before approval (pattern 9).
+
+## 8. Out of scope / open questions
+- Out: judging the result (Assessment), venue outreach and RFPs, adding private listings at create time.
+- Should populate respect the search area once the platform supports it?
+- Agent naming is inconsistent across the prototype: "Create Collection Agent" (dialog, Workflow assignee) vs "Market Sourcing Agent" (Workflow auto-assign in `RequirementsHome.tsx`). Pick one.
+- The dialog note mentions location, headcount and workspace type; budget is not used by populate (platform issue). Revisit the copy if the platform is fixed.
+
+## 9. Acceptance criteria
+1. Every Requirement without a Collection offers Create Collection, including Drafts.
+2. Without a Location, Create is disabled and the reason is shown; Link remains available.
+3. With a budget set, populate still returns spaces (budget cleared and restored around the call) and the budget value is unchanged afterwards.
+4. After create, the Requirement shows the Collection link and space count with no further user action.
+5. An empty result creates an empty Collection and says so, naming the city.
+6. An invalid URL shows an inline error and links nothing; a valid URL links without changing the Collection's contents.
+7. Both paths write one Timeline event.
+8. The hover card counts (location, budget, headcount band) match the Collection's spaces.

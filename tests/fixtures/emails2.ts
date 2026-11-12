@@ -96,3 +96,29 @@ Maria Alves
 Slalom`,
   expect: [{ city: 'Madrid', fields: { company: 'Slalom', location: 'Madrid', capacity: '25', startDate: '2026-10-01', termLength: '12', budget: '30000', workspaceType: 'Private Office' } }],
 });
+
+CASES2.push({
+  id: 'austin-northwind', title: 'Direction word before city, preferred budget under a stated budget, radius of "either", nice-to-have, funding condition',
+  text: `Hi David,
+
+Thanks for the call yesterday. A couple of updates after talking to our leadership team:
+
+We’re now looking at about 25 people rather than the 18 I mentioned. Actually, make that 22 seats, since a few of the team are hybrid and in the office two days a week at most. We’d like a private team office, not coworking. Ideally somewhere in East Austin or the Domain, within 3 miles of either is fine.
+
+Budget is around $14,000 a month, though we’d prefer to land closer to $12k. We’re targeting a move-in of February 1, but that’s flexible by a few weeks. Our current lease on Congress Ave expires March 31.
+
+Must-haves: 2 meeting rooms, a couple of phone booths, and secure badge access. A kitchen would be nice.
+
+If we close the Series B in January, we may need room to grow to 35 by summer, but don’t plan for that yet.
+
+Thanks,`,
+  expect: [{
+    city: 'Austin',
+    fields: { location: 'Austin', capacity: '22', workspaceType: 'Team Office', budget: '14000', startDate: '2027-02-01', otherFunctional: 'Preferred area: within 3 miles of East Austin or the Domain.', amenityNeeds: 'Phone booths and secure badge access. Nice to have: kitchen/pantry.' },
+    contains: { otherCommercial: ['closer to $12,000', 'lease ends Mar 31, 2027'], programNeeds: ['2 meeting rooms'] },
+    empty: ['closeDate', 'termLength', 'size'],
+    target: ['startDate', 'budget'],
+    ambiguous: ['capacity'],
+    notes: ['revised it to 22'],
+  }],
+});

@@ -352,7 +352,9 @@ function extractBudget(s: Sentence, out: Cand[], ctx: Ctx) {
     const ceiling = /\b(up to|max(?:imum)?|no more than|not to exceed|cap(?:ped)?|ceiling|hard limit|at most|under|below|can'?t exceed|cannot exceed|do not exceed|limit)\b/i.test(cueText) || /\b(hard (?:cap|limit)|firm|not (?:a )?(?:flexible|negotiable)|absolute max)\b/i.test(t) || /\b(?:can'?t|cannot|won'?t|will not|don'?t|do not)\s+(?:go|spend|pay|exceed|stretch)\s*(?:above|over|more than|past|beyond)?/i.test(t);
     const flexible = /\b(flexible|negotiable|some (?:room|flexibility)|wiggle|can stretch|could stretch|stretch)\b/i.test(t);
     const hedge = !!m[1] || /\b(around|about|roughly|approximately|ballpark|target|hoping|ideally|in the range|somewhere|maybe|perhaps|probably|something like|let'?s say)\b/i.test(before);
-    const target = !ceiling && (hedge || /\b(target|ballpark|aim|hoping|ideally|budget (?:is|of)? ?(?:around|about))\b/i.test(t) || flexible);
+    // "Budget is $14k, though we'd prefer closer to $12k": the second figure is a preference under the budget, not a conflicting budget.
+    const preferred = !ceiling && /\b(?:prefer(?:red|ably)?|ideally|hoping|rather|would like|we'?d like|like to)\b[^.$]{0,30}$/i.test(before);
+    const target = !ceiling && (hedge ||/\b(target|ballpark|aim|hoping|ideally|budget (?:is|of)? ?(?:around|about))\b/i.test(t) || flexible);
     const base = { field: 'budget' as PField, quote: m[0].trim(), msg: s.msg, idx: s.idx, conditional: condBefore(t, m.index), revision: REVISION.test(t) };
     if (cur !== 'USD') { out.push({ ...base, value: '', conf: 'stated', role: 'foreign-currency', note: `Budget stated as ${cur === 'EUR' ? '€' : '£'}${(hi ?? lo).toLocaleString('en-US')}. I did not convert currencies.` }); continue; }
     if (COMMERCIAL_NUM_BLOCK.test(around) && per !== 'month' && per !== 'seat') {
@@ -375,7 +377,7 @@ function extractBudget(s: Sentence, out: Cand[], ctx: Ctx) {
       value = amount; conf = 'inferred'; note = `${fmtMoney(amount)} had no period; read as per month.`;
     }
     if (hi !== null) note = `Range ${fmtMoney(lo)} to ${fmtMoney(hi)}; entered the upper end.${note ? ' ' + note : ''}`;
-    out.push({ ...base, value: String(value), conf, note, approx: hedge || hi !== null, target: target && !ceiling, role: ceiling ? 'ceiling' : 'plain' });
+    out.push({ ...base, value: String(value), conf, note, approx: hedge || hi !== null, target: target && !ceiling, role: ceiling ? 'ceiling' : preferred ? 'preferred' : 'plain' });
   }
 }
 
@@ -469,6 +471,8 @@ function extractProgramAndAmenities(s: Sentence, out: Cand[]) {
     [/(?:near|close to|walkable to|steps from|next to)\s+(?:public\s+)?(?:transit|subway|metro|train|station|bus)|transit access|public transport/i, 'transit access'], [/mail (?:room|handling|service)|package (?:handling|room|reception)/i, 'mail and package handling'],
     [/lockers?|storage lockers?/i, 'lockers'], [/on-?site security|security desk|\b24\/7 security\b/i, 'on-site security'], [/gym|fitness/i, 'fitness'], [/wellness room|lactation|mothers'? room/i, 'wellness room'],
   ];
+  // "A kitchen would be nice": wanted, not required
+  const nice = /\b(?:would be (?:nice|great|a (?:bonus|plus))|nice[- ]to[- ]haves?|bonus|optional|if possible|not (?:a )?(?:must|required|essential))\b/i.test(t);
   for (const [re, label, counted] of prog) {
     if (!re.test(t)) continue;
     let value = label;
@@ -480,9 +484,9 @@ function extractProgramAndAmenities(s: Sentence, out: Cand[]) {
       else if (couple) value = `2 ${label}`;
       else if (trailing) { const n = toNum(trailing[1]); if (Number.isFinite(n) && n > 0 && n < 500) value = `${n} ${label}`; }
     }
-    out.push({ field: 'programNeeds', value, quote: label, conf: 'stated', msg: s.msg, idx: s.idx, conditional: condBefore(t, t.search(re)) });
+    out.push({ field: 'programNeeds', value, quote: label, conf: 'stated', msg: s.msg, idx: s.idx, conditional: condBefore(t, t.search(re)), role: nice ? 'nice' : undefined });
   }
-  for (const [re, label] of amen) if (re.test(t)) out.push({ field: 'amenityNeeds', value: label, quote: label, conf: 'stated', msg: s.msg, idx: s.idx, conditional: condBefore(t, t.search(re)) });
+  for (const [re, label] of amen) if (re.test(t)) out.push({ field: 'amenityNeeds', value: label, quote: label, conf: 'stated', msg: s.msg, idx: s.idx, conditional: condBefore(t, t.search(re)), role: nice ? 'nice' : undefined });
 }
 
 function extractConfiguration(s: Sentence, out: Cand[]) {
@@ -494,7 +498,7 @@ function extractConfiguration(s: Sentence, out: Cand[]) {
 }
 
 const START_CUE = /\b(start(?:ing)?|begin(?:ning)?|move[- ]?in|moving in|move in|occupy|occupancy|open(?:ing)?|go(?:ing)? live|ready by|available|commence|kick ?off|need (?:it|the space|space|to be in|to be there)|be in by|in by|get in|take possession|possession|lease (?:start|commencement)|target(?:ing)? (?:date )?of|want (?:it|to start)|looking to (?:start|move))\b/i;
-const CLOSE_CUE = /\b(sign(?:ed|ing)?|close|closing|decide|decision|finali[sz]e|commit(?:ment)?|approval|approve|execute|execution|loi|lease signed|wrap up|get this done|board)\b/i;
+const CLOSE_CUE = /\b(sign(?:ed|ing)?|close(?!\s+(?:the|our|a|this)\s+(?:series|round|funding|raise|acquisition|merger|quarter|books))|closing(?!\s+(?:the|our|a|this)\s+(?:series|round|funding|raise|acquisition|merger|quarter|books))|decide|decision|finali[sz]e|commit(?:ment)?|approval|approve|execute|execution|loi|lease signed|wrap up|get this done|board)\b/i;
 const EXPIRY_CUE = /\b(lease|license|contract|agreement|term|membership)\b[^.]{0,50}\b(ends?|expires?|up|runs? out|terminates?|is up|renews?|renewal)\b|\bexpir|\bup for renewal\b|\bour (?:current )?(?:lease|license) (?:is|ends)/i;
 function extractDates(s: Sentence, out: Cand[], ctx: Ctx) {
   const dates = findDates(s.text, ctx.today);
@@ -544,8 +548,12 @@ export function cityMentions(sentence: string, loose = false): CityMention[] {
     const m = re.exec(sentence); if (!m) return;
     const s = m.index; const e = s + m[0].length;
     if (hit(s, e)) return;
-    const before = sentence.slice(Math.max(0, s - 40), s);
-    const sameWord = /\b(?:[A-Z][a-z]+)\s+$/.test(sentence.slice(0, s)) && !/\b(?:in|to|near|around|from|of|at|downtown|greater|the)\s+$/i.test(before);
+    const rawBefore = sentence.slice(Math.max(0, s - 40), s);
+    // A direction or district word before the city ("East Austin", "North Dallas") is part of the place, not another name.
+    const DIRECTION = /\b(?:East|West|North|South|Northeast|Northwest|Southeast|Southwest|Central|Downtown|Greater|Uptown|Midtown)\s+$/i;
+    const directional = DIRECTION.test(rawBefore);
+    const before = directional ? rawBefore.replace(DIRECTION, '') : rawBefore;
+    const sameWord = !directional && /\b(?:[A-Z][a-z]+)\s+$/.test(sentence.slice(0, s)) && !/\b(?:in|to|near|around|from|of|at|downtown|greater|the)\s+$/i.test(before);
     const nextWord = /^\s+[A-Z][a-z]+/.test(sentence.slice(e)) && !/^\s+(?:area|metro|office|market|and|or|team|,)/i.test(sentence.slice(e));
     const prep = /\b(?:in|to|near|around|from|of|at|downtown|greater|outside|within|serving)\s+(?:the\s+)?(?:downtown\s+|greater\s+|central\s+)?$/i.test(before);
     const label = /\b(?:location|city|market|where|office|area)s?\s*[:\-–]\s*$/i.test(before) || /^\s*(?:,\s*[A-Z]{2}\b|\s+(?:area|metro|office|market))/.test(sentence.slice(e));
@@ -579,7 +587,12 @@ function extractArea(s: Sentence, out: Cand[]) {
   const base = { field: 'otherFunctional' as PField, msg: s.msg, idx: s.idx, conditional: CONDITIONAL.test(t), conf: 'stated' as const };
   const isCity = (v: string) => CITY_RES.some((c) => c.name.toLowerCase() === v.replace(/[.,]+$/, '').trim().toLowerCase());
   if (req && isCity(clean(req[1]))) return;
-  if (within) { const hard = !/\b(ideally|preferably|prefer|hoping|about)\b/i.test(t); out.push({ ...base, value: `${hard ? 'Required' : 'Preferred'} area: within ${within[1]} ${within[2]} of ${within[3].trim()}.`, quote: within[0], role: 'area' }); return; }
+  // "Ideally East Austin or the Domain, within 3 miles of either": the radius refers back to the places named before it.
+  if (within && /^(?:either|either one|both|them|those|these|each|any of (?:them|those)|it|there)\b/i.test(within[3].trim()) && pref) {
+    const places = pref[1].split(/,?\s*\bwithin\b/i)[0].replace(/[.;,]+$/, '').trim();
+    if (places) { out.push({ ...base, value: `Preferred area: within ${within[1]} ${within[2]} of ${places}.`, quote: pref[0], role: 'area' }); return; }
+  }
+  if (within) { const hard =!/\b(ideally|preferably|prefer|hoping|about)\b/i.test(t); out.push({ ...base, value: `${hard ? 'Required' : 'Preferred'} area: within ${within[1]} ${within[2]} of ${within[3].trim()}.`, quote: within[0], role: 'area' }); return; }
   if (req) { out.push({ ...base, value: `Required area: ${clean(req[1])}.`, quote: req[0], role: 'area' }); return; }
   if (pref) { const val = clean(pref[1]); if (val && !/^(?:a|an|the)?\s*(?:space|office|building|floor)\b/i.test(val)) { out.push({ ...base, value: `Preferred area: ${val}.`, quote: pref[0], role: 'area' }); return; } }
   if (inArea) { out.push({ ...base, value: `Preferred area: ${inArea[1].trim()} area.`, quote: inArea[0], role: 'area' }); return; }
@@ -655,7 +668,7 @@ function resolveScope(cands: Cand[], ctx: Ctx, extraNotes: string[]): ParsedScop
     let cs = by(f).filter((c) => c.value !== '' && c.role !== 'expiry');
     const condOnly = cs.filter((c) => c.conditional);
     cs = cs.filter((c) => !c.conditional);
-    if (condOnly.length) sc.ambiguities.push({ field: f, text: `${FIELD_NAME[f]}: “${condOnly[0].quote.trim()}” depends on a condition (${condOnly[0].value}), so I left it out of the requirement.` });
+    if (condOnly.length) sc.ambiguities.push({ field: f, text: `${FIELD_NAME[f]}: “${condOnly[0].quote.trim()}” depends on a condition, so I left it out of the requirement.` });
     if (f !== 'capacity' && cs.some((c) => !c.weak) && cs.some((c) => c.weak)) cs = cs.filter((c) => !c.weak);
     if (f === 'capacity') {
       const strong = cs.filter((c) => !c.weak);
@@ -671,6 +684,14 @@ function resolveScope(cands: Cand[], ctx: Ctx, extraNotes: string[]): ParsedScop
     if (f === 'capacity' && top.some((c) => c.role === 'growth') && top.some((c) => c.role !== 'growth')) {
       const g = top.find((c) => c.role === 'growth')!; const others = top.filter((c) => c.role !== 'growth');
       sc.notes.push(`Headcount: ${others.map((o) => o.value).join(', ')} now, planning for ${g.value}.`); top = [g];
+    }
+    // a preferred figure alongside a stated budget: keep the budget, record the preference
+    if (f === 'budget' && top.some((c) => c.role === 'preferred') && top.some((c) => c.role !== 'preferred')) {
+      const p = top.find((c) => c.role === 'preferred')!;
+      top = top.filter((c) => c.role !== 'preferred');
+      const pref = `Prefers to land closer to ${fmtMoney(Number(p.value))}/mo.`;
+      sc.fields.otherCommercial = unique([...(sc.fields.otherCommercial ? [sc.fields.otherCommercial] : []), pref]).join(' ');
+      sc.notes.push(`Budget: ${fmtMoney(Number(top[0].value))}/mo stated; prefers closer to ${fmtMoney(Number(p.value))}/mo.`);
     }
     const vals = unique(top.map((c) => c.value));
     let chosen: Cand;
@@ -710,10 +731,15 @@ function resolveScope(cands: Cand[], ctx: Ctx, extraNotes: string[]): ParsedScop
 
   // list fields: union
   (['programNeeds', 'amenityNeeds'] as PField[]).forEach((f) => {
-    const vals = unique(by(f).filter((c) => !c.conditional).map((c) => c.value));
+    const live = by(f).filter((c) => !c.conditional);
     // a counted item supersedes the bare item
-    const final = vals.filter((v) => !vals.some((w) => w !== v && /^\d+ /.test(w) && w.endsWith(v)));
-    if (final.length) setF(f, cap1(joinList(final)) + '.', { kind: 'source', note: `Mentioned in the text: ${final.join(', ')}.` });
+    const counted = (vals: string[]) => vals.filter((v) => !vals.some((w) => w !== v && /^\d+ /.test(w) && w.endsWith(v)));
+    const must = counted(unique(live.filter((c) => c.role !== 'nice').map((c) => c.value)));
+    const nice = counted(unique(live.filter((c) => c.role === 'nice').map((c) => c.value))).filter((v) => !must.some((m) => m.endsWith(v)));
+    if (must.length || nice.length) {
+      const text = [must.length ? cap1(joinList(must)) + '.' : '', nice.length ? `Nice to have: ${joinList(nice)}.` : ''].filter(Boolean).join(' ');
+      setF(f, text, { kind: 'source', note: `Mentioned in the text: ${[...must, ...nice.map((n) => `${n} (nice to have)`)].join(', ')}.` });
+    }
     const cond = by(f).filter((c) => c.conditional);
     if (cond.length) sc.ambiguities.push({ field: f, text: `${FIELD_NAME[f]}: ${unique(cond.map((c) => c.value)).join(', ')} only if a condition in the text is met, so not included.` });
   });
