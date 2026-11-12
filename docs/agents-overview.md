@@ -1,7 +1,11 @@
 # Transaction Manager Agents — Overview
 Design close-out, Nov 2026
 
-Three agents take a dedicated requirement from customer correspondence to a candidate list Sales can judge. Each has its own spec with the same structure: Job, Entry points, Inputs and outputs, Flow and states, Rules, Copy, Data and platform limits, Out of scope / open questions, Acceptance criteria.
+Three agents take a dedicated requirement from customer correspondence to a candidate list Sales can judge.
+
+Each agent has two documents:
+- **Spec (for engineering):** one page each, covering Job, Rules, Platform limits, Acceptance criteria and Open questions. Each rule is marked **Required** (a product requirement) or **Default** (the prototype's choice, open to engineering).
+- **Design reference (for Figma):** every screen state and its exact copy, taken from the prototype. Layout and wording there are for design, not engineering requirements.
 
 ## How they connect
 ```
@@ -22,15 +26,15 @@ Customer email / notes / license
 ```
 
 ## Specs
-| Agent | Spec | Status | Prototype entry |
+| Agent | Spec (engineering) | Design reference (Figma) | Prototype entry |
 |---|---|---|---|
-| Requirement Agent | [requirement-agent-spec.md](requirement-agent-spec.md) | Design complete | Create Requirement; Requirement Details → Update Fields |
-| Create Collection Agent | [collection-creation-spec.md](collection-creation-spec.md) | Design complete | Collection column → Create Collection |
-| Assess Collection Agent | [collection-assessment-spec.md](collection-assessment-spec.md) | Design complete | Collection pill → Assess; row menu; Workflow tab |
-| Shared UI patterns | [agent-ui-patterns.md](agent-ui-patterns.md) | Reference | — |
-| Assessment history event model | [collection-assessment-history-spec.md](collection-assessment-history-spec.md) | **Superseded** (June, tier-based) | — |
+| Requirement Agent | [requirement-agent-spec.md](requirement-agent-spec.md) | [requirement-agent-states.md](design-reference/requirement-agent-states.md) | Create Requirement; Requirement Details → Update Fields |
+| Create Collection Agent | [collection-creation-spec.md](collection-creation-spec.md) | [create-collection-states.md](design-reference/create-collection-states.md) | Collection column → Create Collection |
+| Assess Collection Agent | [collection-assessment-spec.md](collection-assessment-spec.md) | [assess-collection-states.md](design-reference/assess-collection-states.md) | Collection pill → Assess; row menu; Workflow tab |
 
-Figma: _add file links here._ Name frames by spec state ID (e.g. `Requirement / C6 Draft ready`, `Assess / A6 Requirement changed`) so each frame traces to a row in a spec.
+Also: [agent-ui-patterns.md](agent-ui-patterns.md), the shared UI patterns (reference). [collection-assessment-history-spec.md](collection-assessment-history-spec.md) is **superseded** (June, tier-based).
+
+Figma: _add file links here._ Name frames by the state IDs in the design references (e.g. `Requirement / C6 Draft ready`, `Assess / A6 Requirement changed`) so each frame traces to one row.
 
 ## Principles shared by all three
 1. **The agent proposes, a person decides.** Nothing is written until the user acts.
