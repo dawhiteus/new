@@ -56,7 +56,7 @@ Not offered: anywhere outside these two. No auto-run on email arrival.
 |---|---|---|
 | U1 | Composer | Text box on Overview with **Update Fields**. |
 | U2 | No changes | "No changes found. The requirement already matches this text, or the text doesn't mention requirement details." |
-| U3 | Review | One row per change: field, "Was {value}" or "Was empty", new value, source quote on hover, **Accept** / **Keep mine** (default Accept). Unsure or conflicting statements are listed as needing a call and are not applied. If a sourcing field changed and a Collection exists, a line says the Collection is not changed automatically. |
+| U3 | Fields updated | Changed fields are written into the form and highlighted, each with "Was {value}" or "Was empty" and **Undo**. Banner: "**Requirement Agent updated N fields.** Review the highlights, then save." with **Make Additional Changes** and **Undo All**. Nothing is saved until **Save Changes**. Unsettled statements are not applied. |
 | U4 | Applied | Toast "Requirement updated." (or "Kept as a Draft: …" / "Not provided yet: …"). **Make Additional Changes** reopens U1. |
 | U5 | Open questions | Overview box "Open questions" with copy ("Message for the customer copied.") and dismiss ("Open questions dismissed."). Clears per field as answered; when all are answered the Intake Task completes and the Timeline records it. |
 

@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TM Agents Design File</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Design-file chrome (follows light/dark). Product screens below always render light, as in the product. ── */
+:root {
+  --canvas: #eceef1; --canvas-dot: #d9dde3; --paper: #ffffff; --ink: #0f2a3d; --ink-2: #4b5563; --muted: #6b7280;
+  --line: #e5e7eb; --accent: #005b94; --accent-soft: #e6f1f8; --chip: #f3f4f6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #15181c; --canvas-dot: #23282e; --paper: #1d2126; --ink: #e8edf2; --ink-2: #b7c0ca; --muted: #8b95a1;
+    --line: #2d333a; --accent: #6cb4e8; --accent-soft: #1d3346; --chip: #262b31;
+  }
+}
+:root[data-theme="dark"] {
+  --canvas: #15181c; --canvas-dot: #23282e; --paper: #1d2126; --ink: #e8edf2; --ink-2: #b7c0ca; --muted: #8b95a1;
+  --line: #2d333a; --accent: #6cb4e8; --accent-soft: #1d3346; --chip: #262b31;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--canvas); color: var(--ink); font-family: Inter, system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); }
+
+.df { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 100vh; }
+.df-nav { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--paper); border-right: 1px solid var(--line); padding: 20px 16px 40px; }
+.df-nav h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: -0.01em; }
+.df-nav .sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+.df-nav h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
+.df-nav a { display: flex; gap: 8px; align-items: baseline; text-decoration: none; color: var(--ink-2); font-size: 13px; padding: 4px 6px; border-radius: 6px; line-height: 1.35; }
+.df-nav a:hover { background: var(--chip); color: var(--ink); }
+.df-nav a b { font-weight: 600; color: var(--muted); font-size: 11px; min-width: 30px; font-variant-numeric: tabular-nums; }
+.df-main { padding: 32px 40px 80px; min-width: 0; }
+.df-intro { max-width: 860px; margin-bottom: 28px; }
+.df-intro h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.df-intro p { color: var(--ink-2); font-size: 14px; line-height: 1.6; margin: 6px 0; }
+.df-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.df-legend span { font-size: 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; color: var(--ink-2); }
+.df-section { margin-top: 44px; }
+.df-section > h2 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; scroll-margin-top: 20px; }
+.df-section > p { margin: 0 0 18px; color: var(--ink-2); font-size: 14px; max-width: 860px; line-height: 1.55; }
+.df-group { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 28px 0 10px; font-weight: 600; }
+.frame { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 22px; overflow: hidden; scroll-margin-top: 20px; }
+.frame-head { display: flex; gap: 12px; align-items: baseline; padding: 14px 18px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.frame-id { font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+.frame-title { font-size: 15px; font-weight: 600; }
+.frame-when { flex-basis: 100%; font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+.frame-when b { color: var(--ink); font-weight: 600; }
+.stage { padding: 28px; overflow-x: auto; background-color: var(--canvas); background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1px); background-size: 16px 16px; }
+.stage-inner { display: flex; gap: 28px; align-items: flex-start; width: max-content; }
+.stage-cap { font-size: 12px; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
+
+@media (max-width: 860px) {
+  .df { grid-template-columns: 1fr; }
+  .df-nav { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .df-main { padding: 20px 16px 60px; }
+  .stage { padding: 16px; }
+}
+
+/* ── Product screens (light only, values from the prototype) ── */
+.ui { font-family: Inter, sans-serif; color: #374151; background: #fff; color-scheme: light; text-align: left; }
+.ui * { font-family: inherit; }
+.modal { background: #fff; box-shadow: 0 20px 60px rgba(15,42,61,.18); overflow: hidden; }
+.hdr-grad { background: linear-gradient(135deg, #004a7c 0%, #005b94 50%, #0071b8 100%); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; color: #fff; }
+.hdr-grad .t { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.hdr-blue { background: #005b94; padding: 20px 16px; display: flex; align-items: center; justify-content: space-between; color: #fff; }
+.hdr-blue .t { font-size: 24px; font-weight: 700; }
+.x { color: rgba(255,255,255,.8); display: inline-flex; }
+.x-dark { color: #6b7280; display: inline-flex; }
+.ink { color: #0f2a3d; }
+.muted { color: #6b7280; }
+.sect { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #0d619b; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin: 8px 0 18px; }
+.lbl { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+.inp { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 12px; font-size: 15px; color: #111827; background: #fff; min-height: 44px; }
+.inp.ph { color: #9ca3af; }
+.inp.area { min-height: 86px; }
+.inp.changed { border-color: #005b94; background: #e6f1f8; font-weight: 600; }
+.np { font-size: 13px; color: #b45309; margin-top: 6px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.mb20 { margin-bottom: 20px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { padding: 8px 14px; border-radius: 999px; border: 1px solid #d1d5db; background: #fff; color: #0f2a3d; font-size: 14px; font-weight: 500; }
+.chip.on { border-color: #0d619b; background: #eaf3fb; color: #0d619b; font-weight: 600; }
+.chip.wide { flex: 1; border-radius: 8px; padding: 11px; text-align: center; }
+.mark { color: #0e7490; display: inline-flex; }
+.btn { height: 40px; padding: 0 18px; border-radius: 10px; font-size: 14.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; border: 0; }
+.btn.pri { background: #0d619b; color: #fff; box-shadow: 0 1px 2px rgba(13,97,155,.3); }
+.btn.pri.dis { opacity: .5; }
+.btn.sec { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+.btn.outline-blue { background: #fff; color: #005b94; border: 1px solid #005b94; border-radius: 8px; }
+.btn.sm { height: 36px; font-size: 13px; padding: 0 14px; border-radius: 8px; }
+.link { color: #0d619b; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.foot { padding: 14px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.av { width: 40px; height: 40px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #059669; }
+.av.sm { width: 34px; height: 34px; }
+.av.xs { width: 30px; height: 30px; }
+.teal-sq { width: 28px; height: 28px; border-radius: 6px; background: #00b8c4; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pill-teal { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #ecfeff; border: 1px solid #a5f3fc; color: #0e7490; }
+.card { border: 1px solid #e5e7eb; border-radius: 12px; }
+.shadow { box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04); }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.toast { display: flex; align-items: flex-start; gap: 10px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.12); font-size: 14px; color: #0f2a3d; width: 360px; line-height: 1.45; }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }
+.num { font-variant-numeric: tabular-nums; }
+.note-amber { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 8px; background: #fffbeb; border: 1px solid #fde68a; font-size: 13px; line-height: 1.5; color: #374151; }
+.note-blue { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 8px; background: #e6f1f8; border: 1px solid #cce3f1; font-size: 13px; line-height: 1.5; color: #374151; }
+.prov { display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: 999px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.prov.Provided { background: #e6f1f8; border: 1px solid #cce3f1; color: #004d7d; }
+.prov.Derived { background: #f3f4f6; border: 1px solid #e5e7eb; color: #6b7280; }
+.prov.Assumed { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
+.count { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #f3f4f6; color: #6b7280; }
+.count.blue { background: #e6f1f8; border: 1px solid #cce3f1; color: #004d7d; }
+.bar { height: 6px; border-radius: 999px; background: #f3f4f6; overflow: hidden; }
+.bar > i { display: block; height: 6px; border-radius: 999px; }
+.miss { color: #dc3545; font-weight: 600; }
+.tbl-head { display: grid; column-gap: 10px; padding: 10px 16px; background: #f8f9fa; border-bottom: 1px solid #e5e7eb; align-items: start; }
+.tbl-row { display: grid; column-gap: 10px; padding: 14px 16px; align-items: start; border-top: 1px solid #f3f4f6; }
+.page { background: #f8f9fa; }
+.rq-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.rq-table th { text-align: left; font-size: 12px; font-weight: 600; color: #374151; letter-spacing: .02em; padding: 12px 14px; background: #f3f4f6; }
+.rq-table td { padding: 14px; border-top: 1px solid #e5e7eb; color: #0f2a3d; white-space: nowrap; }
+.badge { display: inline-flex; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; }
+.colpill { display: inline-flex; align-items: center; padding: 3px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #e8f0fe; color: #1d4ed8; border: 1px solid #d5e3fb; white-space: nowrap; }
+.cc-btn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #fff; color: #0f2a3d; border: 1px solid #d1d5db; white-space: nowrap; }
+.menu { width: 220px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.14); padding: 6px; font-size: 14px; color: #0f2a3d; }
+.menu div { padding: 8px 10px; border-radius: 6px; }
+.menu .sep { height: 1px; padding: 0; margin: 4px 0; background: #e5e7eb; }
+.menu .danger { color: #b91c1c; }
+</style>
+</head>
+<body>
+<div class="df">
+  <nav class="df-nav" id="nav" aria-label="Frames"></nav>
+  <main class="df-main">
+    <div class="df-intro">
+      <h1>Transaction Manager Agents — Design File</h1>
+      <p>Every screen state of the three TM agents: Requirement Agent, Create Collection and Assess Collection. Screens are drawn from the working prototype (Nov 2026) at their real widths, with the prototype's colors, type and copy. Frame IDs match the state IDs in <code>docs/design-reference/</code>; frames those files don’t list (such as T1, UC1 and AS1) are additions. Use cases in brackets match the engineering specs.</p>
+      <p>Sample data is illustrative (the Northwind Analytics Austin requirement). Animated states (spinners) are shown mid-animation.</p>
+      <div class="df-legend"><span>Frame ID = design-reference state</span><span>“When” = what puts the user in this state</span><span>Use cases in brackets, e.g. [R1]</span></div>
+    </div>
+    <div id="frames"></div>
+  </main>
+</div>
+
+<script>
+/* ───────────── Icons (lucide-style strokes) ───────────── */
+const P = {
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  bot: '<path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/>',
+  sparkles: '<path d="M9.94 14.06 4 20M14 4l1.5 4.5L20 10l-4.5 1.5L14 16l-1.5-4.5L8 10l4.5-1.5Z"/><path d="M5 3v4M3 5h4"/>',
+  up: '<path d="m5 12 7-7 7 7M12 19V5"/>',
+  clip: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  copy: '<rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  checksq: '<path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  loader: '<path d="M21 12a9 9 0 1 1-6.22-8.56"/>',
+  zap: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+  ext: '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  left: '<path d="m15 18-6-6 6-6"/>',
+  right: '<path d="M5 12h14M12 5l7 7-7 7"/>',
+  pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  dollar: '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  plus: '<path d="M5 12h14M12 5v14"/>',
+  dots: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/>',
+  link: '<path d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  grip: '<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>',
+  chev: '<path d="m6 9 6 6 6-6"/>',
+  updown: '<path d="m7 15 5 5 5-5M7 9l5-5 5 5"/>',
+  circlex: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/>',
+  circlecheck: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+};
+const ic = (n, s = 16, c = 'currentColor', extra = '') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${P[n]}</svg>`;
+
+/* ───────────── Shared pieces ───────────── */
+const X = (cls = 'x', s = 20) => `<span class="${cls}">${ic('x', s)}</span>`;
+const modal = (w, inner, r = 16) => `<div class="ui modal" style="width:${w}px;border-radius:${r}px">${inner}</div>`;
+const stage = (...screens) => `<div class="stage"><div class="stage-inner">${screens.join('')}</div></div>`;
+const cap = (t, html) => `<div><div class="stage-cap">${t}</div>${html}</div>`;
+const toast = (kind, text) => `<div class="ui toast">${kind === 'err' ? ic('circlex', 18, '#dc2626') : ic('circlecheck', 18, '#16a34a')}<span>${text}</span></div>`;
+const mk = () => `<span class="mark" title="Agent-filled">${ic('sparkles', 12)}</span>`;
+
+/* Requirement: Create Requirement modal */
+const createReq = (body, footer = '', h = '') => modal(760, `
+  <div class="hdr-grad"><span class="t">Create Requirement</span>${X()}</div>
+  <div style="padding:16px 20px 28px;${h}">${body}${footer}</div>`, 24);
+
+const agentClosed = `
+  <div style="border:1px solid #e5e7eb;background:#f9fafb;border-radius:14px;padding:10px 14px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+    <div class="av sm">${ic('bot', 20)}</div>
+    <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700" class="ink">Requirement Agent</div>
+    <div style="font-size:13px" class="muted">I can draft this from a pasted email, a description, or a license ID.</div></div>
+    <span style="background:#fff;border:1px solid #0f7b4f;color:#0f7b4f;border-radius:8px;padding:8px 14px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap">${ic('sparkles', 14)} Use Requirement Agent</span>
+  </div>`;
+
+const SAMPLE_EMAIL = 'Hi David,\n\nThanks for the call yesterday. A couple of updates after talking to our leadership team:\n\nWe’re now looking at about 25 people rather than the 18 I mentioned. Actually, make that 22 seats…';
+
+const composer = ({ text = '', file = '', unreadable = false, lic = '', licOpen = false, working = '' } = {}) => {
+  const can = !!(text || file || lic);
+  const ta = text
+    ? `<div class="inp" style="min-height:110px;white-space:pre-wrap;font-size:15px;line-height:1.5;padding-right:52px;max-height:130px;overflow:hidden">${text}</div>`
+    : `<div class="inp ph" style="min-height:110px">Paste or type requirements here.</div>`;
+  const send = `<span style="position:absolute;right:10px;bottom:10px;width:32px;height:32px;border-radius:50%;background:${can ? '#0f7b4f' : '#c7d9cf'};color:#fff;display:flex;align-items:center;justify-content:center">${ic('up', 18)}</span>`;
+  const fileRow = file
+    ? `<span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:4px 6px 4px 10px;font-size:13px;color:#0f2a3d">${ic('clip', 13)} ${file} <span class="x-dark">${ic('x', 13)}</span></span>`
+    : `<span style="color:#0d619b;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px">${ic('clip', 14)} Attach a file</span>`;
+  const licList = licOpen ? `
+    <div style="position:absolute;z-index:2;left:0;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12)">
+      <div style="padding:8px 12px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.3px">Licenses needing a decision in the next 6 months</div>
+      ${[['Northwind Analytics · Austin', 'LIC-2023-014 · ends Mar 31, 2027', 'Notify by Dec 31, 2026', 'in 49 days', false],
+         ['Acme · Dallas', 'LIC-2022-031 · ends Feb 28, 2027', 'Notify by Nov 30, 2026', 'in 18 days', false],
+         ['Meridian Capital · New York', 'LIC-2021-008 · ends Jan 31, 2027', 'Notify by Nov 1, 2026', '11 days overdue', true]]
+        .map(([a, b, c, d, late]) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 12px;border-top:1px solid #f3f4f6">
+          <span><span style="display:block;font-size:14px;font-weight:600" class="ink">${a}</span><span style="display:block;font-size:12.5px" class="muted">${b}</span></span>
+          <span style="font-size:12.5px;font-weight:600;color:${late ? '#b91c1c' : '#374151'};text-align:right;white-space:nowrap">${c}<span style="display:block;font-weight:400;color:${late ? '#b91c1c' : '#6b7280'}">${d}</span></span></div>`).join('')}
+      <div style="padding:8px 12px;border-top:1px solid #f3f4f6;color:#0d619b;font-size:13px;font-weight:600">Show all licenses</div>
+    </div>` : '';
+  return `
+  <div style="border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:16px;padding:16px;margin-bottom:20px">
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <div class="av">${working ? `<span class="spin" style="display:inline-flex">${ic('loader', 22)}</span>` : ic('bot', 24)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:15px;font-weight:700" class="ink">Requirement Agent</span><span style="flex:1"></span>${working ? '' : X('x-dark', 16)}</div>
+        ${working ? `<div style="font-size:14px;padding:6px 0">${working}</div>` : `
+        <div style="position:relative">${ta}${send}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">${fileRow}
+          ${unreadable ? `<span style="font-size:12.5px;color:#b45309">The prototype can only read text files (.txt, .eml, .md). Paste this file's text instead.</span>` : ''}</div>
+        <div style="position:relative;margin-top:10px;max-width:420px">
+          <div class="inp ${lic ? '' : 'ph'}" style="padding:8px 12px;min-height:38px;${licOpen ? 'border-color:#0d619b' : ''}">${lic || 'Pick or enter a License ID (optional, for renewals)'}</div>${licList}
+        </div>`}
+      </div>
+    </div>
+  </div>`;
+};
+
+const summary = ({ title, sub, filled = 9, total = 13, badge = 'Draft ready', noticed = [], err = '' }) => `
+  <section class="card shadow" style="padding:16px 20px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="teal-sq">${ic('bot', 15)}</div><span style="font-size:13px;font-weight:600">Requirement Agent</span><span class="pill-teal">${badge}</span>
+      <span style="flex:1"></span><span style="font-size:12px" class="muted num"><b style="color:#374151;font-weight:600">${filled} of ${total}</b> fields filled</span>
+      <div class="bar" style="width:88px;background:#e5e7eb"><i style="width:${Math.round(filled / total * 100)}%;background:#00b8c4"></i></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <p style="margin:0;font-size:15px;font-weight:600">${title}</p><p style="margin:0;font-size:14px">${sub}</p>
+      ${err ? `<p style="margin:0;font-size:13px;color:#b45309">${err}</p>` : ''}
+    </div>
+    ${noticed.length ? `<div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:600" class="muted">What I noticed</span>
+      <ul style="margin:0;padding-left:18px">${noticed.map((n) => `<li style="font-size:13px;line-height:1.5">${n}</li>`).join('')}</ul></div>` : ''}
+    <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px" class="muted"><span class="mark">${ic('sparkles', 12)}</span> Agent-filled fields are marked</span>
+  </section>`;
+
+const needed = (rows, who = 'the customer', label = '') => `
+  <section class="card" style="overflow:hidden;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px 12px 20px;border-bottom:1px solid #f3f4f6">
+      <h2 style="margin:0;font-size:13px;font-weight:600">Needed from customer${label}</h2><span class="count" style="padding:1px 8px;font-size:11px">${rows.length}</span><span style="flex:1"></span>
+      <span style="height:30px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-weight:500">${ic('copy', 14)} Copy Missing Details</span>
+    </div>
+    ${rows.map(([a, b], i) => `<div style="display:grid;grid-template-columns:160px minmax(0,1fr);column-gap:16px;padding:10px 20px;${i < rows.length - 1 ? 'border-bottom:1px solid #f3f4f6' : ''}"><span style="font-size:13px;font-weight:600">${a}</span><span style="font-size:13px" class="muted">${b}</span></div>`).join('')}
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:#f8f9fa;border-top:1px solid #e5e7eb;font-size:12px" class="muted">${ic('checksq', 13)} On create, a task asks ${who} for these details.</div>
+  </section>`;
+
+const viewChips = (n) => `<div style="display:flex;gap:8px;margin-bottom:16px">
+  <span style="padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;border:1px solid #93c5fd;background:#eff6ff;color:#0d619b">All fields</span>
+  <span style="padding:6px 12px;border-radius:6px;font-size:13px;font-weight:500;border:1px solid #d1d5db;background:#fff">Needs review · ${n}</span></div>`;
+
+const field = (label, value, { marked = false, np = false, area = false, ph = '' } = {}) => `
+  <div><div class="lbl">${label}${marked ? mk() : ''}</div><div class="inp ${area ? 'area' : ''} ${value ? '' : 'ph'}">${value || ph}</div>${np ? '<div class="np">Not provided</div>' : ''}</div>`;
+
+const reqForm = (v, marks, np, opts = {}) => `
+  <div class="sect">Deal Details</div>
+  <div class="row2">${field('Company', v.company, { marked: marks.company, np: np.company })}${field('Status *', 'Active')}</div>
+  <div class="sect">Business Requirements</div>
+  <div class="mb20">${field('Requirement Name *', v.name, { marked: marks.name })}</div>
+  <div class="mb20">${field('Location', v.location, { marked: marks.location, np: np.location })}</div>
+  <div class="mb20"><div class="lbl">Workspace Type${marks.type ? mk() : ''}</div><div class="chips">${['Office Suite', 'Private Office', 'Team Office', 'Coworking', 'Meeting Space'].map((t) => `<span class="chip ${t === v.type ? 'on' : ''}">${t}</span>`).join('')}</div></div>
+  <div class="row2">${field('Capacity / Headcount', v.capacity, { marked: marks.capacity })}${field('Size (sq ft)', v.size, { marked: marks.size })}</div>
+  ${opts.short ? '' : `
+  <div class="mb20">${field('Program Needs', v.program, { marked: marks.program, area: true, ph: 'Open workstations, 3 meeting rooms, 2 team rooms, and a kitchen/pantry.' })}</div>
+  <div class="mb20">${field('Amenity Needs', v.amenity, { marked: marks.amenity, area: true, ph: 'On-site staffed reception, secure badge access, and bookable phone booths.' })}</div>
+  <div class="mb20"><div class="lbl">Configuration</div><div class="chips"><span class="chip wide">Single space</span><span class="chip wide">Collection of spaces</span></div></div>
+  <div class="mb20">${field('Other Functional Requirements', v.otherF, { marked: marks.otherF, area: true, ph: 'Any other functional needs' })}</div>
+  <div class="sect">Commercial Terms</div>
+  <div class="row2">${field('Start Date', v.start, { marked: marks.start })}${field('Term Length (mos)', v.term, { np: np.term })}</div>
+  <div class="row2">${field('Expected Close Date', '', { ph: 'mm/dd/yyyy' })}${field('Budget ($/mo)', v.budget, { marked: marks.budget, np: np.budget })}</div>
+  <div class="mb20">${field('Other Commercial Requirements', v.otherC, { marked: marks.otherC, area: true, ph: 'Any other commercial terms' })}</div>`}`;
+
+const AUSTIN = { company: '', name: 'Austin', location: 'Austin', type: 'Team Office', capacity: '22', size: '', program: '2 meeting rooms.', amenity: 'Phone booths and secure badge access. Nice to have: kitchen/pantry.', otherF: 'Preferred area: within 3 miles of East Austin or the Domain.', start: '02/01/2027', term: '', budget: '14000', otherC: 'Prefers to land closer to $12,000/mo. Current lease ends Mar 31, 2027.' };
+const AUSTIN_MARKS = { name: 1, location: 1, type: 1, capacity: 1, program: 1, amenity: 1, otherF: 1, start: 1, budget: 1, otherC: 1 };
+const AUSTIN_NOTICED = ['Headcount: the text first said 25, then revised it to 22.', 'Budget: $14,000/mo stated; prefers closer to $12,000/mo.', 'Other workspace types mentioned: Coworking.', 'Headcount: “grow to 35” depends on a condition, so I left it out of the requirement.', 'Start date: “summer” depends on a condition, so I left it out of the requirement.'];
+const AUSTIN_NEEDED = [['Start date', 'I read the start as Feb 1, 2027. Is that the actual day?'], ['Term length', 'Months of commitment'], ['Size', 'Square feet (not given; ~3,300 at 150 per person)'], ['Company', 'Customer company name']];
+
+const reqFooter = (primary = 'Save as Draft', dup = '') => `
+  <div style="display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;padding-top:8px">
+    ${dup ? `<div style="flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:10px 14px;font-size:14px"><span>${dup}</span><span style="display:flex;gap:8px;flex-shrink:0"><span style="color:#0d619b;font-weight:600;font-size:13px;padding:6px 4px">Review</span><span style="background:#0d619b;color:#fff;border-radius:8px;padding:6px 12px;font-weight:600;font-size:13px">Create anyway</span></span></div>` : ''}
+    <span class="btn" style="border:1px solid #0d619b;color:#0d619b;background:#fff;border-radius:10px">Cancel</span>
+    <span class="btn pri">${primary}</span>
+  </div>`;
+
+/* Requirement Details modal */
+const details = (body, status = 'Active') => modal(820, `
+  <div class="hdr-blue" style="padding:16px"><span class="t">Requirement Details</span><span style="display:flex;align-items:center;gap:14px"><span class="badge" style="background:#2e9d4a;font-size:13px;padding:3px 12px">${status}</span>${X()}</span></div>
+  <div style="display:flex;gap:32px;padding:0 20px;border-bottom:1px solid #e5e7eb">${['Overview', 'Workflow', 'Team', 'Documents', 'Timeline'].map((t, i) => `<span style="padding:14px 0 12px;font-size:15px;font-weight:${i === 0 ? 600 : 500};color:${i === 0 ? '#0d619b' : '#6b7280'};border-bottom:2px solid ${i === 0 ? '#0d619b' : 'transparent'}">${t}</span>`).join('')}</div>
+  <div style="padding:20px 24px 28px">
+    <div style="font-size:20px;font-weight:700" class="ink">Requirement Details</div>
+    <div style="font-size:14px;margin:4px 0 16px" class="muted">Authoritative summary of client requirements and deal parameters</div>
+    ${body}
+  </div>`, 24);
+
+const updOffer = `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px">
+  <span style="color:#005b94;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;flex-shrink:0"><span style="width:22px;height:22px;border-radius:6px;background:#00b8c4;color:#fff;display:inline-flex;align-items:center;justify-content:center">${ic('bot', 13)}</span>Use Requirement Agent</span>
+  <span style="font-size:12px" class="muted">Paste a reply or call notes and the agent fills in the fields below.</span></div>`;
+const updComposer = (text, none = false) => `<div style="border:1px solid #e5e7eb;background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:16px">
+  <div style="min-height:90px;border:1px solid #d1d5db;border-radius:12px;padding:10px;font-size:13px;background:#fff;white-space:pre-wrap;color:${text ? '#111827' : '#9ca3af'}">${text || 'Paste or type a reply, call notes or the changes you need. The Requirement Agent reads it and updates the fields.'}</div>
+  ${none ? `<div style="font-size:12px;margin-top:6px" class="muted">No changes found. The requirement already matches this text, or the text doesn't mention requirement details.</div>` : ''}
+  <div style="display:flex;gap:8px;margin-top:8px"><span style="background:#005b94;color:#fff;border-radius:12px;height:30px;padding:0 12px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;opacity:${text ? 1 : .5}">Update Fields</span><span style="height:30px;padding:0 10px;font-size:12px;font-weight:500;display:inline-flex;align-items:center">Cancel</span></div></div>`;
+const updBanner = (n) => `<div style="display:flex;align-items:center;gap:12px;padding:8px 10px 8px 14px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:8px;margin-bottom:16px;color:#0e7490">
+  ${ic('bot', 16)}<div style="flex:1;font-size:13px"><b style="font-weight:600">Requirement Agent updated ${n} fields.</b> Review the highlights, then save.</div>
+  <span style="font-size:12px;font-weight:600;padding:0 8px">Make Additional Changes</span><span style="font-size:12px;font-weight:600;padding:0 8px">Undo All</span></div>`;
+const openQs = (qs) => `<div style="border:1px solid #e5e7eb;background:#f9fafb;border-radius:12px;padding:12px 16px;margin-bottom:16px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-size:14px;font-weight:700;color:#111827">Open questions <span style="font-weight:400;font-size:12px" class="muted">· saved with this requirement</span></div>
+  <div style="display:flex;align-items:center;gap:12px"><span style="color:#0d619b;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px">${ic('copy', 13)} Copy for customer</span><span style="color:#9ca3af;display:inline-flex">${ic('x', 16)}</span></div></div>
+  <ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.7">${qs.map((q) => `<li>${q}</li>`).join('')}</ol></div>`;
+const chgField = (label, value, was) => `<div><div class="lbl">${label}${mk()}</div><div class="inp changed">${value}</div>
+  <div style="display:flex;align-items:baseline;gap:6px;font-size:12px;margin-top:5px" class="muted"><span>${was}</span><span style="color:#005b94;font-weight:600">Undo</span></div></div>`;
+
+/* Create Collection modal */
+const ccHead = (title, sub = 'For Austin · Northwind Analytics') => `<div style="padding:20px 24px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+  <div><div style="font-size:19px;font-weight:700;letter-spacing:-.01em" class="ink">${title}</div><div style="font-size:13.5px;margin-top:3px" class="muted">${sub}</div></div>${X('x-dark', 18)}</div>`;
+const ccNew = ({ name = 'Austin Collection', noLoc = false, working = false } = {}) => modal(500, `
+  ${ccHead('New Collection', noLoc ? 'For Draft requirement · Northwind Analytics' : undefined)}
+  <div style="padding:4px 24px 24px">
+    <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Collection name</label>
+    <div class="inp" style="border-radius:10px;padding:10px 14px;${working ? 'background:#f3f4f6' : ''}">${noLoc ? 'Draft requirement Collection' : name}</div>
+    <div style="background:#f5f9fd;border:1px solid #dce8f5;border-radius:12px;padding:14px 16px;margin:18px 0 14px;display:flex;gap:12px;align-items:flex-start">
+      <div style="width:28px;height:28px;border-radius:8px;background:#e3eefa;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#0d619b">${ic('zap', 15)}</div>
+      <div style="font-size:14px;line-height:1.55;color:#1e3a5f"><b style="font-weight:600">The Create Collection Agent</b> searches LiquidSpace for spaces that match this requirement's location, headcount and workspace type, and builds the collection for you. You can add or remove spaces at any time.</div>
+    </div>
+    ${noLoc ? `<div style="font-size:13.5px;line-height:1.55" class="muted">This requirement needs a location first. Add one, or link an existing collection.</div>` : ''}
+  </div>
+  <div class="foot"><span class="link" style="${working ? 'opacity:.5' : ''}">Link an Existing Collection</span>
+    <span style="display:flex;gap:10px"><span class="btn sec" style="${working ? 'opacity:.6' : ''}">Cancel</span><span class="btn pri ${noLoc ? 'dis' : ''}">${working ? `<span class="spin" style="display:inline-flex">${ic('loader', 16)}</span> Creating…` : 'Create Collection'}</span></span></div>`);
+const ccDone = (spaces) => modal(500, `
+  <div style="padding:32px 32px 24px;text-align:center;position:relative">
+    <span style="position:absolute;top:14px;right:14px">${X('x-dark', 18)}</span>
+    <div style="width:48px;height:48px;border-radius:50%;background:#e6f4ec;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:#0f7b4f">${ic('check', 24)}</div>
+    <div style="font-size:19px;font-weight:700" class="ink">${spaces ? 'Collection populated' : 'Collection created'}</div>
+    <div style="font-size:14.5px;color:#4b5563;line-height:1.6;margin-top:8px">${spaces ? `“Austin Collection” now has ${spaces} spaces for the requirement “Austin”.` : '“Austin Collection” was created, but no suitable spaces were found in Austin. You can add spaces in LiquidSpace.'}</div>
+  </div>
+  <div class="foot" style="justify-content:flex-end"><span class="btn sec">Close</span><span class="btn pri">View Collection ${ic('ext', 15)}</span></div>`);
+const ccLink = (value = '', err = '') => modal(500, `
+  ${ccHead('Link a Collection')}
+  <div style="padding:4px 24px 24px">
+    <div style="font-size:14px;margin-bottom:16px;line-height:1.5" class="muted">Paste the link to a Collection in LiquidSpace. Its contents aren't changed.</div>
+    <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Collection URL</label>
+    <div class="inp ${value ? '' : 'ph'}" style="border-radius:10px;padding:10px 14px;${err ? '' : 'border-color:#0d619b;box-shadow:0 0 0 3px rgba(13,97,155,.15)'}">${value || 'https://liquidspace.com/collections/…'}</div>
+    ${err ? `<div style="font-size:13px;color:#b91c1c;margin-top:8px">${err}</div>` : ''}
+  </div>
+  <div class="foot"><span class="link">${ic('left', 16)} Back</span><span style="display:flex;gap:10px"><span class="btn sec">Cancel</span><span class="btn pri">Link Collection</span></span></div>`);
+
+/* Requirements table */
+const rqTable = (rows) => `<div class="ui page" style="width:980px;padding:20px;border-radius:12px">
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:visible">
+  <table class="rq-table"><thead><tr>${['REQUIREMENT', 'COMPANY', 'STATUS', 'STAGE', 'BUDGET', 'COLLECTION', 'LAST UPDATED', ''].map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+  <tbody>${rows.join('')}</tbody></table></div></div>`;
+const rqRow = (name, co, status, stage, budget, colHtml, upd, extra = '') => `<tr><td style="font-weight:600">${name}</td><td>${co}</td>
+  <td><span class="badge" style="background:${status === 'Draft' ? '#6b7280' : '#2e9d4a'}">${status}</span></td>
+  <td><span class="badge" style="background:${stage === 'Evaluation' ? '#d97706' : '#f59e0b'}">${stage}</span></td><td>${budget}</td><td style="position:relative">${colHtml}${extra}</td><td>${upd}</td><td style="color:#6b7280">${ic('dots', 18)}</td></tr>`;
+const hover = ({ status = 'Few', text = '2 of 8 meet every criterion', warn = '', update = false } = {}) => `
+  <div class="ui" style="width:240px;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);border:1px solid #e5e7eb;white-space:normal">
+    <div style="padding:12px 12px 10px"><div style="font-weight:700;font-size:15px" class="ink">Austin Collection</div><div style="font-size:12px" class="muted">8 spaces total · Updated Nov 12, 2026</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-top:6px"><span style="width:8px;height:8px;border-radius:50%;background:${status === 'Plenty' ? '#2e9d4a' : status === 'Few' ? '#e8a91c' : '#9ca3af'}"></span>${text}</div>
+      ${warn ? `<div style="font-size:12.5px;color:#b45309;margin-top:3px;line-height:1.4">${warn}</div>` : ''}</div>
+    <div style="border-top:1px solid #e5e7eb;padding:8px 12px">
+      ${[['pin', 'Austin, TX', 6], ['dollar', 'Within $14,000/mo', 3], ['users', 'For 18-31 people', 4]].map(([i, l, n]) => `<div style="display:flex;align-items:center;justify-content:space-between;font-size:14px;padding:3px 0"><span style="display:flex;align-items:center;gap:6px;color:#9ca3af">${ic(i, 13)} ${l}</span><span style="font-weight:700" class="ink">${n} spaces</span></div>`).join('')}</div>
+    <div style="border-top:1px solid #e5e7eb;display:grid;grid-template-columns:1fr 1fr"><div style="padding:8px 12px;border-right:1px solid #e5e7eb"><div style="font-size:20px;font-weight:700" class="ink">8</div><div style="font-size:12px" class="muted">Saved</div></div><div style="padding:8px 12px"><div style="font-size:20px;font-weight:700" class="ink">2</div><div style="font-size:12px" class="muted">Shortlisted</div></div></div>
+    <div style="border-top:1px solid #e5e7eb;padding:12px;display:flex;flex-direction:column;gap:8px">
+      <span style="height:36px;background:#005b94;color:#fff;border-radius:6px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px">View Collection ${ic('right', 14)}</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${update ? `<span style="grid-column:1/-1;height:36px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px">${ic('refresh', 14)}Update Collection</span>` : ''}
+        <span style="height:36px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px">${ic('bot', 14)}Assess</span>
+        <span style="height:36px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px">${ic('plus', 14)}Add Space</span>
+      </div></div></div>`;
+const rowMenu = (hasCol) => `<div class="ui menu">${hasCol
+  ? '<div>View Requirement</div><div class="sep"></div><div>View Collection</div><div>Assess Collection</div><div>Add Space</div><div>Update Collection</div><div class="danger">Remove collection</div><div class="sep"></div><div class="danger">Remove Requirement</div>'
+  : '<div>View Requirement</div><div class="sep"></div><div>Create Collection</div><div class="sep"></div><div class="danger">Remove Requirement</div>'}</div>`;
+
+/* Agent bar used by Update Collection and Add Space */
+const agentBar = (name = 'Collection Assessment Agent') => `<div style="border:1px solid #e5e7eb;background:#f9fafb;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px">
+  <div class="av xs">${ic('bot', 18)}</div><div style="flex:1;font-size:14px;font-weight:700" class="ink">${name}</div><div style="font-size:13px" class="muted">Austin · Austin Collection</div></div>`;
+
+/* Assess Collection */
+const SP = [
+  // title, venue, listing, miles, seats, price, pp, type, pass[area,cap,bud,type], group, confirmed
+  ['Suite 410', 'Domain Tower Workspace', 'Public · updated 12 d ago', 1.8, 24, 13200, 550, 'Team Office', [1, 1, 1, 1], 'Shortlist', 1],
+  ['Team Room B', 'East Sixth Commons', 'Public · updated 30 d ago', 0.9, 20, 12600, 630, 'Team Office', [1, 1, 1, 1], 'Shortlist', 1],
+  ['Studio 3', 'Plaza Saltillo Works', 'Public · updated 140 d ago', 1.2, 22, 13800, 627, 'Team Office', [1, 1, 1, 1], 'Recommendations', 0],
+  ['Suite 1200', 'Republic Square Offices', 'Public · updated 21 d ago', 2.6, 26, 16900, 650, 'Team Office', [1, 1, 0, 1], 'Recommendations', 1],
+  ['North Wing', 'Domain Northside Hub', 'Public · updated 8 d ago', 2.1, 40, 21500, 538, 'Office Suite', [1, 0, 0, 0], 'Recommendations', 1],
+  ['Office 7', 'Cesar Chavez Studios', 'Public · updated 45 d ago', 2.9, 12, 7800, 650, 'Private Office', [1, 0, 1, 0], 'Recommendations', 1],
+  ['Suite 300', 'Mueller Exchange', 'Public · updated 60 d ago', 4.4, 30, 15200, 507, 'Team Office', [0, 1, 0, 1], 'Recommendations', 1],
+  ['Floor 2', 'South Congress Lofts', 'Public · updated 19 d ago', 5.3, 50, 26000, 520, 'Office Suite', [0, 0, 0, 0], 'Recommendations', 1],
+];
+const money = (n) => '$' + n.toLocaleString('en-US');
+const GRID = '16px minmax(0,1fr) 112px 104px 144px 132px 32px';
+const cell = (v, pass, note = '') => `<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:13px" class="num ${pass ? '' : 'miss'}" ${pass ? '' : 'title="Doesn\'t meet the requirement"'}>${v}</span>${note ? `<span style="font-size:12px;line-height:1.4" class="muted num">${note}</span>` : ''}</div>`;
+const facts = [['Booking', 'Request to Book'], ['Listing updated', '12 days ago'], ['Minimum term', '6 months'], ['Guest reviews', '4.8 stars (37)'], ['Last 12 months', '41 leads, 9 tours'], ['Lead response', '2 h (92% rate)'], ['Dedicated contracts', 'On record at this venue, last billed Sep 2026']];
+const spaceRow = (s, first, open = false) => {
+  const [t, v, l, mi, seats, price, pp, type, ps, , conf] = s;
+  return `<div style="${first ? '' : 'border-top:1px solid #f3f4f6;'}background:${open ? '#f8f9fa' : '#fff'}">
+    <div style="display:grid;grid-template-columns:${GRID};column-gap:10px;padding:14px 16px;align-items:start">
+      <span style="color:#9ca3af;margin-top:1px">${ic('grip', 16)}</span>
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:13px;font-weight:600;line-height:1.4">${t}</span><span style="font-size:12px;line-height:1.4" class="muted">${v}</span><span style="font-size:12px;line-height:1.4;color:${conf ? '#6b7280' : '#dc3545'}">${l}${conf ? '' : ' · unconfirmed'}</span></div>
+      ${cell(mi.toFixed(1) + ' mi', ps[0])}${cell(seats, ps[1])}${cell(money(price), ps[2], money(pp) + ' / person')}${cell(type, ps[3])}
+      <span style="width:32px;height:32px;margin-top:-6px;display:inline-flex;align-items:center;justify-content:center;color:#6b7280;${open ? 'transform:rotate(180deg)' : ''}">${ic('chev', 16)}</span>
+    </div>
+    ${open ? `<div style="margin:0 16px 16px 42px;padding:16px 20px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px">${facts.map(([k, val]) => `<div style="display:grid;grid-template-columns:136px minmax(0,1fr);gap:12px;padding:8px 0;border-bottom:1px solid #f3f4f6"><span style="font-size:12px" class="muted">${k}</span><span style="font-size:13px">${val}</span></div>`).join('')}</div>
+      <div style="display:flex;justify-content:flex-end"><span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#005b94">Open Listing ${ic('ext', 13)}</span></div></div>` : ''}
+  </div>`;
+};
+const groupBox = (g, list, summaryTxt, openFirst = false) => `<div style="border:1px solid #e5e7eb;border-radius:16px;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid #e5e7eb"><span style="font-size:14px;font-weight:600">${g}</span><span class="count blue">${list.length}</span><span style="margin-left:auto;font-size:12px" class="muted num">${summaryTxt}</span></div>
+  <div class="tbl-head" style="grid-template-columns:${GRID}"><span></span>
+    ${[['Space'], ['Distance', '≤ 3 mi'], ['Seats', '18-31'], ['Price / mo', '≤ $14,000'], ['Type', 'Team Office']].map(([a, b]) => `<span style="display:flex;flex-direction:column;gap:2px"><span class="eyebrow">${a}</span>${b ? `<span style="font-size:12px" class="muted num">${b}</span>` : ''}</span>`).join('')}<span></span></div>
+  ${list.map((s, i) => spaceRow(s, i === 0, openFirst && i === 0)).join('')}</div>`;
+const dropZone = (g, over = false) => `<div style="display:flex;align-items:center;gap:8px;height:48px;padding:0 16px;border:1px dashed ${over ? '#005b94' : '#d1d5db'};border-radius:12px;background:${over ? '#e6f1f8' : '#fff'}"><span style="font-size:13px;font-weight:600">${g}</span><span class="count">0</span><span style="margin-left:auto;font-size:12px;color:${over ? '#005b94' : '#6b7280'}">Drag spaces here</span></div>`;
+const ledger = (changed = false) => `<section style="border:1px solid #e5e7eb;border-radius:16px;overflow:hidden">
+  <div style="display:grid;grid-template-columns:156px minmax(0,1fr)"><div class="eyebrow" style="display:flex;align-items:center;padding:12px 20px;border-right:1px solid #f3f4f6">Requirement details</div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 28px;padding:12px 20px">${[['Location', 'Austin'], ['Headcount', '22'], ['Budget', changed ? '$16,000/mo' : '$14,000/mo'], ['Workspace type', 'Team Office'], ['Start date', 'Feb 1, 2027']].map(([k, v]) => `<span style="display:inline-flex;align-items:baseline;gap:8px"><span style="font-size:12px" class="muted">${k}</span><span style="font-size:13px;font-weight:600" class="num">${v}</span></span>`).join('')}</div></div>
+  <div style="display:grid;grid-template-columns:156px minmax(0,1fr);background:#f8f9fa;border-top:1px solid #f3f4f6"><div class="eyebrow" style="display:flex;align-items:center;padding:12px 20px;border-right:1px solid #f3f4f6">Agent searched</div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 28px;padding:12px 20px">${[['Distance', 'Within 3 mi', 'Provided', ''], ['Seats', '18-31', 'Derived', 'from headcount'], ['Price', 'Up to ' + (changed ? '$16,000' : '$14,000') + '/mo', 'Provided', ''], ['Type', 'Team Office', 'Provided', '']].map(([k, v, p, w]) => `<span style="display:inline-flex;align-items:center;gap:8px"><span style="font-size:12px" class="muted">${k}</span><span style="font-size:13px;font-weight:600" class="num">${v}</span>${w ? `<span style="font-size:12px" class="muted">· ${w}</span>` : ''}<span class="prov ${p}">${p}</span></span>`).join('')}</div></div>
+  <div style="display:flex;align-items:center;gap:6px;padding:10px 20px;border-top:1px solid #e5e7eb;font-size:12px" class="muted">${ic('lock', 12)}<span>Collection built by Create Collection Agent · updated Nov 12, 2026 · requirement ${changed ? 'changed' : 'unchanged'} since</span></div></section>`;
+const rag = (p) => (p >= 0.7 ? '#28a745' : p >= 0.4 ? '#ffa500' : '#dc3545');
+const scorecard = (fits = 2, total = 8, crit = [['Distance', 6, 'Within 3 mi'], ['Seats', 4, '18-31 people'], ['Price', 3, 'Up to $14,000/mo'], ['Type', 5, 'Team Office']]) => `
+  <div style="display:grid;grid-template-columns:1.35fr repeat(${crit.length},minmax(0,1fr));border:1px solid #e5e7eb;border-radius:16px;overflow:hidden" class="shadow">
+    <div style="display:flex;flex-direction:column;gap:6px;padding:18px 20px;background:#f8f9fa;border-right:1px solid #e5e7eb"><span class="eyebrow">Meet every criterion</span>
+      <div style="display:flex;align-items:baseline;gap:6px" class="num"><span style="font-size:32px;line-height:1;font-weight:700;color:${fits >= 5 ? '#28a745' : fits === 0 ? '#dc3545' : '#374151'}">${fits}</span><span style="font-size:14px;font-weight:500">of ${total} spaces</span></div>
+      <span style="font-size:12px" class="muted">Thin below 5 confirmed spaces</span></div>
+    ${crit.map(([k, n, r], i) => `<div style="display:flex;flex-direction:column;gap:8px;padding:18px 20px;${i < crit.length - 1 ? 'border-right:1px solid #e5e7eb' : ''}"><span class="eyebrow">${k}</span>
+      <div style="display:flex;align-items:baseline;gap:4px" class="num"><span style="font-size:22px;line-height:1;font-weight:600">${n}</span><span style="font-size:13px" class="muted">of ${total}</span></div>
+      <div class="bar"><i style="width:${Math.round(n / total * 100)}%;background:${rag(n / total)}"></i></div><span style="font-size:12px" class="muted">${r}</span></div>`).join('')}</div>`;
+const insight = `<div class="note-amber"><span style="color:#b45309;flex-shrink:0;margin-top:1px">${ic('alert', 16)}</span><p style="margin:0"><strong style="font-weight:600">Price is the gap.</strong> 5 of 8 spaces are over $14,000/mo. The workflow counts a collection as thin below 5 confirmed spaces. This one has 2.</p></div>`;
+const staleLine = `<div style="font-size:14px;line-height:1.5">1 more space would meet every criterion, but its listing is over 90 days old.</div>`;
+const changedNote = `<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid #fde68a;background:#fffbeb;border-radius:8px"><div style="font-size:13px;line-height:1.5"><strong style="font-weight:600">The requirement has changed since this collection was built:</strong> budget $14,000/mo → $16,000/mo.</div><span style="height:36px;background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:0 14px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap">${ic('refresh', 14)} Update Collection</span></div>`;
+const sinceNote = `<div class="note-blue"><span style="color:#004d7d;flex-shrink:0;margin-top:2px">${ic('info', 15)}</span><span><strong style="font-weight:600">Since last assessed on Nov 4:</strong> budget $12,000/mo → $14,000/mo. Matches <span class="num">0 → 2</span>.</span></div>`;
+const shareMenu = (state = 'idle') => `<div style="position:absolute;right:44px;top:62px;z-index:3;width:296px;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14)">
+  ${[[state === 'copied' ? 'check' : 'link', state === 'copied' ? 'Link Copied' : 'Copy Link', 'Anyone with the link can view the collection'],
+     [state === 'building' ? 'loader' : 'download', state === 'building' ? 'Building Report…' : 'Download PDF Report', state === 'error' ? "Couldn't build the report. Try again." : 'This assessment, formatted to attach or print']]
+    .map(([i, t, s]) => `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px"><span style="display:inline-flex;width:28px;height:28px;flex-shrink:0;align-items:center;justify-content:center;border-radius:8px;background:#e6f1f8;color:#005b94" class="${i === 'loader' ? 'spin' : ''}">${ic(i, 14)}</span><span style="display:flex;flex-direction:column"><span style="font-size:13px;font-weight:600">${t}</span><span style="font-size:12px;color:${s.startsWith('Couldn') ? '#dc3545' : '#6b7280'}">${s}</span></span></div>`).join('')}</div>`;
+const assessModal = ({ body, share = '', shareBtn = true, sub = 'Austin Collection · Austin · 1 added by hand', footNote = true, w = 960 }) => `<div class="ui modal" style="width:${w}px;border-radius:16px;position:relative">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px 20px;border-bottom:1px solid #e5e7eb">
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:0"><div style="font-size:20px;line-height:1.25;font-weight:600;letter-spacing:-.01em">Assess Collection</div><p style="margin:0;font-size:13px;line-height:1.5" class="muted">${sub}</p></div>
+    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+      <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:#ecfeff;border:1px solid #a5f3fc;color:#0e7490;font-size:12px;font-weight:600;white-space:nowrap">${ic('bot', 13)} Collection Assessment Agent</span>
+      ${shareBtn ? `<span style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid ${share ? '#005b94' : '#d1d5db'};border-radius:8px;font-size:13px;font-weight:500">${ic('share', 14)} Share</span>` : ''}
+      <span style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;color:#6b7280">${ic('x', 18)}</span></div></div>
+  ${share}
+  <div style="padding:20px 24px 24px;display:grid;gap:20px">${body}</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;border-top:1px solid #e5e7eb;background:#f8f9fa">
+    <span style="font-size:12px" class="muted">${footNote ? "Values in red don't meet the requirement. Drag a space to move it between Shortlist, Favorites and Recommendations." : ''}</span>
+    <span style="height:36px;padding:0 18px;border-radius:12px;background:#005b94;color:#fff;font-size:13px;font-weight:600;display:inline-flex;align-items:center">Done</span></div></div>`;
+const shortlist = SP.filter((s) => s[9] === 'Shortlist');
+const recs = SP.filter((s) => s[9] === 'Recommendations');
+const groupsFull = (openFirst = false) => `${dropZone('Favorites')}${groupBox('Shortlist', shortlist, '2 meet all', openFirst)}${groupBox('Recommendations', recs, '1 meets all · 1 misses one · 4 miss 2 or more')}`;
+const emptyBody = (title, rows) => `<div class="eyebrow" style="margin:8px 0 -8px">${title}</div>
+  <div style="border:1px solid #e5e7eb;border-radius:16px;padding:2px 20px">${rows.map(([l, t], i) => `<div style="display:flex;gap:16px;padding:12px 0;${i ? 'border-top:1px solid #f3f4f6' : ''}"><div style="width:118px;flex-shrink:0;font-size:13px;font-weight:600;color:${l === 'Not assessed' ? '#6b7280' : '#374151'}">${l}</div><div style="flex:1;font-size:13px;line-height:1.5;color:${l === 'Not assessed' ? '#6b7280' : '#374151'}">${t}</div></div>`).join('')}</div>`;
+
+const updModal = (noLoc = false) => modal(560, `
+  <div class="hdr-blue"><span class="t">Update Collection</span>${X()}</div>
+  <div style="padding:20px 24px 24px">${agentBar()}
+    ${noLoc ? '' : `<div style="font-size:14px;line-height:1.55;margin-top:16px;padding-left:12px;border-left:2px solid #0d619b">The requirement has changed since this collection was built: budget $14,000/mo → $16,000/mo.</div>`}
+    <div style="font-size:14px;line-height:1.6;margin-top:16px">${noLoc ? "I can't search for spaces until the requirement has a location I can find." : "I'll search again with the current requirement and replace the Recommendations: 3 spaces meet every criterion, 2 would be added and 3 removed. The 2 spaces in your Shortlist and Favorites stay as they are."}</div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px"><span style="border:1px solid #d1d5db;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:600" class="ink">Cancel</span><span style="background:#0d619b;color:#fff;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:600;opacity:${noLoc ? .5 : 1}">Update collection</span></div>
+  </div>`);
+const addModal = ({ value = '', busy = false, msg = '', noLoc = false } = {}) => modal(640, `
+  <div class="hdr-blue"><span class="t">Add Space</span>${X()}</div>
+  <div style="padding:20px 24px 24px">${agentBar()}
+    ${noLoc ? `<div style="font-size:14px;margin-top:16px;line-height:1.55">This requirement has no location I can find, so spaces can't be added here yet.</div>` : `
+    <div style="margin-top:18px"><div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Listing link</div>
+      <div style="display:flex;gap:8px"><div class="inp ${value ? '' : 'ph'}" style="height:40px;min-height:40px;padding:9px 12px;font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${value || 'https://liquidspace.com/us/…'}</div>
+      <span style="background:#005b94;color:#fff;border-radius:8px;padding:0 22px;height:40px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;white-space:nowrap;opacity:${value && !busy ? 1 : .5}">${busy ? 'Checking…' : 'Add'}</span></div>
+      ${msg ? `<div style="font-size:13.5px;margin-top:10px">${msg}</div>` : ''}</div>`}
+  </div>`);
+
+const wfTask = (name, desc, line, warn, actions, done) => `<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:16px">
+  <span style="margin-top:4px;width:20px;height:20px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;${done ? 'background:#0f7b4f;color:#fff' : 'border:1.5px solid #d1d5db'}">${done ? ic('check', 14, '#fff', 'stroke-width="3"') : ''}</span>
+  <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600" class="ink">${name}</div><div style="font-size:13px;margin-top:4px" class="muted">${desc}</div>
+    <div style="margin-top:10px"><div style="font-size:13px;font-weight:600" class="ink">${line}</div>${warn ? `<div style="font-size:13px;color:#b45309;margin-top:4px;line-height:1.45">${warn}</div>` : ''}
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">${actions.map((a) => `<span style="background:#fff;color:#0b4f7f;border:1px solid #0b4f7f;border-radius:6px;padding:5px 12px;font-size:13px;font-weight:600">${a}</span>`).join('')}</div></div></div></div>`;
+const workflow = (changed, assessed) => modal(820, `
+  <div class="hdr-blue" style="padding:16px"><span class="t">Requirement Details</span><span style="display:flex;align-items:center;gap:14px"><span class="badge" style="background:#2e9d4a;font-size:13px;padding:3px 12px">Active</span>${X()}</span></div>
+  <div style="display:flex;gap:32px;padding:0 20px;border-bottom:1px solid #e5e7eb">${['Overview', 'Workflow', 'Team', 'Documents', 'Timeline'].map((t, i) => `<span style="padding:14px 0 12px;font-size:15px;font-weight:${i === 1 ? 600 : 500};color:${i === 1 ? '#0d619b' : '#6b7280'};border-bottom:2px solid ${i === 1 ? '#0d619b' : 'transparent'}">${t}</span>`).join('')}</div>
+  <div style="padding:20px 24px 24px">
+    <div style="border:1px solid #e5e7eb;border-radius:12px;padding:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:700" class="ink">Stage Tasks: Evaluation</span><span style="font-size:15px" class="muted">(2)</span></div><span style="background:#0b4f7f;color:#fff;border-radius:6px;padding:10px 14px;font-size:14px;font-weight:600">+ Add Task</span></div>
+      ${wfTask('Create Collection', 'Source candidate spaces into a LiquidSpace Collection.', 'Austin Collection · 8 spaces · updated Nov 12, 2026', changed ? 'The requirement has changed since this collection was built: budget $14,000/mo → $16,000/mo.' : '', ['View Collection', 'Add Space', ...(changed ? ['Update Collection'] : [])], true)}
+      ${wfTask('Assess Collection', 'Check whether the candidate list is good enough.', assessed ? '2 of 8 meet every criterion · assessed Nov 12, 2026' : 'Not assessed yet', changed ? 'The collection has changed since it was last assessed.' : '', ['Assess Collection'], assessed)}
+    </div></div>`, 24);
+
+/* ───────────── Frames ───────────── */
+const F = [];
+const sec = (id, title, desc) => F.push({ sec: true, id, title, desc });
+const grp = (t) => F.push({ grp: t });
+const fr = (id, title, when, html) => F.push({ id, title, when, html });
+
+sec('requirement', 'Requirement Agent', 'Creates a Requirement from customer correspondence or a license, and updates it from later replies. Lives inside Create Requirement and Requirement Details. [R1–R12]');
+grp('Create Requirement · starting');
+fr('C1', 'Agent offered (closed bar)', '<b>When:</b> Create Requirement opens. The manual form below is unchanged; the agent is opt-in. [R12]',
+  stage(createReq(agentClosed + `<div class="sect">Deal Details</div><div class="row2">${field('Company', '')}${field('Status *', 'Active')}</div><div class="sect">Business Requirements</div><div class="mb20">${field('Requirement Name *', '')}</div>`)));
+fr('C2', 'Composer, empty', '<b>When:</b> the user clicks Use Requirement Agent. Send is disabled until there is text, a file or a License ID. [R1]',
+  stage(createReq(composer())));
+fr('C2a', 'Composer with pasted text', '<b>When:</b> text is pasted. Send turns green; Ctrl/Cmd + Enter also drafts. [R1]',
+  stage(createReq(composer({ text: SAMPLE_EMAIL }))));
+fr('C2b', 'License picker', '<b>When:</b> the License ID field gets focus. Opens on licenses needing a decision in the next 6 months, soonest first; overdue in red. Typing filters; “Show all licenses” lists all. [R6]',
+  stage(createReq(composer({ licOpen: true }), '', 'min-height:470px')));
+fr('C3', 'Unreadable file', '<b>When:</b> the attached file isn’t a text file (prototype limit). [R1]',
+  stage(createReq(composer({ file: 'Northwind brief.pdf', unreadable: true }))));
+fr('C4', 'Working', '<b>When:</b> the user sends. Progress lines rotate: “Reading what you pasted…” / “Reading the file…” / “Pulling license {ID}…”, then “Pulling out the requirement details…”, “Checking what is missing…”. [R1]',
+  stage(createReq(composer({ working: 'Pulling out the requirement details…' }))));
+fr('C5', 'Nothing found', '<b>When:</b> the text has no requirement details. Returns to the composer with the text kept. [R1]',
+  stage(createReq(composer({ text: 'Thanks, talk soon!' })), cap('Toast', toast('err', "I didn't find a requirement in that text. Add details and try again, or fill the form yourself."))));
+
+grp('Create Requirement · draft ready');
+fr('C6', 'Draft ready (with C6c, C7)', '<b>When:</b> drafting finishes. Summary with fields filled, “What I noticed” (revisions, preferences, set-aside items), “Needed from customer”, and the form with agent-filled fields marked. [R1–R5]',
+  stage(createReq(summary({ title: 'Drafted from pasted text', sub: 'Review the marked fields, then create the requirement.', noticed: AUSTIN_NOTICED }) + needed(AUSTIN_NEEDED) + viewChips(4) + reqForm(AUSTIN, AUSTIN_MARKS, { company: 1, term: 1 }, { short: true }))));
+fr('C6-form', 'Draft ready, full form', '<b>When:</b> the user scrolls the draft. ✦ marks agent-filled fields (hover shows the source: “From your text”, “From the license”, “Suggested, please confirm”); editing removes it. Missing fields say “Not provided”. [R2, R4]',
+  stage(createReq(reqForm(AUSTIN, AUSTIN_MARKS, { company: 1, term: 1 }) + reqFooter('Save as Draft'))));
+fr('C6a', 'Draft from a license', '<b>When:</b> a License ID is sent. Customer, location, seats and size carry over; commercial terms don’t. [R6]',
+  stage(createReq(summary({ title: 'Drafted from license LIC-2023-014', sub: 'Customer, location, seats and size carried over. Commercial terms were not.', filled: 6 }) + needed([['Monthly budget', 'Target spend per month'], ['Start date', 'Current term ends Mar 31, 2027'], ['Term length', 'Months of commitment']], 'Northwind Analytics') + viewChips(3) + reqForm({ company: 'Northwind Analytics', name: 'Austin renewal', location: 'Austin', type: '', capacity: '22', size: '3,400' }, { company: 1, name: 1, location: 1, capacity: 1, size: 1 }, {}, { short: true }))));
+fr('C6a-1', 'Draft from a license and an email', '<b>When:</b> both are sent. The text wins where it differs from the license. [R7]',
+  stage(createReq(summary({ title: 'Drafted from license LIC-2023-014 and pasted text', sub: 'Customer, location, seats and size carried over. Commercial terms were not.', filled: 10 }))));
+fr('C6a-2', 'License not found', '<b>When:</b> the License ID doesn’t exist. Drafting continues from the text. [R6]',
+  stage(createReq(summary({ title: 'Drafted from pasted text', sub: 'Review the marked fields, then create the requirement.', err: "I couldn't find license LIC-2099-001, so I drafted from the text alone." }))));
+fr('C6b', 'Several cities', '<b>When:</b> the text covers more than one city. One draft per city; pills switch between them, and each saves as its own Requirement. [R8]',
+  stage(createReq(summary({ title: 'Drafted 2 requirements · Madrid and Lisbon', sub: 'Review the marked fields, then create the requirement.', badge: 'Drafts ready', filled: 16, total: 26 }) +
+    `<div style="display:flex;gap:8px;margin-bottom:16px"><span style="padding:8px 16px;border-radius:999px;font-size:14px;font-weight:600;border:1.5px solid #0d619b;background:#e8f1f8;color:#0d619b">Madrid</span><span style="padding:8px 16px;border-radius:999px;font-size:14px;font-weight:600;border:1.5px solid #d1d5db;background:#fff" class="ink">Lisbon</span></div>` +
+    needed([['Monthly budget', 'Target spend per month'], ['Term length', 'Months of commitment']], 'Slalom', ' · Madrid'))));
+
+grp('Create Requirement · saving');
+fr('C8', 'Likely duplicate', '<b>When:</b> saving a draft that matches an existing Requirement (same company and city, headcount within 20%). Shown once. [R9]',
+  stage(createReq(reqFooter('Create Requirement', 'This looks like an existing requirement: Austin (Northwind Analytics, 22 seats). Create it anyway?'))));
+fr('C9', 'Name missing', '<b>When:</b> saving without a Requirement Name, the only field that blocks saving. [R4]',
+  stage(cap('Toast', toast('err', 'Requirement Name is required.'))));
+fr('C10', 'Save button', '<b>When:</b> always. Reads “Save as Draft” while required details are missing, otherwise “Create Requirement”. [R4]',
+  stage(cap('Details missing', `<div class="ui" style="width:360px;padding:16px;border-radius:12px">${reqFooter('Save as Draft')}</div>`), cap('Complete', `<div class="ui" style="width:360px;padding:16px;border-radius:12px">${reqFooter('Create Requirement')}</div>`)));
+
+grp('Requirement Details · update from text');
+fr('U0', 'Agent offered', '<b>When:</b> Requirement Details, Overview tab, on any Requirement. [R10]',
+  stage(details(updOffer + openQs(['How long a term are they planning?', 'Which company is this requirement for?']))));
+fr('U1', 'Composer', '<b>When:</b> the user clicks Use Requirement Agent. [R10]',
+  stage(details(updComposer('Hi David, we can do a 24-month term. Headcount is now 24 and we could go to $15,000 a month.'))));
+fr('U2', 'No changes found', '<b>When:</b> the text matches the record or has no requirement details. [R10]',
+  stage(details(updComposer('Thanks David, looking forward to the options.', true))));
+fr('U3', 'Fields updated, review', '<b>When:</b> changes are found. Changed fields are highlighted with “Was …” and Undo; nothing is saved until Save Changes. Undo All reverts every change. [R10]',
+  stage(details(updBanner(3) + `<div class="sect">Business Requirements</div><div class="row2">${chgField('Capacity / Headcount', '24', 'Was 22')}${field('Size (sq ft)', '')}</div><div class="sect">Commercial Terms</div><div class="row2">${field('Start Date', '02/01/2027', { marked: true })}${chgField('Term Length (mos)', '24', 'Was empty')}</div><div class="row2">${field('Expected Close Date', '', { ph: 'mm/dd/yyyy' })}${chgField('Budget ($/mo)', '15000', 'Was 14000')}</div>`)));
+fr('U4', 'Saved', '<b>When:</b> Save Changes is clicked after an update. The Timeline records “Requirement Updated” with before and after values. [R10]',
+  stage(cap('Saved, complete', toast('ok', 'Requirement updated.')), cap('Saved, still missing details', toast('ok', 'Kept as a Draft: Term length, Company.'))));
+fr('U5', 'Open questions', '<b>When:</b> a Requirement still has unanswered questions. Copy for customer copies a ready-to-send message; × dismisses. Questions clear as fields are filled. [R5]',
+  stage(details(openQs(['I read the start as Feb 1, 2027. Is that the actual day?', 'How long a term are they planning?', 'Do they have a size in mind (sq ft)? At about 150 sq ft per person, 22 people would be roughly 3,300 sq ft.', 'Which company is this requirement for?'])),
+    cap('Toasts', toast('ok', 'Message for the customer copied.') + '<div style="height:10px"></div>' + toast('ok', 'Open questions dismissed.'))));
+
+sec('create', 'Create Collection Agent', 'Creates, fills and links a LiquidSpace Collection for a Requirement in one action, or links an existing one. [C1–C7]');
+grp('Entry points');
+fr('T1', 'Requirements table', '<b>When:</b> always. Requirements without a Collection show Create Collection; with one, a pill with the space count. [C1, C6]',
+  stage(rqTable([rqRow('Austin', 'Northwind Analytics', 'Active', 'Intake', '$14,000', '<span class="colpill">8 spaces</span>', '11/12/2026'), rqRow('Dallas', 'Brightline Health', 'Active', 'Intake', '$28,000', `<span class="cc-btn">${ic('plus', 13)} Create Collection</span>`, '10/09/2026'), rqRow('Test', 'Slalom', 'Draft', 'Intake', '$5,000', `<span class="cc-btn">${ic('plus', 13)} Create Collection</span>`, '10/15/2026')])));
+fr('T2', 'Row menu', '<b>When:</b> the row’s ⋯ is clicked. [C1, C5]',
+  stage(cap('No Collection', rowMenu(false)), cap('Has a Collection', rowMenu(true))));
+grp('Create');
+fr('S1', 'New Collection', '<b>When:</b> Create Collection is clicked. Name is editable. [C1, C2]', stage(ccNew()));
+fr('S2', 'No location', '<b>When:</b> the Requirement has no Location. Create is disabled; Link still works. [C3]', stage(ccNew({ noLoc: true })));
+fr('S3', 'Creating', '<b>When:</b> Create Collection is clicked. Inputs and buttons are disabled. [C1]', stage(ccNew({ working: true })));
+fr('S4', 'Collection populated', '<b>When:</b> spaces were found. [C1, C7]', stage(ccDone(8)));
+fr('S5', 'Created empty', '<b>When:</b> nothing matched. The Collection still exists. [C4]', stage(ccDone(0)));
+grp('Link existing');
+fr('L1', 'Link a Collection', '<b>When:</b> Link an Existing Collection is clicked. Enter submits. [C5]', stage(ccLink()));
+fr('L2', 'Invalid link', '<b>When:</b> the URL isn’t a LiquidSpace Collection, or is empty. Clears on edit. [C5]',
+  stage(ccLink('https://example.com/my-list', "That doesn't look like a LiquidSpace Collection link. It should look like liquidspace.com/collections/…"), ccLink('', 'Enter a LiquidSpace Collection URL.')));
+grp('At a glance');
+fr('T3', 'Collection hover card', '<b>When:</b> hovering the Collection pill. Status dot: green Plenty (5+), amber Few (1–4), gray None, empty or not assessed. [C6, A3]',
+  stage(cap('Few', hover()), cap('Plenty', hover({ status: 'Plenty', text: '6 of 8 meet every criterion' })), cap('Not assessed', hover({ status: 'None', text: 'Not assessed' })), cap('Empty', hover({ status: 'None', text: 'Empty collection' }))));
+fr('T4', 'Hover card with change notice', '<b>When:</b> the Requirement changed since the Collection was built (Update appears), or the Collection changed since it was assessed. [A6]',
+  stage(cap('Requirement changed', hover({ warn: 'The requirement has changed since this collection was built: budget $14,000/mo → $16,000/mo.', update: true })), cap('Collection changed', hover({ warn: 'The collection has changed since it was last assessed.' }))));
+
+sec('assess', 'Assess Collection Agent', 'Tells the TM user whether a Collection’s candidate list is good enough, and why. Also Update Collection and Add Space. [A1–A12]');
+grp('Assess');
+fr('A1–A9', 'Assessment', '<b>When:</b> Assess is opened on a Collection with spaces. What it was built from, the scorecard, the main gap, then spaces by group. [A1–A4, A11]',
+  stage(assessModal({ body: ledger() + scorecard() + insight + staleLine + groupsFull() })));
+fr('A8a', 'Space expanded', '<b>When:</b> a space row is clicked. Venue facts and Open Listing. [A10]',
+  stage(assessModal({ body: groupBox('Shortlist', shortlist, '2 meet all', true) })));
+fr('A6', 'Requirement changed', '<b>When:</b> a matching Requirement field changed since the Collection was built. Stays until Update Collection runs. [A6]',
+  stage(assessModal({ body: ledger(true) + scorecard() + changedNote })));
+fr('A7', 'Since last assessed', '<b>When:</b> re-run after the Requirement or Collection changed. Also recorded on the Timeline as “Collection Assessed”. [A8]',
+  stage(assessModal({ body: scorecard() + sinceNote })));
+fr('A8b', 'Dragging between groups', '<b>When:</b> a space is dragged. The target group highlights; the move is recorded on the Timeline and updates Shortlisted. [A11]',
+  stage(assessModal({ body: dropZone('Favorites', true) + groupBox('Shortlist', shortlist, '2 meet all') })));
+fr('A10', 'Share menu', '<b>When:</b> Share is clicked. Hidden when there is nothing to assess. [A12]',
+  stage(cap('Open', assessModal({ w: 760, share: shareMenu(), body: '<div style="height:150px"></div>', footNote: false })), cap('Link copied', assessModal({ w: 760, share: shareMenu('copied'), body: '<div style="height:150px"></div>', footNote: false })), cap('Building / failed', assessModal({ w: 760, share: shareMenu('building'), body: '<div style="height:150px"></div>', footNote: false }) + '<div style="height:16px"></div>' + assessModal({ w: 760, share: shareMenu('error'), body: '<div style="height:150px"></div>', footNote: false }))));
+grp('Empty or unassessable');
+fr('E1', 'Empty, location known', '<b>When:</b> the Collection has no spaces. Counts nearby listings per criterion so the user knows what to change. [A5]',
+  stage(assessModal({ shareBtn: false, footNote: false, w: 760, sub: 'Austin Collection · Austin', body: `<div style="font-size:14px;line-height:1.5">The collection is empty. 3 listings near Austin would meet every criterion.</div>` + emptyBody("Why it's empty", [['Area', '24 of 40 listings near Austin are within 3 miles.'], ['Workspace type', '18 of 40 are Team Office.'], ['Capacity', '11 of 40 hold 18-31 people.'], ['Budget', '9 of 40 are within $14,000/mo.'], ['Together', '3 of 40 meet all of them.'], ['Platform', 'Populate returns nothing when a requirement has a budget, which can leave a collection empty even when spaces exist.']]) })));
+fr('E2', 'Location not found', '<b>When:</b> the Requirement’s location can’t be searched, or is missing. [A5]',
+  stage(assessModal({ shareBtn: false, footNote: false, w: 760, sub: 'Draft Collection · Draft requirement', body: `<div style="font-size:14px;line-height:1.5">I can't find “Domain area” as a location.</div>` + emptyBody("Why it's empty", [['Location', '“Domain area” isn\'t a place I can search near. Use Edit requirement to set a city.']]) })));
+fr('E4', 'Spaces not readable', '<b>When:</b> the Collection’s spaces can’t be read. Status shows “Not assessed”. [A1]',
+  stage(assessModal({ shareBtn: false, footNote: false, w: 760, sub: 'Chicago Collection · Chicago', body: `<div style="font-size:14px;line-height:1.5">I can't read this collection's spaces.</div>` + emptyBody('Gaps and trade-offs', [['Not assessed', "I can't read this collection's spaces, so I can't compare them to the requirement."]]) })));
+grp('Update Collection');
+fr('UC1', 'Update Collection', '<b>When:</b> Update Collection is clicked (hover card, assessment, Workflow tab). Says what will change before it runs; opens the assessment after. [A7]', stage(updModal()));
+fr('UC2', 'Update unavailable', '<b>When:</b> the Requirement has no location that can be searched. [A7]', stage(updModal(true)));
+grp('Add Space');
+fr('AS1', 'Add Space', '<b>When:</b> Add Space is clicked (hover card, row menu, Workflow tab). [A9]', stage(addModal()));
+fr('AS2', 'Checking', '<b>When:</b> Add is clicked. [A9]', stage(addModal({ value: 'https://liquidspace.com/us/tx/austin/east-sixth-commons/team-room-b', busy: true })));
+fr('AS3', 'Rejected link', '<b>When:</b> the link isn’t a listing, or the space is already in the Collection. [A9]',
+  stage(addModal({ value: 'https://example.com/space', msg: "That isn't a LiquidSpace listing link. Copy the link from a space's page on liquidspace.com." }), addModal({ value: 'https://liquidspace.com/us/tx/austin/domain-tower/suite-410', msg: 'That space is already in this collection.' })));
+fr('AS4', 'No location', '<b>When:</b> the Requirement has no location that can be searched. [A9]', stage(addModal({ noLoc: true })));
+fr('AS5', 'Added', '<b>When:</b> the space is added. The modal closes; the space starts in Shortlist and the Timeline records it. [A9]',
+  stage(cap('Toast', toast('ok', 'Added “Team Room B” (East Sixth Commons, public) to Austin Collection.'))));
+grp('Workflow tab');
+fr('W1', 'Evaluation tasks', '<b>When:</b> Requirement Details → Workflow. Lines are read from the Collection and the last assessment. [C1, A1]',
+  stage(cap('Assessed', workflow(false, true)), cap('Changed, not yet reassessed', workflow(true, false))));
+
+/* ───────────── Render ───────────── */
+const nav = ['<h1>TM Agents</h1><div class="sub">Design file · Nov 2026</div>'];
+const out = [];
+for (const f of F) {
+  if (f.sec) { nav.push(`<h2>${f.title}</h2>`); out.push(`<section class="df-section"><h2 id="${f.id}">${f.title}</h2><p>${f.desc}</p>`); continue; }
+  if (f.grp) { out.push(`<div class="df-group">${f.grp}</div>`); continue; }
+  const anchor = 'f-' + f.id.replace(/[^A-Za-z0-9-]/g, '-');
+  nav.push(`<a href="#${anchor}"><b>${f.id}</b><span>${f.title}</span></a>`);
+  out.push(`<article class="frame" id="${anchor}"><div class="frame-head"><span class="frame-id">${f.id}</span><span class="frame-title">${f.title}</span><span class="frame-when">${f.when}</span></div>${f.html}</article>`);
+}
+document.getElementById('nav').innerHTML = nav.join('');
+document.getElementById('frames').innerHTML = out.join('').replace(/<section class="df-section">/g, (m, i) => (i ? '</section>' : '') + m) + '</section>';
+</script>
+</body>
+</html>
