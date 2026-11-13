@@ -22,7 +22,7 @@ As a TM user, I want to…
 | A9 | add a specific space, such as one a venue proposed | spaces found outside the search are included |
 | A10 | see each venue's facts (booking method, minimum term, reviews, recent leads and tours, dedicated contracts on record) | I can judge a space beyond the criteria |
 | A11 | keep spaces in Shortlist, Favorites and Recommendations, as on LiquidSpace | I can separate my picks from the agent's matches |
-| A12 | share the Collection or a report of the assessment | colleagues and customers can see it without TM |
+| A12 | copy a ready-to-send email about the Collection, or download a report of the assessment | I can update the customer in one step, and the link brings them back to this requirement |
 
 ## Rules
 **A1–A4: Assess**
@@ -50,7 +50,12 @@ As a TM user, I want to…
 **A10–A12: Venue facts, groups, sharing**
 - **Required:** each space's venue facts are available on demand, stated as observations, never as scores.
 - **Required:** spaces are shown in their LiquidSpace groups. Moving a space between groups is recorded on the Timeline and updates the Shortlisted count.
-- **Required:** the user can copy the Collection's link and download the assessment as a PDF. Both are unavailable when there's nothing to assess.
+- **Required:** Copy Email copies a ready-to-send email: a subject, a summary of the result, the spaces (Shortlist first, otherwise the spaces meeting every criterion), and a link that opens this requirement's assessment. TM never sends it; the user pastes and sends.
+- **Required:** when few or no spaces fit, the email asks the customer about the main gap (for example, whether the headcount range is firm) instead of presenting a list.
+- **Required:** the email uses customer-facing facts only (distance, seats, price, workspace type). Venue lead data, response rates, dedicated contracts and the over-market flag never go in, and it never promises availability.
+- **Required:** the user can download the assessment as a PDF.
+- **Required:** both are unavailable when there's nothing to assess.
+- **Default:** up to 5 spaces in the email.
 
 ## Acceptance criteria
 1. Every Requirement with a Collection offers Assess. (A1)

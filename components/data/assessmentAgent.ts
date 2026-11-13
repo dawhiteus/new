@@ -121,6 +121,7 @@ export function setGroup(r: MvpRequirement, sp: AssessSpace, g: Group) {
   const m = groupMap.get(r.id) ?? new Map<string, Group>();
   m.set(keyOf(sp), g);
   groupMap.set(r.id, m);
+  saveState();
 }
 export const shortlistCount = (r: MvpRequirement) => membersFor(r).members.filter((m) => groupOf(r, m) === 'Shortlist').length;
 
@@ -133,7 +134,7 @@ function baseMembers(r: MvpRequirement): AssessSpace[] {
   const key = collectionCityFor(r.collection?.url);
   return refreshed.get(r.id) ?? (key ? collectionSpaces(key) : []);
 }
-export function addSpace(r: MvpRequirement, sp: AssessSpace) { bump(r.id); addedSpaces.set(r.id, [...(addedSpaces.get(r.id) ?? []), { ...sp, inCollection: true, addedByHand: true }]); }
+export function addSpace(r: MvpRequirement, sp: AssessSpace) { bump(r.id); addedSpaces.set(r.id, [...(addedSpaces.get(r.id) ?? []), { ...sp, inCollection: true, addedByHand: true }]); saveState(); }
 
 function membersFor(r: MvpRequirement): { members: AssessSpace[]; recorded: boolean } {
   const key = collectionCityFor(r.collection?.url);
@@ -421,7 +422,7 @@ function diffs(prev: Snapshot, now: Values, spaces: number, rid: string): string
 // The requirement values a collection was built (or last updated) for. A later change to the requirement means
 // the collection may no longer match it, until it is updated.
 const basis = new Map<string, Values>();
-export function ensureBasis(r: MvpRequirement) { if (r.collection && !basis.has(r.id)) basis.set(r.id, currentValues(r)); }
+export function ensureBasis(r: MvpRequirement) { if (r.collection && !basis.has(r.id)) { basis.set(r.id, currentValues(r)); saveState(); } }
 /** What changed on the requirement since the collection was built or last updated. */
 export function requirementChanges(r: MvpRequirement): string[] {
   const prev = basis.get(r.id);
@@ -440,6 +441,7 @@ export function recordRun(r: MvpRequirement, a: Assessment): RunInfo {
   const spaces = r.collection?.totalSpaces ?? 0;
   const at = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   snapshots.set(r.id, { values, spaces, rev: revs.get(r.id) ?? 0, fits: a.confirmedFits, total: a.total, at });
+  saveState();
   if (!prev) return { first: true, log: `Collection assessed: ${a.confirmedFits} of ${a.total} ${a.total === 1 ? 'space meets' : 'spaces meet'} every criterion.` };
   const changes = diffs(prev, values, spaces, r.id);
   if (!changes.length) return { first: false, since: { at: prev.at, changes: [], fitsBefore: prev.fits, fitsNow: a.confirmedFits } };
@@ -478,5 +480,31 @@ export function applyUpdate(r: MvpRequirement): ReturnType<typeof previewUpdate>
   refreshed.set(r.id, keptBase);
   basis.set(r.id, currentValues(r));
   bump(r.id);
+  saveState();
   return p;
 }
+
+// ── Kept in this browser ─────────────────────────────────────────────────────────────────────────────
+// Groups, hand-added spaces, updates and the last run are saved with the demo's requirements (see requirementsStore),
+// so an assessment opened from a link in a new tab looks the same as it did when the link was copied.
+const STATE_KEY = 'tm.assessmentState.v1';
+function saveState() {
+  try {
+    window.localStorage.setItem(STATE_KEY, JSON.stringify({
+      added: [...addedSpaces], groups: [...groupMap].map(([k, m]) => [k, [...m]]), refreshed: [...refreshed],
+      revs: [...revs], snapshots: [...snapshots], basis: [...basis],
+    }));
+  } catch { /* storage unavailable: this page still works */ }
+}
+(function loadState() {
+  try {
+    const v = JSON.parse(window.localStorage.getItem(STATE_KEY) || 'null');
+    if (!v) return;
+    (v.added ?? []).forEach(([k, x]: [string, AssessSpace[]]) => addedSpaces.set(k, x));
+    (v.groups ?? []).forEach(([k, m]: [string, [string, Group][]]) => groupMap.set(k, new Map(m)));
+    (v.refreshed ?? []).forEach(([k, x]: [string, AssessSpace[]]) => refreshed.set(k, x));
+    (v.revs ?? []).forEach(([k, x]: [string, number]) => revs.set(k, x));
+    (v.snapshots ?? []).forEach(([k, x]: [string, Snapshot]) => snapshots.set(k, x));
+    (v.basis ?? []).forEach(([k, x]: [string, Values]) => basis.set(k, x));
+  } catch { /* ignore a damaged saved state */ }
+})();

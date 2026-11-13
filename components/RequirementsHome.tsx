@@ -312,6 +312,21 @@ export function RequirementsHome() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // A link from a shared email (?requirement=<id>&open=assess) opens that requirement's assessment, or its details.
+  useEffect(() => {
+    const id = searchParams.get('requirement');
+    if (!id) return;
+    const r = rows.find((x) => x.id === id);
+    if (r) {
+      if (searchParams.get('open') === 'assess' && r.collection) setAssessForId(r.id);
+      else setDetailIdRaw(r.id);
+    } else {
+      toast.error("That requirement isn't in this demo. It may have been created in another browser.");
+    }
+    const next = new URLSearchParams(searchParams); next.delete('requirement'); next.delete('open'); setSearchParams(next, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const setDetailId = (id: string | null) => {
     setDetailIdRaw(id);
     if (id) setRows((rs) => rs.map((r) => (r.id === id && r.origin && !r.origin.seen ? { ...r, origin: { ...r.origin, seen: true } } : r)));

@@ -301,8 +301,42 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
   // ── Share: copy the collection link, or build a PDF report from this assessment ──────────────────────────────
   const canShare = ok && total > 0;
   const resetShareSoon = () => setTimeout(() => { setShareState('idle'); setShareOpen(false); }, 1400);
+  // Copy a ready-to-send email: a short summary and a link that opens this requirement's assessment in TM.
+  // Customer-facing facts only (distance, seats, price, type); never venue lead data or availability.
+  const shareEmail = () => {
+    const first = requirement.details.intake?.contact?.split(' ')[0];
+    const link = `${window.location.origin}/transactions/list?requirement=${encodeURIComponent(requirement.id)}&open=assess`;
+    const city = c.centerLabel || requirement.city;
+    const asked = [band ? `${bandShort} people` : '', c.budget ? `up to ${money(c.budget)}/mo` : '', c.type || '', `within ${c.radiusMi} mi of ${city}`].filter(Boolean).join(', ');
+    const fits = a.results.filter((r) => r.fit && r.confirmed);
+    const shortlist = a.results.filter((r) => groupOf(requirement, r.space) === 'Shortlist');
+    const listed = (shortlist.length ? shortlist : fits).slice(0, 5);
+    const line = (r: typeof listed[number]) => `- ${r.space.title}, ${r.space.venue}: ${Number.isFinite(r.miles) ? `${r.miles.toFixed(1)} mi, ` : ''}${r.space.desks ? `${r.space.desks} seats, ` : ''}${r.space.rate != null ? `${money(r.space.rate)}/mo` : 'price on request'}`;
+    const n = (k: 'area' | 'capacity' | 'budget' | 'type') => a.results.filter((r) => r.pass[k] !== false).length;
+    const gaps = ([['capacity', !!band], ['budget', !!c.budget], ['type', !!c.type], ['area', true]] as const).filter(([, on]) => on).map(([k]) => ({ k, n: n(k) })).sort((x, y) => x.n - y.n);
+    const ask = (k: string) => k === 'capacity' ? `Most are sized outside ${bandShort} people. Is that range firm, or would a somewhat larger or smaller space work?`
+      : k === 'budget' ? `Most are priced above ${money(c.budget as number)}/mo. Is there any flexibility on budget?`
+      : k === 'type' ? `Most aren't ${c.type}. Would another type of space work?`
+      : `Most are more than ${c.radiusMi} mi from ${city}. Could we look a little further out?`;
+    const body = [
+      first ? `Hi ${first},` : 'Hi,',
+      '',
+      `We've reviewed ${plural(total, 'space')} in ${requirement.city} against your requirement (${asked}).`,
+      '',
+      ...(fits.length === 0
+        ? [`None of them meet everything you asked for yet. ${ask(gaps[0].k)}`]
+        : [`${fits.length} ${fits.length === 1 ? 'meets' : 'meet'} everything you asked for${shortlist.length ? `. Our shortlist` : ''}:`, ...listed.map(line), ...(fits.length < 5 ? ['', `That's a short list, so we're still looking. ${ask(gaps[0].k)}`] : [])]),
+      '',
+      `You can see every space, with photos and details, here:`,
+      link,
+      '',
+      'Thanks,',
+    ].join('\n');
+    const subject = `${requirement.city} workspace options${requirement.company ? ` · ${requirement.company}` : ''}`;
+    return `Subject: ${subject}\n\n${body}`;
+  };
   const copyLink = async () => {
-    try { await navigator.clipboard.writeText(col.url ?? ''); setShareState('copied'); } catch { setShareState('error'); }
+    try { await navigator.clipboard.writeText(shareEmail()); setShareState('copied'); } catch { setShareState('error'); }
     resetShareSoon();
   };
   const downloadPdf = async () => {
@@ -338,7 +372,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
         <>
           <div onClick={() => shareState !== 'building' && setShareOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} aria-hidden />
           <div role="menu" onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setShareOpen(false); } }} style={{ position: 'absolute', right: 0, top: 40, zIndex: 41, width: 296, padding: 6, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
-            {col.url && shareItem(shareState === 'copied' ? <Check size={14} /> : <Link2 size={14} />, shareState === 'copied' ? 'Link Copied' : 'Copy Link', 'Anyone with the link can view the collection', copyLink)}
+            {shareItem(shareState === 'copied' ? <Check size={14} /> : <Link2 size={14} />, shareState === 'copied' ? 'Email Copied' : 'Copy Email', 'A summary and a link to this requirement, ready to paste and send', copyLink)}
             {shareItem(shareState === 'building' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />, shareState === 'building' ? 'Building Report…' : 'Download PDF Report', shareState === 'error' ? "Couldn't build the report. Try again." : 'This assessment, formatted to attach or print', downloadPdf, true)}
             <style>{`.ac-share-item:hover:not(:disabled){background:${PAGE}!important}.ac-share-item:focus-visible{outline:3px solid rgba(0,91,148,.35);outline-offset:-2px}`}</style>
           </div>
