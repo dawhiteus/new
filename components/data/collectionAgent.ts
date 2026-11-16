@@ -112,6 +112,8 @@ export const REAL_COLLECTIONS: Record<string, { name: string; url: string }> = {
   dallas: { name: 'Dallas Collection', url: 'https://liquidspace.com/collections/568ef221-1642-4822-b79f-3fe348062ccc' },
   'new york': { name: 'New York Collection', url: 'https://liquidspace.com/collections/b6709b07-6512-4120-98b7-7a4dd7505bb4' },
   porto: { name: 'Porto Collection', url: 'https://liquidspace.com/collections/85361f6e-0113-4954-a782-54c933b5155c' },
+  // A real collection with no spaces, so View Collection on an empty collection opens a real (empty) LiquidSpace page.
+  test: { name: 'Test Collection', url: 'https://liquidspace.com/collections/30857d7f-f151-48ee-97b1-100e2cd20b92' },
 };
 export const realCollectionFor = (location: string) => REAL_COLLECTIONS[location.toLowerCase().split(',')[0].trim()];
 

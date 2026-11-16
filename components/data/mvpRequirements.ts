@@ -274,6 +274,7 @@ export const MVP_REQUIREMENTS: MvpRequirement[] = [
     agentTasks: 0,
     collection: {
       name: 'Test Collection',
+      url: 'https://liquidspace.com/collections/30857d7f-f151-48ee-97b1-100e2cd20b92',
       totalSpaces: 0,
       location: 'In Test',
       locationSpaces: 0,
