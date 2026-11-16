@@ -119,6 +119,7 @@ Thanks,`,
     empty: ['closeDate', 'termLength', 'size'],
     target: ['startDate', 'budget'],
     ambiguous: ['capacity'],
+    notAmbiguous: ['startDate', 'closeDate'],
     notes: ['revised it to 22'],
   }],
 });

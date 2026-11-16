@@ -510,6 +510,8 @@ function extractDates(s: Sentence, out: Cand[], ctx: Ctx) {
     const target = /\b(target(?:ing)?|ideally|hope|hoping|aim(?:ing)?|looking to|would like|want to|we'?d like|i'?d like|like to|we'?d love|prefer|roughly|around|approximately|tentative|goal|planning|expect|anticipate|tbd|something like|probably|maybe|aiming)\b/i.test(clauseBefore);
     const firm = /\b(must|hard deadline|no later than|firm|lease (?:is )?up|have to|need to be in by)\b/i.test(before + ' ' + s.text);
     const role = (() => {
+      // "grow to 35 by summer": a growth timeline, not a move-in or close date.
+      if (/\b(?:grow|growing|grows|expand|expanding|scale|scaling|ramp(?:ing)? up|hire|hiring|double)\b[^.]{0,40}\b(?:by|in|around)\s*$/i.test(before)) return 'unknown';
       if (EXPIRY_CUE.test(sentBefore) && !START_CUE.test(before.slice(-36))) return 'expiry';
       if (CLOSE_CUE.test(before.slice(-48)) && !START_CUE.test(before.slice(-30))) return 'close';
       if (START_CUE.test(before.slice(-60)) || START_CUE.test(s.text.slice(h.end, h.end + 24))) return 'start';

@@ -23,6 +23,7 @@ describe('Requirement Agent: reading customer correspondence', () => {
         for (const k of e.approx ?? []) expect((sc.data.approx as any)[k], `${c.id}[${i}].${k} approx`).toBe(true);
         for (const k of e.target ?? []) expect((sc.data.target as any)[k], `${c.id}[${i}].${k} target`).toBe(true);
         for (const k of e.ambiguous ?? []) expect(sc.data.ambiguities.some((a) => a.field === k), `${c.id}[${i}] ambiguity on ${k}`).toBe(true);
+        for (const k of e.notAmbiguous ?? []) expect(sc.data.ambiguities.some((a) => a.field === k), `${c.id}[${i}] no ambiguity on ${k}`).toBe(false);
         for (const n of e.notes ?? []) expect(sc.data.notes.join(' | '), `${c.id}[${i}] notes`).toContain(n);
       });
     });

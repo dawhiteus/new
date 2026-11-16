@@ -16,6 +16,8 @@ export interface Expect {
   target?: string[];
   /** Fields that must have an ambiguity reported. */
   ambiguous?: string[];
+  /** Fields that must not get an ambiguity note. */
+  notAmbiguous?: string[];
   /** Substrings expected in notes. */
   notes?: string[];
 }
