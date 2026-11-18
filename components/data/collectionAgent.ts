@@ -231,7 +231,7 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string, on
   const missingInputs: string[] = [];
   if (c.capacity == null) missingInputs.push('headcount');
   if (c.budget == null) missingInputs.push('budget');
-  if (!c.workspaceType) missingInputs.push('workspace type');
+  if (!c.workspaceType) missingInputs.push('space type');
   if (!c.startDate) missingInputs.push('start date');
 
   if (counts.strong === 0) gaps.push({ label: 'Overall', text: 'No strong matches. Every space has at least one trade-off.', severity: 'high' });
@@ -260,7 +260,7 @@ export function sourceCollection(c: SourcingCriteria, collectionName: string, on
   }
   if (c.workspaceType) {
     const off = scored.filter((s) => s.type !== c.workspaceType).length;
-    if (off) gaps.push({ label: 'Workspace type', text: `${off} of ${scored.length} ${off === 1 ? 'is' : 'are'} not ${c.workspaceType}.`, severity: off === scored.length ? 'high' : 'medium' });
+    if (off) gaps.push({ label: 'Space type', text: `${off} of ${scored.length} ${off === 1 ? 'is' : 'are'} not ${c.workspaceType}.`, severity: off === scored.length ? 'high' : 'medium' });
   }
   if (c.startDate) {
     const late = scored.filter((s) => s.availableFrom != null && s.availableFrom > c.startDate);

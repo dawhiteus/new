@@ -199,10 +199,10 @@ export function SpaceComparisonModal({ isOpen, onClose, spaces }: SpaceCompariso
                       </div>
                     </div>
 
-                    {/* Workspace Type */}
+                    {/* Space Type */}
                     <div>
                       <div style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>
-                        Workspace Type
+                        Space Type
                       </div>
                       <Badge 
                         style={{ backgroundColor: '#005B94', color: 'white', fontSize: '12px', fontWeight: 500 }}

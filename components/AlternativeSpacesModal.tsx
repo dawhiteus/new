@@ -316,7 +316,7 @@ export function AlternativeSpacesModal({
                     letterSpacing: '0.05em'
                   }}
                 >
-                  Workspace Type
+                  Space Type
                 </TableHead>
                 <TableHead 
                   className="py-4 px-4"

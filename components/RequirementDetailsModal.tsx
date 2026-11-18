@@ -479,7 +479,7 @@ export function RequirementDetailsModal({ requirement, isOpen, onClose, onSave, 
                   {field('Size (sq ft)', text('size', { type: 'number' }), 'size')}
                 </div>
                 <div style={{ marginBottom: 20 }}>
-                  <label style={label}>Workspace Type{mark('workspaceType')}</label>
+                  <label style={label}>Space Type{mark('workspaceType')}</label>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {WORKSPACE_TYPES.map((t) => chip(f.workspaceType === t, t, () => setVal('workspaceType', f.workspaceType === t ? '' : t)))}
                   </div>

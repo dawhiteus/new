@@ -361,7 +361,7 @@ export function BrokerTasks({ onAIAssistantOpen, isAIDrawerOpen }: BrokerTasksPr
 
                 <Select value={filterWorkspaceType} onValueChange={setFilterWorkspaceType}>
                   <SelectTrigger className="w-44 border-gray-300" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
-                    <SelectValue placeholder="Workspace Type" />
+                    <SelectValue placeholder="Space Type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>

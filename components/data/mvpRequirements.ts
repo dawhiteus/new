@@ -88,7 +88,7 @@ export function defaultTeam(): TeamMember[] {
     {
       id: 'm-assess', name: 'Collection Assessment Agent', email: 'assessment.agent@ai.liquidspace.com', role: 'CollectionEvaluationAgent',
       type: 'Agent', organization: 'LiquidSpace AI', phone: '', taskLabel: 'Assess collection',
-      description: "A Requirement-aware lens layered on top of LiquidSpace's existing recommendations. Answers: how well does this specific collection satisfy this specific requirement? Evaluates each space across five dimensions — location proximity, workspace type, size and capacity, budget, and term. Runs automatically after sourcing completes, and re-triggers when requirement fields are edited.",
+      description: "A Requirement-aware lens layered on top of LiquidSpace's existing recommendations. Answers: how well does this specific collection satisfy this specific requirement? Evaluates each space across five dimensions — location proximity, space type, size and capacity, budget, and term. Runs automatically after sourcing completes, and re-triggers when requirement fields are edited.",
     },
     {
       id: 'm-sourcing', name: 'Market Sourcing Agent', email: 'sourcing.agent@ai.liquidspace.com', role: 'MarketplaceSearchAgent',

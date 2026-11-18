@@ -301,7 +301,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
     const budOk = c.budget ? pass((x) => x.space.rate != null && x.space.rate <= (c.budget as number)) : M;
     const rows: { label: string; text: string; n: number }[] = [
       { label: 'Area', n: area, text: `${area} of ${M} listings near ${c.centerLabel} are within ${c.radiusMi} miles.` },
-      ...(c.type ? [{ label: 'Workspace type', n: typeOk, text: `${typeOk} of ${M} are ${c.type}.` }] : []),
+      ...(c.type ? [{ label: 'Space type', n: typeOk, text: `${typeOk} of ${M} are ${c.type}.` }] : []),
       ...(c.capacity ? [{ label: 'Capacity', n: capOk, text: `${capOk} of ${M} hold ${band}.` }] : []),
       ...(c.budget ? [{ label: 'Budget', n: budOk, text: `${budOk} of ${M} are within ${money(c.budget)}/mo${budOk === 0 && poolResults.some((x) => x.space.rate != null) ? `. The lowest is ${money(Math.min(...poolResults.filter((x) => x.space.rate != null).map((x) => x.space.rate as number)))}/mo` : ''}.` }] : []),
     ];
@@ -333,7 +333,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   }
   if (c.type) {
     const mix = Object.entries(results.reduce((m: Record<string, number>, x) => { const t = x.space.type || 'of unknown type'; m[t] = (m[t] ?? 0) + 1; return m; }, {})).map(([t, n]) => `${n} ${t}`).join(', ');
-    if (off((x) => x.pass.type === false)) gaps.push({ label: 'Workspace type', text: `This collection holds ${mix}. You asked for ${c.type}.` });
+    if (off((x) => x.pass.type === false)) gaps.push({ label: 'Space type', text: `This collection holds ${mix}. You asked for ${c.type}.` });
   }
   const overMarket = off((x) => x.issues.includes('over the local market rate'));
   if (overMarket) gaps.push({ label: 'Rate', text: `${plural(overMarket, 'space')} ${overMarket === 1 ? 'is' : 'are'} more than 15% above the local market rate per seat.` });
@@ -361,7 +361,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
   const rtc = results.filter((x) => x.space.booking).reduce((m: Record<string, number>, x) => { m[x.space.booking as string] = (m[x.space.booking as string] ?? 0) + 1; return m; }, {});
   const withResp = venues.filter((v) => v.st?.responseMin).length;
   if (Object.keys(rtc).length) gaps.push({ label: 'Booking', text: `${Object.entries(rtc).map(([k, n]) => `${n} ${n === 1 ? 'is' : 'are'} ${k}`).join(', ')}. Average lead response is on record for ${withResp} of ${V} venues.` });
-  const missing = [!c.capacity ? 'headcount' : '', !c.budget ? 'budget' : '', !c.type ? 'workspace type' : ''].filter(Boolean);
+  const missing = [!c.capacity ? 'headcount' : '', !c.budget ? 'budget' : '', !c.type ? 'space type' : ''].filter(Boolean);
   const sd = r.details.startDate ? new Date(r.details.startDate + 'T00:00:00') : null;
   const startTxt = sd && !isNaN(+sd) ? `Availability for the ${sd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} start isn't in the available data. ` : "Availability isn't in the available data. ";
   gaps.push({ label: 'Not assessed', text: `${missing.length ? `${missing.join(', ').replace(/^./, (m) => m.toUpperCase())} ${missing.length === 1 ? 'was' : 'were'} not provided. ` : ''}${startTxt}Amenity and program needs are written as free text on the requirement, so I don't match them. Each space's listed amenities are in its details.` });
@@ -370,7 +370,7 @@ export function assess(r: MvpRequirement, ov: Partial<Values> = {}): Assessment 
     { n: tooFar, text: `area (${tooFar === total ? 'all' : tooFar} too far)`, name: 'area' },
     ...(c.capacity ? [{ n: off((x) => { const [lo, hi] = capacityBand(c.capacity as number); return x.space.desks < lo || x.space.desks > hi; }), text: `capacity (outside ${band})`, name: 'capacity' }] : []),
     ...(c.budget ? [{ n: off((x) => x.space.rate != null && x.space.rate > (c.budget as number)), text: 'budget', name: 'budget' }] : []),
-    ...(c.type ? [{ n: off((x) => x.pass.type === false), text: `workspace type (not ${c.type})`, name: 'workspace type' }] : []),
+    ...(c.type ? [{ n: off((x) => x.pass.type === false), text: `space type (not ${c.type})`, name: 'space type' }] : []),
   ].filter((x) => x.n > 0).sort((x, y) => y.n - x.n).slice(0, 2);
   const names = reasons.map((x) => x.name);
   const gapPhrase = names.length ? `${names.join(' and ').replace(/^./, (m) => m.toUpperCase())} ${names.length > 1 ? 'are' : 'is'} the main gap${names.length > 1 ? 's' : ''}.` : '';
@@ -412,7 +412,7 @@ export function quickStatus(r: MvpRequirement) {
 const fmtVal = (k: keyof Values, v: Values[keyof Values]) => (k === 'budget' ? (v ? `${money(v as number)}/mo` : 'not set') : k === 'type' ? (v || 'any') : v == null || v === '' ? 'not set' : String(v));
 function diffs(prev: Snapshot, now: Values, spaces: number, rid: string): string[] {
   const out: string[] = [];
-  const label: Record<string, string> = { location: 'location', type: 'workspace type', capacity: 'people', budget: 'budget', radiusMi: 'search distance (miles)' };
+  const label: Record<string, string> = { location: 'location', type: 'space type', capacity: 'people', budget: 'budget', radiusMi: 'search distance (miles)' };
   (Object.keys(label) as (keyof Values)[]).forEach((k) => { if (String(prev.values[k] ?? '') !== String(now[k] ?? '')) out.push(`${label[k]} ${fmtVal(k, prev.values[k])} → ${fmtVal(k, now[k])}`); });
   if (prev.spaces !== spaces) out.push(`${prev.spaces} → ${spaces} spaces in the collection`);
   else if (prev.rev !== (revs.get(rid) ?? 0)) out.push('the collection was updated');
@@ -428,7 +428,7 @@ export function requirementChanges(r: MvpRequirement): string[] {
   const prev = basis.get(r.id);
   if (!prev) return [];
   const now = currentValues(r);
-  const label: Record<string, string> = { location: 'location', type: 'workspace type', capacity: 'people', budget: 'budget', radiusMi: 'search distance (miles)' };
+  const label: Record<string, string> = { location: 'location', type: 'space type', capacity: 'people', budget: 'budget', radiusMi: 'search distance (miles)' };
   return (Object.keys(label) as (keyof Values)[]).filter((k) => String(prev[k] ?? '') !== String(now[k] ?? '')).map((k) => `${label[k]} ${fmtVal(k, prev[k])} → ${fmtVal(k, now[k])}`);
 }
 

@@ -463,10 +463,10 @@ export function CreateEditDealModal({ isOpen, onClose, deal }: CreateEditDealMod
               />
             </div>
 
-            {/* Workspace Type — multi-select */}
+            {/* Space Type — multi-select */}
             <div className="col-span-2">
               <Label style={{ fontSize: '14px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                Workspace Type *
+                Space Type *
               </Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {WORKSPACE_TYPES.map((t) => {

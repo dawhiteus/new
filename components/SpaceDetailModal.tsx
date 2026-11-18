@@ -179,10 +179,10 @@ export function SpaceDetailModal({
               </p>
             </div>
 
-            {/* Workspace Type */}
+            {/* Space Type */}
             <div>
               <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif', marginBottom: '12px' }}>
-                Workspace Type
+                Space Type
               </h3>
               <Badge 
                 style={{ backgroundColor: '#005B94', color: 'white', fontSize: '14px', fontWeight: 500 }}

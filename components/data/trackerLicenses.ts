@@ -19,14 +19,28 @@ export const AGREEMENT_TYPES = [
 /** @deprecated use AGREEMENT_TYPES */
 export const LICENSE_TYPES = AGREEMENT_TYPES;
 
+// On-Demand (hourly flex) is a first-class Agreement Type in Workplace
+// Strategist. It is not something License Administrator records, so it is not
+// offered in these menus, but a record that carries it is shown as On-Demand.
+export const ON_DEMAND = 'On-Demand';
+
 // Earlier labels, kept so older saved/demo values still resolve.
 const LEGACY_AGREEMENT_TYPES: Record<string, string> = {
   'Dedicated (External)': 'Dedicated (External License)',
   'Dedicated (LiquidSpace License)': 'Dedicated (LiquidSpace)',
+  'Flex (Hourly)': ON_DEMAND,
 };
-export const toLicenseType = (agreementType: string) =>
-  AGREEMENT_TYPES.includes(agreementType) ? agreementType
-  : LEGACY_AGREEMENT_TYPES[agreementType] ?? 'Dedicated (External License)';
+/** Canonical Agreement Type for a stored value. A value that is not a known
+ *  type is returned unchanged rather than silently re-labelled. Blank → the
+ *  form default. */
+export const toAgreementType = (value: string | undefined | null): string => {
+  const v = (value ?? '').trim();
+  if (!v) return 'Dedicated (External License)';
+  if (AGREEMENT_TYPES.includes(v) || v === ON_DEMAND) return v;
+  return LEGACY_AGREEMENT_TYPES[v] ?? v;
+};
+/** @deprecated use toAgreementType */
+export const toLicenseType = toAgreementType;
 
 
 export const mockLicenses = [

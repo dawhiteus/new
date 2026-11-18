@@ -63,6 +63,7 @@ export interface LicenseRecord {
   seats: number;
   sizeSf: number;
   monthlyCost: number;
+  agreementType?: string;
   contractType: string;
   renewalMechanism: string;
   notificationPeriod: string;
@@ -86,7 +87,7 @@ export interface IntakeResult {
 
 export const REQUIRED: FieldKey[] = ['company', 'name', 'location', 'capacity', 'startDate', 'termLength', 'budget'];
 export const FIELD_LABEL: Record<FieldKey, string> = {
-  company: 'Company', status: 'Status', name: 'Requirement Name', location: 'Location', workspaceType: 'Workspace Type',
+  company: 'Company', status: 'Status', name: 'Requirement Name', location: 'Location', workspaceType: 'Space Type',
   capacity: 'Capacity / Headcount', size: 'Size (sq ft)', programNeeds: 'Program Needs', amenityNeeds: 'Amenity Needs',
   configuration: 'Configuration', otherFunctional: 'Other Functional Requirements', startDate: 'Start Date',
   termLength: 'Term Length (mos)', closeDate: 'Expected Close Date', budget: 'Budget ($/mo)', otherCommercial: 'Other Commercial Requirements',
@@ -388,7 +389,8 @@ export const SAMPLE_RENEWAL_LICENSE = 'TT-2023-003';
 export const licenseTermsReference = (l: LicenseRecord) => [
   { label: 'Current monthly cost', value: fmtMoney(l.monthlyCost) },
   { label: 'Term ends', value: l.termEnd ? fmtLong(l.termEnd) : 'Auto-renews' },
-  { label: 'Contract type', value: l.contractType },
+  ...(l.agreementType ? [{ label: 'Agreement type', value: l.agreementType }] : []),
+  ...(l.contractType ? [{ label: 'Contract type', value: l.contractType }] : []),
   { label: 'Renewal mechanism', value: l.renewalMechanism },
   { label: 'Notice period', value: l.notificationPeriod },
   ...(l.noticeDate ? [{ label: 'Customer must decide by', value: fmtLong(l.noticeDate) }] : []),

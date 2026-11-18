@@ -1048,7 +1048,7 @@ export function WorkflowOverview({ onAIAssistantOpen, isAIDrawerOpen, onNavigate
                       <div className="flex items-start gap-3">
                         <Building2 className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: '#9CA3AF' }} />
                         <div className="flex-1">
-                          <div style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif', marginBottom: '2px' }}>Workspace Type</div>
+                          <div style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif', marginBottom: '2px' }}>Space Type</div>
                           <div style={{ fontSize: '14px', fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif' }}>{selectedDeal.workspaceType} • {selectedDeal.size} seats</div>
                         </div>
                       </div>

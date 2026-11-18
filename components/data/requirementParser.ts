@@ -26,7 +26,7 @@ export interface ParsedScope {
   /** Fields the customer was unsure about ("maybe", "might", "not decided"). */
   tentative: Partial<Record<PField, boolean>>;
   ambiguities: Ambiguity[];
-  /** Context that is useful but has no field (current office, headcount today, other workspace types…). */
+  /** Context that is useful but has no field (current office, headcount today, other space types…). */
   notes: string[];
 }
 export interface ParsedResult {
@@ -656,7 +656,7 @@ function extractContact(messages: Message[]): string | undefined {
 
 // ───────────────────────────── resolution ─────────────────────────────
 const toPlain = (field: PField, v: string) => (field === 'startDate' || field === 'closeDate' ? fmtDate(v) : v);
-const FIELD_NAME: Record<PField, string> = { company: 'Company', name: 'Name', location: 'Location', workspaceType: 'Workspace type', capacity: 'Headcount', size: 'Size', programNeeds: 'Program needs', amenityNeeds: 'Amenities', configuration: 'Configuration', otherFunctional: 'Other requirements', startDate: 'Start date', termLength: 'Term', closeDate: 'Close date', budget: 'Budget', otherCommercial: 'Commercial terms' };
+const FIELD_NAME: Record<PField, string> = { company: 'Company', name: 'Name', location: 'Location', workspaceType: 'Space type', capacity: 'Headcount', size: 'Size', programNeeds: 'Program needs', amenityNeeds: 'Amenities', configuration: 'Configuration', otherFunctional: 'Other requirements', startDate: 'Start date', termLength: 'Term', closeDate: 'Close date', budget: 'Budget', otherCommercial: 'Commercial terms' };
 
 function resolveScope(cands: Cand[], ctx: Ctx, extraNotes: string[]): ParsedScope {
   const sc: ParsedScope = { fields: {}, prov: {}, approx: {}, target: {}, tentative: {}, ambiguities: [], notes: [...extraNotes] };
@@ -700,7 +700,7 @@ function resolveScope(cands: Cand[], ctx: Ctx, extraNotes: string[]): ParsedScop
     if (vals.length > 1) {
       const rev = top.filter((c) => c.revision);
       if (rev.length) { chosen = rev[rev.length - 1]; sc.notes.push(`${FIELD_NAME[f]}: the text first said ${toPlain(f, top.find((c) => c !== chosen && c.value !== chosen.value)!.value)}, then revised it to ${toPlain(f, chosen.value)}.`); }
-      else if (f === 'workspaceType') { chosen = top[0]; sc.notes.push(`Other workspace types mentioned: ${joinList(vals.filter((v) => v !== chosen.value))}.`); }
+      else if (f === 'workspaceType') { chosen = top[0]; sc.notes.push(`Other space types mentioned: ${joinList(vals.filter((v) => v !== chosen.value))}.`); }
       else {
         sc.ambiguities.push({ field: f, text: `${FIELD_NAME[f]}: the text gives ${joinList(vals.map((v) => toPlain(f, v)))}. I left it blank until you choose.` });
         return;
@@ -782,7 +782,7 @@ function validate(sc: ParsedScope, today: string): void {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || !validDay(y, m, d)) return drop(f, `${FIELD_NAME[f]} “${v}” is not a valid date, so I left it blank.`);
     if (y < ty - 1 || y > ty + 10) drop(f, `${FIELD_NAME[f]} ${fmtDate(v)} looks implausible, so I left it blank.`);
   });
-  if (sc.fields.workspaceType && !(WORKSPACE_TYPES as readonly string[]).includes(sc.fields.workspaceType)) drop('workspaceType', `“${sc.fields.workspaceType}” is not a supported workspace type.`);
+  if (sc.fields.workspaceType && !(WORKSPACE_TYPES as readonly string[]).includes(sc.fields.workspaceType)) drop('workspaceType', `“${sc.fields.workspaceType}” is not a supported space type.`);
   if (sc.fields.configuration && !(CONFIGURATIONS as readonly string[]).includes(sc.fields.configuration)) drop('configuration', `“${sc.fields.configuration}” is not a supported configuration.`);
   if (sc.fields.startDate && sc.fields.closeDate && sc.fields.closeDate > sc.fields.startDate) {
     sc.ambiguities.push({ field: 'closeDate', text: `The expected close date (${fmtDate(sc.fields.closeDate)}) is after the start date (${fmtDate(sc.fields.startDate)}). Please check both.` });

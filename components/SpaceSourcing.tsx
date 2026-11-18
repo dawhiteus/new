@@ -137,7 +137,7 @@ export function SpaceSourcing({ dealId, dealName }: SpaceSourcingProps) {
         <TabsContent value="search" className="mt-0">
           <Card className="bg-white rounded-xl border" style={{ borderColor: '#E5E7EB' }}>
             <CardContent className="p-6">
-              {/* Row 1: Location, Min Size, Max Size, Workspace Type, Max Budget */}
+              {/* Row 1: Location, Min Size, Max Size, Space Type, Max Budget */}
               <div className="grid grid-cols-5 gap-4 mb-4">
                 <div>
                   <Label style={{ fontSize: '12px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
@@ -179,7 +179,7 @@ export function SpaceSourcing({ dealId, dealName }: SpaceSourcingProps) {
 
                 <div>
                   <Label style={{ fontSize: '12px', fontWeight: 600, color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-                    Workspace Type
+                    Space Type
                   </Label>
                   <Select value={workspaceType} onValueChange={setWorkspaceType}>
                     <SelectTrigger className="mt-1 border-gray-300" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>

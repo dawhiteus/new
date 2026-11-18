@@ -32,7 +32,7 @@ const EMPTY_FORM = {
   state: '',
   zip: '',
   country: 'UNITED STATES',
-  workspaceType: 'Dedicated (External License)',
+  agreementType: 'Dedicated (External License)',
   status: 'Active',
   size: '',
   seats: '',
@@ -99,7 +99,7 @@ export function AddLicenseModal({ isOpen, onClose, onSave }: AddLicenseModalProp
             </div>
             <div>
               <Label style={labelStyle}>Agreement Type</Label>
-              <Select value={formData.workspaceType} onValueChange={(v) => set('workspaceType', v)}>
+              <Select value={formData.agreementType} onValueChange={(v) => set('agreementType', v)}>
                 <SelectTrigger className="border-gray-300" style={fieldStyle}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {AGREEMENT_TYPES.map(t => <SelectItem key={t} value={t} style={fieldStyle}>{t}</SelectItem>)}

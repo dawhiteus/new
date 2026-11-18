@@ -38,7 +38,7 @@ export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: Lic
     state: licenseData?.state || 'MN',
     zip: licenseData ? (licenseData.zip ?? '') : '55401',
     country: licenseData?.country || 'UNITED STATES',
-    workspaceType: licenseData?.workspaceType || 'Dedicated (External License)',
+    agreementType: licenseData?.agreementType || 'Dedicated (External License)',
     status: licenseData?.status || 'Active',
     size: licenseData?.size || '4,200 RSF',
     owner: licenseData ? (licenseData.owner ?? '') : 'Jennifer Li',
@@ -245,7 +245,7 @@ export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: Lic
                         <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
                           Agreement Type
                         </Label>
-                        <Select value={formData.workspaceType} onValueChange={(value) => handleInputChange('workspaceType', value)}>
+                        <Select value={formData.agreementType} onValueChange={(value) => handleInputChange('agreementType', value)}>
                           <SelectTrigger className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body h-10" style={{ fontFamily: 'Inter, sans-serif' }}>
                             <SelectValue />
                           </SelectTrigger>

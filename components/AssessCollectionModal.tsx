@@ -99,7 +99,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
     { k: 'Headcount', v: c.capacity ? plural(c.capacity, 'person').replace(/persons$/, 'people') : '' },
     { k: 'Budget', v: c.budget ? `${money(c.budget)}/mo` : '' },
     { k: 'Location', v: c.location },
-    { k: 'Workspace type', v: c.type },
+    { k: 'Space type', v: c.type },
     { k: 'Start date', v: startDate },
     { k: 'Term', v: c.termMonths ? plural(c.termMonths, 'month') : '' },
   ];
@@ -186,7 +186,7 @@ export function AssessCollectionModal({ requirement, onClose, onAssessed, onUpda
     const of = `${missN} of ${total} spaces`;
     if (worst.key === 'capacity') return { title: 'Headcount is the gap.', text: `${of} fall outside ${bandShort} people.` };
     if (worst.key === 'budget') return { title: 'Price is the gap.', text: `${of} are over ${money(c.budget as number)}/mo.` };
-    if (worst.key === 'type') return { title: 'Workspace type is the gap.', text: `${of} aren't ${c.type}.` };
+    if (worst.key === 'type') return { title: 'Space type is the gap.', text: `${of} aren't ${c.type}.` };
     return { title: 'Distance is the gap.', text: `${of} are more than ${c.radiusMi} mi from ${c.centerLabel}.` };
   })();
   const thin = a.confirmedFits < CONFIRMED_NEEDED;

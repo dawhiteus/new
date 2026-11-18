@@ -154,7 +154,7 @@ export function CreateCollectionModal({ requirement, onClose, onComplete }: Prop
                   <Zap size={15} color={BLUE} />
                 </div>
                 <div style={{ fontSize: 14, lineHeight: 1.55, color: '#1E3A5F' }}>
-                  <b style={{ fontWeight: 600 }}>The Create Collection Agent</b> searches LiquidSpace for spaces that match this requirement's location, headcount and workspace type, and builds the collection for you. You can add or remove spaces at any time.
+                  <b style={{ fontWeight: 600 }}>The Create Collection Agent</b> searches LiquidSpace for spaces that match this requirement's location, headcount and space type, and builds the collection for you. You can add or remove spaces at any time.
                 </div>
               </div>
               {!criteria.location && (

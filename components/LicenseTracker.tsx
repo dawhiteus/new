@@ -21,7 +21,7 @@ interface LicenseTrackerProps {
   isAIDrawerOpen?: boolean;
 }
 
-import { DAY_MS, toISO, inDays, isISODate, daysFromNow, LICENSE_TYPES, toLicenseType, mockLicenses } from './data/trackerLicenses';
+import { DAY_MS, toISO, inDays, isISODate, daysFromNow, LICENSE_TYPES, toAgreementType, mockLicenses } from './data/trackerLicenses';
 const formatTermEnd = (v: string) => (isISODate(v) ? `${v.slice(5, 7)}/${v.slice(8, 10)}/${v.slice(0, 4)}` : v || '—');
 
 
@@ -223,14 +223,34 @@ export function LicenseTracker({
     setIsDetailModalOpen(false);
   };
 
-  const handleSaveLicense = (updatedLicense: any) => {
-    console.log('License updated:', updatedLicense);
-    // Update the license in the list
-    setLicenses(prev => prev.map(l => 
-      l.id === updatedLicense.id 
-        ? { ...l, ...updatedLicense }
-        : l
-    ));
+  // The details form uses its own field names (agreementType, monthlyCost,
+  // termStart…); map them back onto the tracker record being edited. The
+  // record is identified by the license that was opened — the form carries no
+  // record id, which is why saving used to change nothing.
+  const handleSaveLicense = (form: any) => {
+    if (!selectedLicense) return;
+    const cost = Number(String(form.monthlyCost ?? '').replace(/,/g, ''));
+    const seats = Number(String(form.seats ?? '').replace(/,/g, ''));
+    setLicenses(prev => prev.map(l => {
+      if (l.id !== selectedLicense.id) return l;
+      const endDate = isISODate(form.termEnd) ? form.termEnd : l.endDate;
+      return {
+        ...l,
+        licenseId: form.licenseId || l.licenseId,
+        operator: form.operator || l.operator,
+        type: toAgreementType(form.agreementType),
+        status: form.status || l.status,
+        size: form.size || l.size,
+        seats: Number.isFinite(seats) && String(form.seats ?? '').trim() !== '' ? seats : l.seats,
+        cost: Number.isFinite(cost) && String(form.monthlyCost ?? '').trim() !== '' ? cost : l.cost,
+        address: [form.address1, form.address2].filter(Boolean).join(', ') || l.address,
+        startDate: isISODate(form.termStart) ? form.termStart : l.startDate,
+        endDate,
+        daysUntilExpiration: isISODate(endDate) ? daysFromNow(endDate) : l.daysUntilExpiration,
+        notificationPeriod: form.notificationPeriod || l.notificationPeriod,
+        customer: form.owner || l.customer,
+      };
+    }));
     handleCloseDetailModal();
   };
 
@@ -245,7 +265,7 @@ export function LicenseTracker({
       {
         id: nextId,
         city: newLicense.city || '—',
-        type: toLicenseType(newLicense.workspaceType),
+        type: toAgreementType(newLicense.agreementType),
         address: [newLicense.address1, newLicense.address2].filter(Boolean).join(', ') || '—',
         size: newLicense.size || '—',
         cost: monthlyCost,
@@ -467,6 +487,7 @@ export function LicenseTracker({
     'Traditional Lease': '#B3D9FF',
     'Virtual Office': '#4FA3D9',
     'Managed Space': '#0F2A3D',
+    'On-Demand': '#CBD5E1',
   };
   const licenseTypeData = LICENSE_TYPES
     .map((name) => ({ name, value: licenses.filter((l) => l.type === name).length, color: TYPE_COLORS[name] }))
@@ -879,7 +900,7 @@ export function LicenseTracker({
           city: String(selectedLicense.location || selectedLicense.city).split(',')[0].trim(),
           state: String(selectedLicense.location || '').split(',')[1]?.trim() || '',
           zip: '',
-          workspaceType: selectedLicense.type,
+          agreementType: toAgreementType(selectedLicense.type),
           status: selectedLicense.status,
           size: selectedLicense.size,
           seats: String(selectedLicense.seats),

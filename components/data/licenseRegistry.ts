@@ -1,5 +1,5 @@
 // Licenses as held in License Admin, read from the License Tracker rows: customer, license ID, location, end date and notification date.
-import { mockLicenses, isISODate } from './trackerLicenses';
+import { mockLicenses, isISODate, toAgreementType } from './trackerLicenses';
 const DAY = 86400000;
 
 export interface RegistryLicense {
@@ -11,6 +11,9 @@ export interface RegistryLicense {
   seats: number;
   sizeSf: number;
   monthlyCost: number;
+  /** How the space is held (Traditional Lease, Dedicated (External License)…). */
+  agreementType: string;
+  /** Term structure (Fixed-Term / Month-to-Month) when recorded; '' otherwise. */
   contractType: string;
   renewalMechanism: string;
   notificationPeriod: string;
@@ -27,7 +30,8 @@ const toRegistry = (r: any): RegistryLicense => {
   const fixed = isISODate(r.endDate);
   return {
     licenseId: r.licenseId, customer: r.customer, operator: r.operator, city, state,
-    seats: r.seats, sizeSf: r.squareFootage, monthlyCost: r.cost, contractType: r.type,
+    seats: r.seats, sizeSf: r.squareFootage, monthlyCost: r.cost,
+    agreementType: toAgreementType(r.type), contractType: r.contractType ?? '',
     renewalMechanism: fixed ? 'Renewal by Mutual Agreement' : 'Auto-Renewal',
     notificationPeriod: r.notificationPeriod, termEnd: fixed ? r.endDate : '',
     // Calculated, as in production: term end minus the notification period. Auto-renew licenses have no term end, so no date.

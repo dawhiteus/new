@@ -1191,7 +1191,7 @@ export function BrokerFlow({ isAIDrawerOpen }: BrokerFlowProps) {
           }}>
             <Zap size={14} style={{ color: '#2563EB', flexShrink: 0, marginTop: 2 }} />
             <p style={{ fontSize: 13, color: '#1E40AF', fontFamily: 'Inter, sans-serif', lineHeight: 1.55, margin: 0 }}>
-              <span style={{ fontWeight: 600 }}>The Create Collection Agent</span> will source spaces based on this requirement's metadata — location, headcount, budget, and workspace type.
+              <span style={{ fontWeight: 600 }}>The Create Collection Agent</span> will source spaces based on this requirement's metadata — location, headcount, budget, and space type.
             </p>
           </div>
 

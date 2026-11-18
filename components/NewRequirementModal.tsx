@@ -539,7 +539,7 @@ export function NewRequirementModal({ isOpen, onClose, onCreate, initialLicenseI
           {vis('name') && <div style={{ marginBottom: 20 }}>{field('name')}</div>}
           {vis('location') && <div style={{ marginBottom: 20 }}>{field('location')}</div>}
           {vis('workspaceType') && <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>Workspace Type{marker('workspaceType')}</label>
+            <label style={labelStyle}>Space Type{marker('workspaceType')}</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {WORKSPACE_TYPES.map((t) => chip(f.workspaceType === t, t, () => setField('workspaceType', f.workspaceType === t ? '' : t)))}
             </div>

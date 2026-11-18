@@ -99,7 +99,7 @@ export const sampleTeamMembers: TeamMember[] = [
     organization: 'LiquidSpace AI',
     email: 'assessment.agent@ai.liquidspace.com',
     type: 'Agent',
-    description: 'A Requirement-aware lens layered on top of LiquidSpace\'s existing recommendations. Answers: how well does this specific collection satisfy this specific requirement? Evaluates each space across five dimensions — location proximity, workspace type, size and capacity, budget, and term. Runs automatically after sourcing completes, and re-triggers when requirement fields are edited.',
+    description: 'A Requirement-aware lens layered on top of LiquidSpace\'s existing recommendations. Answers: how well does this specific collection satisfy this specific requirement? Evaluates each space across five dimensions — location proximity, space type, size and capacity, budget, and term. Runs automatically after sourcing completes, and re-triggers when requirement fields are edited.',
   },
 ];
 

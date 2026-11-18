@@ -192,7 +192,7 @@ const stageTasksData: Record<string, Task[]> = {
       taskType: 'agent',
       agentState: 'completed',
       executionTimestamp: 'Oct 26, 10:18 AM',
-      agentInstruction: 'Evaluate how well the sourced collection fits the requirement across location, workspace type, size and capacity, budget, and term.',
+      agentInstruction: 'Evaluate how well the sourced collection fits the requirement across location, space type, size and capacity, budget, and term.',
       expectedOutput: 'Collection fit assessment',
       agentOutput: 'Collection assessed against requirement. Strong matches: 2, Partial: 4, Weak: 6. Top recommendation: Hudson Yards Tower, 4,800 sq ft (96% match).',
       collectionUrl: 'https://liquidspace.com/collections/manhattan-private-offices-abc123',
@@ -1503,7 +1503,7 @@ export function DealDetailsModal({ deal, isOpen, onClose, defaultTab }: DealDeta
                         <Input type="number" value={editedDeal.size} onChange={(e) => setEditedDeal({ ...editedDeal, size: e.target.value })} placeholder="Optional" className="border-gray-300" style={inp} />
                       </div>
                       <div className="col-span-3">
-                        <Label style={lbl}>Workspace Type</Label>
+                        <Label style={lbl}>Space Type</Label>
                         <div className="flex flex-wrap gap-2">
                           {WORKSPACE_TYPES.map((t) => {
                             const on = editedDeal.workspaceType.includes(t);
