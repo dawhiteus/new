@@ -307,5 +307,137 @@ export const mockLicenses = [
       broker: { name: 'Roberto Martinez, CBRE', phone: '(214) 555-0134', email: 'roberto.martinez@cbre.com' }
     }
   },
+  {
+    // Fictional Tel Tech Virtual Office — mirrors the Workplace Strategist demo record.
+    id: 7,
+    licenseId: 'TT-2025-007',
+    customer: 'Tel Tech Corporation',
+    notificationPeriod: 'None',
+    city: 'Austin',
+    type: 'Virtual Office',
+    address: '100 Congress Ave, Suite 2000, Austin, TX 78701',
+    size: '—',
+    cost: 30,
+    seats: 0,
+    marketRateComparison: '—',
+    startDate: '2025-08-01',
+    endDate: 'autorenew',
+    operator: 'Regus',
+    status: 'Active',
+    paymentInfo: 'Monthly Card Payment',
+    daysUntilExpiration: 0,
+    hasContract: true,
+    isActive: true,
+    isRenewable: true,
+    name: 'Tel Tech Austin Virtual Office',
+    property: 'Regus Austin',
+    location: 'Austin, TX',
+    monthlyRent: 30,
+    squareFootage: 0,
+    renewalStatus: 'Auto-Renews Monthly',
+    lastModified: '2026-11-18',
+    services: 'Basic business address and mail handling — mail received, scanned and held for collection.',
+    documents: [
+      { name: 'Regus Virtual Office Service Agreement', type: 'PDF', size: '0.4 MB', uploadDate: '2025-08-01' }
+    ],
+    financials: {
+      monthlyRent: 30,
+      securityDeposit: 0,
+      brokerFee: 0,
+      totalFirstYear: 360
+    },
+    contacts: {
+      landlord: { name: 'Regus Client Services', phone: '(800) 555-0140', email: 'support@example.com' },
+      broker: { name: 'LiquidSpace Account Team', phone: '(800) 555-0199', email: 'accounts@liquidspace.com' }
+    }
+  },
+  {
+    // Fictional Tel Tech Virtual Office — mirrors the Workplace Strategist demo record.
+    id: 8,
+    licenseId: 'TT-2026-008',
+    customer: 'Tel Tech Corporation',
+    notificationPeriod: '30 Days',
+    city: 'Boston',
+    type: 'Virtual Office',
+    address: 'One Lincoln St, Boston, MA 02111',
+    size: '—',
+    cost: 200,
+    seats: 0,
+    marketRateComparison: '—',
+    startDate: '2026-01-01',
+    endDate: '2027-12-31',
+    operator: 'Industrious',
+    status: 'Active',
+    paymentInfo: 'Monthly Card Payment',
+    daysUntilExpiration: 0,
+    hasContract: true,
+    isActive: true,
+    isRenewable: true,
+    name: 'Tel Tech Boston Virtual Office',
+    property: 'Industrious Boston',
+    location: 'Boston, MA',
+    monthlyRent: 200,
+    squareFootage: 0,
+    renewalStatus: 'Active Term',
+    lastModified: '2026-11-18',
+    services: 'Business address, mail forwarding, live call answering, and 8 meeting-room hours per month.',
+    documents: [
+      { name: 'Industrious Virtual Office Service Agreement', type: 'PDF', size: '0.4 MB', uploadDate: '2026-01-01' }
+    ],
+    financials: {
+      monthlyRent: 200,
+      securityDeposit: 0,
+      brokerFee: 0,
+      totalFirstYear: 2400
+    },
+    contacts: {
+      landlord: { name: 'Industrious Client Services', phone: '(800) 555-0140', email: 'support@example.com' },
+      broker: { name: 'LiquidSpace Account Team', phone: '(800) 555-0199', email: 'accounts@liquidspace.com' }
+    }
+  },
+  {
+    // Fictional Tel Tech Virtual Office — mirrors the Workplace Strategist demo record.
+    id: 9,
+    licenseId: 'TT-2025-009',
+    customer: 'Tel Tech Corporation',
+    notificationPeriod: '30 Days',
+    city: 'New York',
+    type: 'Virtual Office',
+    address: '17 State St, 40th Floor, New York, NY 10004',
+    size: '—',
+    cost: 800,
+    seats: 0,
+    marketRateComparison: '—',
+    startDate: '2025-12-01',
+    endDate: '2027-11-30',
+    operator: 'Servcorp',
+    status: 'Active',
+    paymentInfo: 'Monthly Card Payment',
+    daysUntilExpiration: 0,
+    hasContract: true,
+    isActive: true,
+    isRenewable: true,
+    name: 'Tel Tech New York Virtual Office',
+    property: 'Servcorp New York',
+    location: 'New York, NY',
+    monthlyRent: 800,
+    squareFootage: 0,
+    renewalStatus: 'Active Term',
+    lastModified: '2026-11-18',
+    services: 'Premium package — staffed reception, a dedicated local phone number with call handling, 16 meeting-room hours per month, and up to 5 days of workspace access per month.',
+    documents: [
+      { name: 'Servcorp Virtual Office Service Agreement', type: 'PDF', size: '0.4 MB', uploadDate: '2025-12-01' }
+    ],
+    financials: {
+      monthlyRent: 800,
+      securityDeposit: 0,
+      brokerFee: 0,
+      totalFirstYear: 9600
+    },
+    contacts: {
+      landlord: { name: 'Servcorp Client Services', phone: '(800) 555-0140', email: 'support@example.com' },
+      broker: { name: 'LiquidSpace Account Team', phone: '(800) 555-0199', email: 'accounts@liquidspace.com' }
+    }
+  },
 ];
 mockLicenses.forEach((l: any) => { l.daysUntilExpiration = isISODate(l.endDate) ? daysFromNow(l.endDate) : null; });
