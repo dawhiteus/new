@@ -378,13 +378,13 @@ Slalom`;
 
 export const SAMPLE_RENEWAL = `Hi,
 
-Our New York license is up soon and we'd like to renew, but we expect to be closer to 25 people by then and want to look at lower-cost options. Same area is fine. We'd want to start April 1, 2027.
+Our Atlanta license is up soon and we'd like to renew, but we expect to be closer to 25 people by then and want to look at lower-cost options. Same area is fine. We'd want to start June 1, 2027.
 
 Thanks,
 Dan Whitfield
 Tel Tech Corporation`;
 
-export const SAMPLE_RENEWAL_LICENSE = 'TT-2023-003';
+export const SAMPLE_RENEWAL_LICENSE = 'TT-2024-011';
 
 export const licenseTermsReference = (l: LicenseRecord) => [
   { label: 'Current monthly cost', value: fmtMoney(l.monthlyCost) },

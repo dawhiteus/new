@@ -26,12 +26,14 @@ const formatTermEnd = (v: string) => (isISODate(v) ? `${v.slice(5, 7)}/${v.slice
 
 
 const MARKET_RATE_DETAILS: Record<number, { costPerSeat: number; marketMedian: number; confidence: number; comparables: number; suggestion: string }> = {
-  1: { costPerSeat: 247.83, marketMedian: 269.38, confidence: 4, comparables: 31, suggestion: 'Well-positioned for renewal; strong negotiating position.' },
-  2: { costPerSeat: 385.55, marketMedian: 344.24, confidence: 4, comparables: 28, suggestion: 'Review at renewal; consider renegotiation.' },
-  3: { costPerSeat: 510.95, marketMedian: 526.75, confidence: 3, comparables: 45, suggestion: 'Near market rate; monitor closely ahead of renewal.' },
-  4: { costPerSeat: 333.40, marketMedian: 392.24, confidence: 5, comparables: 22, suggestion: 'Excellent value; prioritize long-term renewal.' },
-  5: { costPerSeat: 471.00, marketMedian: 448.57, confidence: 2, comparables:  8, suggestion: 'Limited comparables; verify rate with local broker before renewal.' },
-  6: { costPerSeat: 180.73, marketMedian: 231.71, confidence: 5, comparables: 37, suggestion: 'Significantly below market; excellent deal. Exercise renewal option early.' },
+  5: { costPerSeat: 550, marketMedian: 356, confidence: 4, comparables: 16, suggestion: "Well above market; review at renewal." },
+  6: { costPerSeat: 415, marketMedian: 424, confidence: 4, comparables: 15, suggestion: "Near market rate; monitor ahead of renewal." },
+  7: { costPerSeat: 500, marketMedian: 442, confidence: 2, comparables: 8, suggestion: "Above market; consider renegotiation at renewal." },
+  8: { costPerSeat: 400, marketMedian: 387, confidence: 5, comparables: 24, suggestion: "Near market rate; monitor ahead of renewal." },
+  9: { costPerSeat: 380, marketMedian: 381, confidence: 5, comparables: 21, suggestion: "Near market rate; monitor ahead of renewal." },
+  10: { costPerSeat: 440, marketMedian: 457, confidence: 3, comparables: 10, suggestion: "Below market; strong position at renewal." },
+  11: { costPerSeat: 260, marketMedian: 253, confidence: 5, comparables: 27, suggestion: "Near market rate; monitor ahead of renewal." },
+  12: { costPerSeat: 450, marketMedian: 455, confidence: 5, comparables: 22, suggestion: "Near market rate; monitor ahead of renewal." },
 };
 
 function getMarketBadgeStyle(rate: string): React.CSSProperties {

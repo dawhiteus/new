@@ -64,9 +64,9 @@ describe('Agent summary and questions', () => {
   it('still drafts a renewal from a license plus text', () => {
     const r = runIntake(SAMPLE_RENEWAL, SAMPLE_RENEWAL_LICENSE, { today: TODAY });
     const f = r.drafts[0].fields;
-    expect(r.license?.licenseId).toBe('TT-2023-003');
-    expect(f.location).toBe('New York');
-    expect(f.startDate).toBe('2027-04-01');
+    expect(r.license?.licenseId).toBe('TT-2024-011');
+    expect(f.location).toBe('Atlanta');
+    expect(f.startDate).toBe('2027-06-01');
     expect(f.capacity).toBe('25');
     expect(f.company).toBe('Tel Tech Corporation');
   });
