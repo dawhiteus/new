@@ -322,7 +322,7 @@ export const mockLicenses = [
     marketRateComparison: '—',
     startDate: '2025-08-01',
     endDate: 'autorenew',
-    operator: 'Regus',
+    operator: 'Davinci Virtual',
     status: 'Active',
     paymentInfo: 'Monthly Card Payment',
     daysUntilExpiration: 0,
@@ -330,7 +330,7 @@ export const mockLicenses = [
     isActive: true,
     isRenewable: true,
     name: 'Tel Tech Austin Virtual Office',
-    property: 'Regus Austin',
+    property: 'Davinci Virtual Austin',
     location: 'Austin, TX',
     monthlyRent: 30,
     squareFootage: 0,
@@ -338,7 +338,7 @@ export const mockLicenses = [
     lastModified: '2026-11-18',
     services: 'Basic business address and mail handling — mail received, scanned and held for collection.',
     documents: [
-      { name: 'Regus Virtual Office Service Agreement', type: 'PDF', size: '0.4 MB', uploadDate: '2025-08-01' }
+      { name: 'Davinci Virtual Office Service Agreement', type: 'PDF', size: '0.4 MB', uploadDate: '2025-08-01' }
     ],
     financials: {
       monthlyRent: 30,
@@ -347,7 +347,7 @@ export const mockLicenses = [
       totalFirstYear: 360
     },
     contacts: {
-      landlord: { name: 'Regus Client Services', phone: '(800) 555-0140', email: 'support@example.com' },
+      landlord: { name: 'Davinci Virtual Client Services', phone: '(800) 555-0140', email: 'support@example.com' },
       broker: { name: 'LiquidSpace Account Team', phone: '(800) 555-0199', email: 'accounts@liquidspace.com' }
     }
   },
