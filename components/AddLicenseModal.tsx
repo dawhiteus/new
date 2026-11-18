@@ -71,7 +71,7 @@ export function AddLicenseModal({ isOpen, onClose, onSave }: AddLicenseModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto p-0" style={{ borderRadius: '12px', border: 'none' }}>
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-y-auto p-0" style={{ borderRadius: '12px', border: 'none' }}>
         <DialogDescription className="sr-only">Add a new external license</DialogDescription>
 
         {/* Blue header */}
