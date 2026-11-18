@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { X } from 'lucide-react';
 import {
-  WORKSPACE_TYPES,
+  AGREEMENT_TYPES,
   LICENSE_STATUS_OPTIONS,
   CONTRACT_TYPES,
   RENEWAL_MECHANISMS,
@@ -32,7 +32,7 @@ const EMPTY_FORM = {
   state: '',
   zip: '',
   country: 'UNITED STATES',
-  workspaceType: 'Dedicated (External)',
+  workspaceType: 'Dedicated (External License)',
   status: 'Active',
   size: '',
   seats: '',
@@ -98,11 +98,11 @@ export function AddLicenseModal({ isOpen, onClose, onSave }: AddLicenseModalProp
               <Input value={formData.operator} onChange={(e) => set('operator', e.target.value)} className="border-gray-300" style={fieldStyle} />
             </div>
             <div>
-              <Label style={labelStyle}>Workspace Type</Label>
+              <Label style={labelStyle}>Agreement Type</Label>
               <Select value={formData.workspaceType} onValueChange={(v) => set('workspaceType', v)}>
                 <SelectTrigger className="border-gray-300" style={fieldStyle}><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {WORKSPACE_TYPES.map(t => <SelectItem key={t} value={t} style={fieldStyle}>{t}</SelectItem>)}
+                  {AGREEMENT_TYPES.map(t => <SelectItem key={t} value={t} style={fieldStyle}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

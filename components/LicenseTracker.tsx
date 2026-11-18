@@ -462,9 +462,11 @@ export function LicenseTracker({
   const totalSeats = currentLicenses.reduce((sum, l) => sum + (l.seats || 0), 0);
   const costPerSeat = totalSeats ? totalMonthlyCost / totalSeats : 0;
   const TYPE_COLORS: Record<string, string> = {
-    'Traditional Lease': '#B3D9FF',
     'Dedicated (External License)': '#80C7FF',
-    'Dedicated (LiquidSpace License)': '#005B94',
+    'Dedicated (LiquidSpace)': '#005B94',
+    'Traditional Lease': '#B3D9FF',
+    'Virtual Office': '#4FA3D9',
+    'Managed Space': '#0F2A3D',
   };
   const licenseTypeData = LICENSE_TYPES
     .map((name) => ({ name, value: licenses.filter((l) => l.type === name).length, color: TYPE_COLORS[name] }))
@@ -636,7 +638,7 @@ export function LicenseTracker({
                     License Distribution
                   </div>
                   <div style={{ fontSize: '12px', fontWeight: 400, color: '#6b7280', fontFamily: 'Inter, sans-serif' }}>
-                    By license type
+                    By agreement type
                   </div>
                 </div>
               </div>

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from './ui/textarea';
 import { X, Calendar, Clock, CheckCircle, FileText } from 'lucide-react';
 import {
-  WORKSPACE_TYPES,
+  AGREEMENT_TYPES,
   LICENSE_STATUS_OPTIONS,
   CONTRACT_TYPES,
   RENEWAL_MECHANISMS,
@@ -38,7 +38,7 @@ export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: Lic
     state: licenseData?.state || 'MN',
     zip: licenseData ? (licenseData.zip ?? '') : '55401',
     country: licenseData?.country || 'UNITED STATES',
-    workspaceType: licenseData?.workspaceType || 'Dedicated (External)',
+    workspaceType: licenseData?.workspaceType || 'Dedicated (External License)',
     status: licenseData?.status || 'Active',
     size: licenseData?.size || '4,200 RSF',
     owner: licenseData ? (licenseData.owner ?? '') : 'Jennifer Li',
@@ -243,14 +243,14 @@ export function LicenseDetailModal({ isOpen, onClose, onSave, licenseData }: Lic
                       </div>
                       <div className="space-y-2">
                         <Label className="text-table-header text-primary font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
-                          Workspace Type
+                          Agreement Type
                         </Label>
                         <Select value={formData.workspaceType} onValueChange={(value) => handleInputChange('workspaceType', value)}>
                           <SelectTrigger className="bg-input-background border-gray-300 focus:border-primary focus:ring-primary text-body h-10" style={{ fontFamily: 'Inter, sans-serif' }}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {WORKSPACE_TYPES.map((t) => (
+                            {AGREEMENT_TYPES.map((t) => (
                               <SelectItem key={t} value={t} style={{ fontFamily: 'Inter, sans-serif' }}>{t}</SelectItem>
                             ))}
                           </SelectContent>

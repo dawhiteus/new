@@ -5,10 +5,8 @@
 // Type, Renewal Mechanism, and Notification Period must each answer one
 // question and stay independent of one another.
 
-// Workspace Type — aligned with the taxonomy already used in the License
-// Tracker overview stats and table filters (Flex / Dedicated-External /
-// Dedicated-LiquidSpace).
-export const WORKSPACE_TYPES = ['Flex (Hourly)', 'Dedicated (External)', 'Dedicated (LiquidSpace)'];
+// Agreement Type — same list the License Tracker table, filter and chart use.
+export { AGREEMENT_TYPES } from './data/trackerLicenses';
 
 export const LICENSE_STATUS_OPTIONS = ['Active', 'Expired', 'Archived'];
 

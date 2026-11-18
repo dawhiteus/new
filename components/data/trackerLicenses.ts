@@ -6,12 +6,27 @@ export const inDays = (n: number) => toISO(new Date(Date.now() + n * DAY_MS));
 export const isISODate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 export const daysFromNow = (iso: string) => Math.round((new Date(iso + 'T00:00:00').getTime() - new Date(new Date().toDateString()).getTime()) / DAY_MS);
 
-// License Type values as used in production.
-export const LICENSE_TYPES = ['Dedicated (LiquidSpace License)', 'Dedicated (External License)', 'Traditional Lease'];
-export const toLicenseType = (workspaceType: string) =>
-  workspaceType === 'Dedicated (LiquidSpace)' ? 'Dedicated (LiquidSpace License)'
-  : workspaceType === 'Traditional Lease' || LICENSE_TYPES.includes(workspaceType) ? workspaceType
-  : 'Dedicated (External License)';
+// Agreement Type — the kind of agreement a tracked space is held under (shown
+// as "Type" where space is tight). Single source of truth for the tracker
+// table, filter, distribution chart and the Add/Edit license forms.
+export const AGREEMENT_TYPES = [
+  'Dedicated (External License)',
+  'Dedicated (LiquidSpace)',
+  'Traditional Lease',
+  'Virtual Office',
+  'Managed Space',
+];
+/** @deprecated use AGREEMENT_TYPES */
+export const LICENSE_TYPES = AGREEMENT_TYPES;
+
+// Earlier labels, kept so older saved/demo values still resolve.
+const LEGACY_AGREEMENT_TYPES: Record<string, string> = {
+  'Dedicated (External)': 'Dedicated (External License)',
+  'Dedicated (LiquidSpace License)': 'Dedicated (LiquidSpace)',
+};
+export const toLicenseType = (agreementType: string) =>
+  AGREEMENT_TYPES.includes(agreementType) ? agreementType
+  : LEGACY_AGREEMENT_TYPES[agreementType] ?? 'Dedicated (External License)';
 
 
 export const mockLicenses = [
@@ -110,7 +125,7 @@ export const mockLicenses = [
     customer: 'Tel Tech Corporation',
     notificationPeriod: '60 Days',
     city: 'New York',
-    type: 'Dedicated (LiquidSpace License)',
+    type: 'Dedicated (LiquidSpace)',
     address: 'Industrious 101 Avenue of the Americas',
     size: '95,000 sq ft',
     cost: 11241,
@@ -241,7 +256,7 @@ export const mockLicenses = [
     customer: 'Tel Tech Corporation',
     notificationPeriod: '60 Days',
     city: 'Dallas',
-    type: 'Dedicated (LiquidSpace License)',
+    type: 'Dedicated (LiquidSpace)',
     address: 'Regus 2600 Commerce St',
     size: '68,000 sq ft',
     cost: 2711,
